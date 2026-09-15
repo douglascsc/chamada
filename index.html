@@ -1,0 +1,3054 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Chamada</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Paleta oficial do IFSul (extraída da marca) */
+      --ink: #241a14;
+      --paper: #f6f7f2;
+      --lime: #8dc542;
+      --brand-green: #2b7a40;
+      --teal: #118a85;
+      --muted: #6e7568;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: auto;
+      min-height: calc(100 * min(var(--vh, 1vh), 1vh));
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    button, input, textarea { font: inherit; }
+
+    .app-wrapper {
+      width: 100%;
+      position: relative;
+      isolation: isolate;
+      height: auto;
+      min-height: auto;
+      overflow: visible;
+    }
+
+    main {
+      height: auto;
+      min-height: auto;
+      overflow: visible;
+    }
+
+    .app-wrapper::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(36, 26, 20, .05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36, 26, 20, .05) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(to bottom, #000 0%, transparent 82%);
+    }
+
+    .accent-disc {
+      position: absolute;
+      z-index: -2;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .accent-disc--lime {
+      width: 360px;
+      height: 360px;
+      top: -170px;
+      right: -75px;
+      background: rgba(141, 197, 66, .45);
+      box-shadow: 0 0 90px rgba(141, 197, 66, .2);
+    }
+
+    .accent-disc--teal {
+      width: 330px;
+      height: 330px;
+      bottom: -180px;
+      left: -150px;
+      background: rgba(17, 138, 133, .16);
+      box-shadow: 0 0 90px rgba(17, 138, 133, .12);
+    }
+
+    .brand-mark {
+      filter: drop-shadow(0 6px 14px rgba(36, 26, 20, .16));
+    }
+
+    .status-pill {
+      border: 1px solid rgba(36, 26, 20, .1);
+      box-shadow: 0 8px 24px rgba(36, 26, 20, .06);
+    }
+
+    .glass-surface {
+      position: relative;
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(255, 255, 255, .74);
+      box-shadow:
+        0 26px 70px rgba(36, 26, 20, .1),
+        inset 0 0 0 1px rgba(36, 26, 20, .04);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero-panel {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      right: -60px;
+      top: -60px;
+      border-radius: 999px;
+      border: 18px solid rgba(141, 197, 66, .3);
+      pointer-events: none;
+    }
+
+    .search-wrap { position: relative; }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      width: 1.1rem;
+      height: 1.1rem;
+      transform: translateY(-50%);
+      color: #8190a4;
+      pointer-events: none;
+    }
+
+    .search-input, .teacher-code-input, .text-field {
+      width: 100%;
+      border: 1.5px solid rgba(36, 26, 20, .16);
+      background: rgba(255, 255, 255, .9);
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+
+    .search-input {
+      min-height: 52px;
+      border-radius: 16px;
+      padding: .85rem 2.8rem .85rem 2.9rem;
+    }
+
+    .teacher-code-input {
+      min-height: 52px;
+      border-radius: 14px;
+      padding: .8rem 1rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-align: center;
+    }
+
+    .text-field {
+      min-height: 48px;
+      border-radius: 12px;
+      padding: .7rem .9rem;
+    }
+
+    textarea.text-field { min-height: auto; resize: vertical; }
+
+    .search-input::placeholder, .teacher-code-input::placeholder, .text-field::placeholder { color: #8c99aa; }
+
+    .search-input:focus, .teacher-code-input:focus, .text-field:focus {
+      border-color: var(--brand-green);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(43, 122, 64, .16);
+      transform: translateY(-1px);
+    }
+
+    .clear-search {
+      position: absolute;
+      right: .65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #607089;
+    }
+
+    .progress-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(36, 26, 20, .1);
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2b7a40, #4fae63);
+      transition: width .45s cubic-bezier(.2, .75, .25, 1);
+    }
+
+    .student-row {
+      transition: background-color .18s ease, transform .18s ease;
+    }
+
+    .student-row:hover {
+      background: rgba(43, 122, 64, .05);
+      transform: translateX(3px);
+    }
+
+    .student-row.is-present { background: rgba(141, 197, 66, .18); }
+
+    #student-list {
+      max-height: calc(60 * min(var(--vh, 1vh), 1vh));
+      overflow-y: auto;
+    }
+
+    .student-avatar {
+      background: #edf2fa;
+      color: #52647b;
+      transition: background-color .2s ease, color .2s ease, transform .2s ease;
+    }
+
+    .student-row.is-present .student-avatar {
+      background: #8dc542;
+      color: #1f3a12;
+      transform: rotate(-3deg);
+    }
+
+    .turma-card {
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+
+    .turma-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(36, 26, 20, .1);
+      border-color: rgba(43, 122, 64, .35);
+    }
+
+    .action-button {
+      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+    .action-button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+    }
+
+    .present-pill { border: 1px solid #b7d98c; }
+
+    .focus-ring:focus-visible {
+      outline: 3px solid rgba(43, 122, 64, .45);
+      outline-offset: 3px;
+    }
+
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: .7rem;
+      border-radius: 15px;
+      padding: .85rem 1rem;
+    }
+
+    .notice-success {
+      color: #285410;
+      background: #e9f8d1;
+      border: 1px solid #b8dc78;
+    }
+
+    .notice-error {
+      color: #922b1e;
+      background: #fff0ed;
+      border: 1px solid #f2b4aa;
+    }
+
+    .notice-info {
+      color: #204f99;
+      background: #edf4ff;
+      border: 1px solid #bdd3fb;
+    }
+
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border: 2px solid rgba(255,255,255,.38);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(8, 21, 40, .62);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.hidden { display: none; }
+
+    .teacher-modal {
+      width: min(100%, 440px);
+      max-height: calc(90 * min(var(--vh, 1vh), 1vh));
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: 26px;
+      padding: 1.5rem;
+      box-shadow: 0 32px 90px rgba(7, 18, 36, .34);
+      animation: modal-in .24s ease both;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: reveal .58s cubic-bezier(.2,.75,.25,1) forwards;
+    }
+
+    .delay-1 { animation-delay: .08s; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes reveal {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: translateY(14px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 640px) {
+      .accent-disc--lime { width: 260px; height: 260px; }
+      .glass-surface { box-shadow: 0 16px 42px rgba(36, 26, 20, .09); }
+      .student-row:hover { transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+ </head>
+ <body>
+  <div class="app-wrapper w-full">
+   <div class="accent-disc accent-disc--lime" aria-hidden="true"></div>
+   <div class="accent-disc accent-disc--teal" aria-hidden="true"></div>
+
+   <header class="relative z-10 w-full px-5 pt-6 sm:px-8 sm:pt-8">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5">
+     <div class="flex min-w-0 items-center gap-4">
+      <img src="data:image/png;base64,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" alt="Instituto Federal Sul-rio-grandense" class="brand-mark h-14 w-auto shrink-0">
+      <div class="min-w-0">
+       <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Sistema de apoio ao registro de chamada</h1>
+       <p class="mt-1 text-sm text-slate-500">Controle de presença por turma</p>
+      </div>
+     </div>
+     <div class="flex flex-wrap items-center gap-2">
+      <button id="btn-teacher-area" class="status-pill action-button flex items-center gap-2 rounded-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs border border-slate-200 shadow-sm" type="button">
+       <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i> <span>Área do professor</span>
+      </button>
+      <div id="db-status-badge" class="status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-amber-50 text-amber-800 border-amber-200">
+       <span id="db-status-dot" class="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" aria-hidden="true"></span> <span id="db-status-label" class="font-bold text-xs uppercase tracking-wider">Conectando…</span>
+      </div>
+     </div>
+    </div>
+   </header>
+
+   <main class="relative z-10 mx-auto w-full max-w-6xl px-5 py-4 sm:px-8 lg:py-6">
+
+    <!-- ===================== SELEÇÃO DE TURMA ===================== -->
+    <section id="view-turma-select">
+     <section class="hero-panel glass-surface reveal rounded-2xl p-5 sm:p-8">
+      <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold bg-[#EEF6EC] text-[#2B7A40] border border-[#D7E9D3]">Chamada</span>
+      <h2 class="mt-3 text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Selecione sua turma</h2>
+      <p class="mt-2 text-sm text-slate-500 leading-relaxed">Escolha a turma para marcar sua presença.</p>
+      <div id="turma-select-professor-filter" class="hidden mt-4 flex flex-wrap items-center gap-2">
+       <span class="text-xs font-semibold text-slate-500">Filtrar por professor:</span>
+       <div id="turma-select-professor-chips" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div id="turma-select-list" class="mt-5 grid gap-3 sm:grid-cols-2"></div>
+      <p id="turma-select-empty" class="hidden mt-5 text-sm text-slate-500">Nenhuma turma cadastrada ainda. Peça ao professor para criar uma turma na Área do professor.</p>
+      <p id="turma-select-filter-empty" class="hidden mt-5 text-sm text-slate-500">Nenhuma turma encontrada para esse professor.</p>
+     </section>
+    </section>
+
+    <!-- ===================== CHAMADA DA TURMA ===================== -->
+    <section id="view-attendance" class="hidden">
+     <section class="hero-panel glass-surface reveal rounded-2xl p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+       <div class="flex min-w-0 items-center gap-3">
+        <button id="btn-trocar-turma" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+         <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Trocar turma
+        </button>
+        <h2 id="attendance-turma-name" class="min-w-0 truncate text-xl font-extrabold text-[var(--ink)]">Turma</h2>
+       </div>
+       <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-teacher-mode" class="status-pill action-button flex items-center gap-2 rounded-full px-4 py-2 bg-white/85 text-slate-700 font-semibold text-xs" type="button" title="Marcar presença com o código do professor, sem precisar do código do dia">
+         <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i> <span id="teacher-mode-label">Modo professor</span>
+        </button>
+        <div id="daily-code-status-badge" class="status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-amber-50 text-amber-800 border-amber-200">
+         <span id="code-dot" class="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" aria-hidden="true"></span> <span id="code-badge-label" class="font-bold text-xs uppercase tracking-wider">Código Pendente</span>
+        </div>
+        <div class="status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-white/85 text-slate-700">
+         <i data-lucide="calendar-days" aria-hidden="true" class="h-4 w-4"></i> <span id="current-date" class="font-bold">—</span>
+        </div>
+        <button id="btn-export-csv" class="hidden status-pill action-button flex items-center gap-2 rounded-full px-4 py-2 bg-white/85 text-slate-700 font-semibold text-xs" type="button" title="Baixar a lista de presença de hoje em Excel (só professor)">
+         <i data-lucide="download" class="h-3.5 w-3.5" aria-hidden="true"></i> <span>Exportar Excel</span>
+        </button>
+       </div>
+      </div>
+      <div class="relative z-10 mt-4">
+       <div class="search-wrap">
+        <i data-lucide="search" aria-hidden="true" class="search-icon"></i>
+        <input id="student-search" class="search-input" type="search" autocomplete="off" placeholder="Buscar aluno pelo nome...">
+        <button id="clear-search" class="clear-search focus-ring hidden rounded-lg p-2" type="button" aria-label="Limpar busca">
+         <i data-lucide="x" aria-hidden="true" class="h-4 w-4"></i>
+        </button>
+       </div>
+       <button id="btn-open-student-info" type="button" class="focus-ring mt-2 rounded px-0.5 text-xs font-semibold text-slate-400 hover:text-[#2B7A40] hover:underline">ℹ️ Sobre seus dados</button>
+      </div>
+     </section>
+
+     <section id="daily-code-setup-card" class="reveal delay-1 mt-6 rounded-[24px] border border-amber-200 bg-amber-50 p-5 text-amber-900 shadow-md">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+       <div class="flex items-start gap-3">
+        <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+         <i data-lucide="key-round" aria-hidden="true" class="h-5 w-5"></i>
+        </div>
+        <div>
+         <h3 class="font-bold text-base text-amber-950">Insira o Código do Dia</h3>
+         <p class="mt-1 text-sm text-amber-900 leading-relaxed">Para registrar sua presença, digite abaixo o código de 4 dígitos que o professor forneceu hoje em sala de aula.</p>
+        </div>
+       </div>
+       <div class="flex shrink-0 items-center gap-3">
+        <input id="student-daily-code" class="daily-code-input-field w-32 min-h-11 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" aria-label="Código do Dia">
+        <button id="btn-verify-code" class="action-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 font-bold text-white shadow-sm hover:bg-amber-700" type="button"> <span>Validar Código</span> </button>
+       </div>
+      </div>
+     </section>
+
+     <section id="attendance-list-locked" class="glass-surface reveal delay-1 mt-6 rounded-[30px] p-8 text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+       <i data-lucide="lock" aria-hidden="true" class="h-7 w-7"></i>
+      </div>
+      <h3 class="text-lg font-bold text-[var(--ink)]">Lista de presença bloqueada</h3>
+      <p class="mt-2 text-sm text-slate-500">Digite o código do dia acima para ver a lista de alunos e marcar sua presença.</p>
+     </section>
+
+     <section id="attendance-list-panel" class="hidden glass-surface reveal delay-1 mt-6 rounded-[30px] p-5 sm:p-8" aria-labelledby="list-heading">
+      <div class="flex flex-col gap-5 border-b border-slate-200/90 pb-6 md:flex-row md:items-end md:justify-between">
+       <div>
+        <div class="mb-2 flex items-center gap-2">
+         <span class="h-2 w-8 rounded-full bg-[#2B7A40]" aria-hidden="true"></span> <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Chamada de hoje</span>
+        </div>
+        <h2 id="list-heading" class="text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Lista de Presença</h2>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Marque sua presença abaixo. Você precisa do código do dia, informado pelo professor em sala de aula.</p>
+       </div>
+       <div class="min-w-0 md:w-72">
+        <div class="mb-2 flex items-center justify-between gap-4">
+         <span class="text-sm font-semibold text-slate-600">Presentes</span> <span class="font-bold text-slate-900"><span id="present-count">0</span>/<span id="student-count">0</span></span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-label="Progresso da chamada" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+         <div id="progress-fill" class="progress-fill"></div>
+        </div>
+       </div>
+      </div>
+      <div id="global-message" class="notice notice-info mt-5 hidden" role="status" aria-live="polite">
+       <i id="global-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="global-message-text"></span>
+      </div>
+      <div id="student-list" class="mt-3 divide-y divide-slate-200/90 pr-2" aria-live="polite"></div>
+      <div id="no-results" class="hidden py-12 text-center">
+       <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+        <i data-lucide="search-x" aria-hidden="true" class="h-7 w-7"></i>
+       </div>
+       <h3 class="text-lg font-bold text-[var(--ink)]">Nenhum aluno encontrado</h3>
+       <p class="mt-2 text-sm text-slate-500">Tente buscar por outro nome.</p>
+      </div>
+     </section>
+    </section>
+
+    <!-- ===================== ÁREA DO PROFESSOR ===================== -->
+    <section id="view-teacher-dashboard" class="hidden">
+     <div class="flex flex-wrap items-center justify-between gap-2">
+      <button id="btn-teacher-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar
+      </button>
+      <button id="btn-sign-out" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+       <i data-lucide="log-out" class="h-3.5 w-3.5" aria-hidden="true"></i> Sair
+      </button>
+     </div>
+     <h2 class="mt-4 text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Área do professor</h2>
+     <p class="mt-1 text-sm text-slate-500">Conectado como <strong id="teacher-account-email">—</strong></p>
+
+     <div class="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#D7E9D3] bg-[#F7FBF6] px-4 py-3 text-xs text-slate-600">
+      <div class="flex items-start gap-2">
+       <i data-lucide="info" aria-hidden="true" class="mt-0.5 h-4 w-4 shrink-0 text-[#2B7A40]"></i>
+       <span>Este sistema foi criado para <strong>facilitar</strong> o professor e não substitui os sistemas institucionais. A chamada deve ser registrada normalmente no SUAP — use os dados daqui como apoio, sempre validando antes de lançar no SUAP.</span>
+      </div>
+      <button id="btn-open-terms" type="button" class="action-button focus-ring shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]">📖 Avisos importantes — leia antes de usar</button>
+     </div>
+
+     <div id="teacher-dashboard-message" class="notice mt-4 hidden" role="status" aria-live="polite">
+      <i id="teacher-dashboard-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="teacher-dashboard-message-text"></span>
+     </div>
+
+     <section id="teacher-name-gate" class="hidden glass-surface reveal rounded-2xl border-2 border-amber-300 p-5 sm:p-6 mt-5">
+      <h3 class="text-lg font-bold text-[var(--ink)]">Bem-vindo! Defina seu nome para continuar</h3>
+      <p class="mt-1 text-sm text-slate-500">É esse nome que vai aparecer para os alunos nas turmas que você criar (em vez do seu e-mail). Só precisa fazer isso uma vez.</p>
+      <div class="mt-3 flex flex-wrap gap-2">
+       <input id="first-access-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Seu nome completo">
+       <button id="btn-save-first-access-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700" type="button">Continuar</button>
+      </div>
+      <p id="first-access-name-status" class="mt-1 text-xs"></p>
+     </section>
+
+     <div id="teacher-dashboard-content" class="hidden">
+     <details class="group glass-surface reveal rounded-2xl mt-5">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <div class="border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Meu nome</h4>
+        <p class="mt-1 text-sm text-slate-500">É esse nome que aparece para os alunos nas turmas que você criar (em vez do seu e-mail).</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+         <input id="teacher-display-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Ex: Douglas Camargo">
+         <button id="btn-save-display-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nome</button>
+        </div>
+        <p id="display-name-status" class="mt-1 text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Trocar senha</h4>
+        <div class="mt-3 grid max-w-sm gap-3">
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-password-input">Nova senha</label>
+          <input id="new-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+         </div>
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="confirm-password-input">Confirmar nova senha</label>
+          <input id="confirm-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+         </div>
+         <div>
+          <button id="btn-change-password" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nova senha</button>
+         </div>
+         <p id="change-password-status" class="text-xs"></p>
+        </div>
+       </div>
+      </div>
+     </details>
+
+     <details id="admin-panel-section" class="hidden group glass-surface reveal rounded-2xl mt-5 border-2 border-[#CFE6C8]">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — criar professor</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <p class="text-sm text-slate-500">Cria uma conta de professor direto por aqui, sem precisar abrir o Firebase Console. A pessoa recebe um e-mail para definir a própria senha — nunca digite uma senha por ela.</p>
+       <div class="mt-3 grid max-w-sm gap-3">
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
+         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Juliane Moura">
+        </div>
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
+         <input id="admin-new-professor-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
+        </div>
+        <div>
+         <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
+        </div>
+        <p id="create-professor-status" class="text-xs"></p>
+       </div>
+      </div>
+     </details>
+
+     <details class="group glass-surface reveal rounded-2xl mt-5">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Nova turma</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <div class="grid gap-3">
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700">Nome da turma</label>
+         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_0.8fr_1.5fr]">
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-turma">Turma</label>
+           <input id="new-turma-turma" class="text-field" type="text" placeholder="Ex: INF2M">
+          </div>
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-ano">Ano</label>
+           <input id="new-turma-ano" class="text-field" type="text" inputmode="numeric" maxlength="9" placeholder="Ex: 2026">
+          </div>
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-disciplina">Disciplina</label>
+           <input id="new-turma-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
+          </div>
+         </div>
+         <p id="new-turma-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
+        </div>
+        <div>
+         <div class="flex flex-wrap items-center justify-between gap-2">
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-turma-alunos">Alunos (opcional)</label>
+          <button id="btn-suap-tip" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]" aria-expanded="false" aria-controls="suap-tip-box">💡 Como obter a lista de alunos</button>
+         </div>
+
+         <div id="suap-tip-box" class="hidden mt-1 mb-3 rounded-xl border border-[#D7E9D3] bg-[#F7FBF6] p-4 text-sm text-slate-700">
+          <h5 class="font-bold text-[var(--ink)]">Como obter a lista de alunos pelo SUAP</h5>
+          <ol class="mt-2 list-decimal list-inside space-y-1.5">
+           <li>Acesse o SUAP.</li>
+           <li>No menu, acesse <strong>Ensino → Turmas e Diários → Meus Diários</strong>.</li>
+           <li>Localize e acesse a turma desejada.</li>
+           <li>Selecione a opção <strong>Imprimir Relação de Alunos</strong>.</li>
+           <li>Salve o arquivo gerado em PDF.</li>
+          </ol>
+          <div id="suap-tip-ai-section">
+           <ol class="mt-2 list-decimal list-inside space-y-1.5" start="6">
+            <li>Envie o PDF para um assistente de IA (ex: ChatGPT).</li>
+            <li>Use o seguinte prompt:</li>
+           </ol>
+           <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-slate-500">Prompt para colar na IA</span>
+            <button id="btn-copy-suap-prompt" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]">📋 Copiar prompt</button>
+           </div>
+           <pre id="suap-prompt-text" class="mt-1 whitespace-pre-wrap rounded-lg border border-[#D7E9D3] bg-white px-3 py-2 text-xs text-slate-600 font-mono">Liste exclusivamente os alunos da turma.
+Retorne somente os nomes completos, com um aluno por linha.
+
+Regras obrigatórias:
+- Não use numeração.
+- Não use marcadores (-, •, etc.).
+- Não use aspas.
+- Não use vírgulas ou ponto e vírgula para separar os nomes.
+- Não inclua matrícula, e-mail, curso, turma ou qualquer outra informação.
+- Não escreva títulos, introduções ou explicações.
+- Não coloque texto antes ou depois da lista.
+- Preserve exatamente a grafia dos nomes, incluindo acentos, cedilha e sobrenomes.
+- Não altere, abrevie, corrija ou reordene os nomes.
+- Cada linha deve conter um único nome de aluno.
+
+Formato esperado:
+Aluno 1
+Aluno 2
+Aluno 3
+
+A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicional.</pre>
+           <p class="mt-3 text-xs text-slate-500">Copie a lista gerada pela IA e cole no campo "Alunos" abaixo.</p>
+          </div>
+         </div>
+
+         <textarea id="new-turma-alunos" class="text-field" rows="4" placeholder="Cole os nomes, um por linha (opcional — dá para adicionar depois)"></textarea>
+         <button id="btn-fill-example" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Preencher com lista de exemplo (30 alunos)</button>
+        </div>
+        <div>
+         <button id="btn-create-turma" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Criar turma</button>
+        </div>
+       </div>
+      </div>
+     </details>
+
+     <section class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
+      <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
+      <div id="teacher-turmas-professor-filter" class="hidden mt-3 flex flex-wrap items-center gap-2">
+       <span class="text-xs font-semibold text-slate-500">Filtrar por professor:</span>
+       <div id="teacher-turmas-professor-chips" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div id="teacher-turmas-list" class="mt-3 flex flex-col gap-2"></div>
+      <p id="teacher-turmas-empty" class="hidden mt-2 text-sm text-slate-500">Nenhuma turma cadastrada ainda.</p>
+     </section>
+
+     <section id="teacher-manage-panel" class="hidden glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
+      <button id="btn-manage-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para a lista
+      </button>
+      <div id="manage-turma-title-row" class="mt-3 flex flex-wrap items-center gap-2">
+       <h3 id="manage-turma-title" class="text-xl font-extrabold text-[var(--ink)]">Turma</h3>
+       <button id="btn-edit-turma-nome" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Editar nome da turma">
+        <i data-lucide="pencil" class="h-4 w-4"></i>
+       </button>
+      </div>
+
+      <div id="manage-turma-edit-form" class="hidden mt-3 rounded-2xl border border-slate-200 bg-white/70 p-4">
+       <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_0.8fr_1.5fr]">
+        <div>
+         <label class="mb-1 block text-xs font-semibold text-slate-500" for="manage-edit-turma">Turma</label>
+         <input id="manage-edit-turma" class="text-field" type="text" placeholder="Ex: INF2M">
+        </div>
+        <div>
+         <label class="mb-1 block text-xs font-semibold text-slate-500" for="manage-edit-ano">Ano</label>
+         <input id="manage-edit-ano" class="text-field" type="text" inputmode="numeric" maxlength="9" placeholder="Ex: 2026">
+        </div>
+        <div>
+         <label class="mb-1 block text-xs font-semibold text-slate-500" for="manage-edit-disciplina">Disciplina</label>
+         <input id="manage-edit-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
+        </div>
+       </div>
+       <p id="manage-edit-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
+       <div class="mt-3 flex gap-2">
+        <button id="btn-save-turma-nome" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Salvar</button>
+        <button id="btn-cancel-turma-nome" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Cancelar</button>
+       </div>
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white/70 p-4">
+       <label class="mb-2 block text-sm font-semibold text-slate-700">Código do dia</label>
+       <div class="flex flex-wrap items-center gap-2">
+        <input id="manage-code-input" class="teacher-code-input w-32" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••">
+        <button id="btn-save-code" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700" type="button">Salvar código</button>
+       </div>
+       <p class="mt-3 mb-1 text-xs font-semibold text-slate-500">Gerar código aleatório válido por:</p>
+       <div class="flex flex-wrap gap-2">
+        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="15">15 min</button>
+        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="60">1h</button>
+        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="120">2h</button>
+        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="180">3h</button>
+       </div>
+       <p id="manage-code-hint" class="mt-2 text-xs text-slate-500"></p>
+       <p id="manage-code-status" class="mt-1 text-xs"></p>
+      </div>
+
+      <div class="mt-6">
+       <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Alunos (<span id="manage-aluno-count">0</span>)</h4>
+       <div id="manage-alunos-list" class="mt-2 max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-100"></div>
+       <p id="manage-alunos-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum aluno cadastrado nesta turma ainda.</p>
+
+       <div class="mt-4 flex flex-wrap gap-2">
+        <input id="manage-add-aluno-nome" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Nome do aluno">
+        <button id="btn-add-aluno" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Adicionar</button>
+       </div>
+
+       <div class="mt-4">
+        <label class="mb-1 block text-sm font-semibold text-slate-700" for="manage-import-alunos">Importar vários alunos de uma vez</label>
+        <textarea id="manage-import-alunos" class="text-field" rows="3" placeholder="Cole os nomes, um por linha"></textarea>
+        <button id="btn-import-alunos" class="action-button focus-ring mt-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Importar lista</button>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+         <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Histórico de chamadas</h4>
+         <button id="btn-load-history" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Carregar histórico</button>
+        </div>
+        <p id="history-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum registro de presença encontrado para esta turma ainda.</p>
+        <div id="history-dates-list" class="mt-3 flex flex-wrap gap-2"></div>
+        <div id="history-day-panel" class="hidden mt-4 rounded-xl border border-slate-200 bg-white/70 p-4">
+         <div class="flex flex-wrap items-center justify-between gap-2">
+          <h5 id="history-day-title" class="font-bold text-[var(--ink)]"></h5>
+          <button id="btn-export-history-csv" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Exportar Excel</button>
+         </div>
+         <div id="history-day-list" class="mt-2 divide-y divide-slate-100"></div>
+        </div>
+       </div>
+
+       <div class="mt-6 rounded-2xl border border-red-200 bg-red-50/60 p-4">
+        <h4 class="text-sm font-bold uppercase tracking-wider text-red-700">Zona de perigo</h4>
+        <p class="mt-1 text-sm text-red-800">Excluir a turma apaga também todos os alunos e todo o histórico de presenças dela. Essa ação não pode ser desfeita.</p>
+        <button id="btn-delete-turma" class="action-button focus-ring mt-3 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700" type="button">Excluir turma</button>
+       </div>
+      </div>
+     </section>
+     </div>
+    </section>
+
+   </main>
+
+   <footer class="relative z-10 w-full px-5 pb-8 sm:px-8">
+    <div class="mx-auto flex max-w-6xl flex-col items-center gap-1 text-center text-slate-500 text-sm">
+     <span class="text-xs text-slate-400">Este projeto é de iniciativa docente. Não substitui os sistemas institucionais do IFSul — a chamada oficial é registrada no SUAP, após validação do professor.</span>
+     <span class="text-xs text-slate-400">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a></span>
+     <span id="footer-credit" class="text-xs text-slate-400">Desenvolvido por Prof. Douglas Camargo Carvalho, docente do IFSul — Campus Sapiranga.</span>
+    </div>
+   </footer>
+  </div>
+
+  <template id="student-row-template">
+   <article class="student-row flex flex-col gap-4 py-4 sm:flex-row sm:items-center">
+    <div class="flex min-w-0 flex-1 items-center gap-3">
+     <div class="student-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-extrabold" aria-hidden="true"></div>
+     <div class="min-w-0">
+      <h3 class="student-name truncate font-bold"></h3>
+      <span class="waiting-status text-xs text-slate-400">Aguardando registro</span> <span class="present-status hidden items-center gap-1.5 text-xs font-semibold text-emerald-700"> <i data-lucide="circle-check" aria-hidden="true" class="h-4 w-4"></i> <span class="present-status-label">Presente</span> </span>
+     </div>
+    </div>
+    <div class="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+     <button class="mark-button action-button focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Marcar presença</span> </button>
+     <div class="present-actions hidden items-center gap-2">
+      <span class="present-pill inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 bg-lime-100 text-lime-900"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Presente</span> </span> <button class="undo-button action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button"> <i data-lucide="undo-2" aria-hidden="true" class="h-4 w-4"></i> <span>Desfazer</span> </button>
+     </div>
+     <div class="identity-actions hidden flex-wrap items-center gap-2">
+      <span class="text-sm text-slate-600">Confirmar presença de</span> <strong class="identity-name text-sm"></strong> <button class="confirm-attendance action-button focus-ring rounded-lg px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm" type="button">Sim, sou eu</button> <button class="cancel-attendance action-button focus-ring rounded-lg px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm" type="button">Cancelar</button>
+     </div>
+    </div>
+   </article>
+  </template>
+
+  <!-- Modal: login do professor (usado para Área do professor, Modo professor e para desfazer presença) -->
+  <div id="teacher-gate-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="teacher-gate-title">
+    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+     <i data-lucide="key-round" aria-hidden="true" class="h-6 w-6"></i>
+    </div>
+    <h2 id="teacher-gate-title" class="text-xl font-extrabold text-[var(--ink)]">Área do professor</h2>
+    <p class="mt-2 text-sm text-slate-500 leading-relaxed">Entre com seu e-mail e senha de professor para continuar.</p>
+    <p id="teacher-gate-context" class="hidden mt-2 text-sm text-slate-600"></p>
+    <form id="teacher-gate-form" class="mt-5" novalidate>
+     <label class="mb-2 block text-sm font-semibold text-slate-700" for="teacher-gate-email">E-mail</label>
+     <input id="teacher-gate-email" class="text-field" type="email" placeholder="seu-email@ifsul.edu.br" autocomplete="username">
+     <label class="mb-2 mt-3 block text-sm font-semibold text-slate-700" for="teacher-gate-password">Senha</label>
+     <input id="teacher-gate-password" class="text-field" type="password" placeholder="Sua senha" autocomplete="current-password">
+     <div id="teacher-gate-error" class="notice notice-error mt-3 hidden" role="alert">
+      <i data-lucide="circle-alert" aria-hidden="true" class="h-5 w-5 shrink-0"></i> <span id="teacher-gate-error-text">Senha incorreta. Tente novamente.</span>
+     </div>
+     <div id="teacher-gate-info" class="notice notice-success mt-3 hidden" role="status">
+      <i data-lucide="mail" aria-hidden="true" class="h-5 w-5 shrink-0"></i> <span id="teacher-gate-info-text"></span>
+     </div>
+     <button id="btn-forgot-password" type="button" class="mt-3 text-xs font-semibold text-[#2B7A40] hover:underline">Esqueci minha senha</button>
+     <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <button id="cancel-teacher-gate" class="action-button focus-ring rounded-xl px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold" type="button">Cancelar</button> <button id="teacher-gate-submit" class="action-button focus-ring flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold" type="submit"> <span>Entrar</span> </button>
+     </div>
+    </form>
+   </section>
+  </div>
+
+  <!-- Modal: aviso curto para o aluno sobre os próprios dados -->
+  <div id="student-info-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="student-info-modal-title">
+    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF6EC] text-[#2B7A40]">
+     <i data-lucide="info" aria-hidden="true" class="h-6 w-6"></i>
+    </div>
+    <h2 id="student-info-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Sobre seus dados</h2>
+    <ul class="mt-3 list-disc list-inside space-y-2 text-sm text-slate-700 leading-relaxed">
+     <li>Seu nome e o horário da sua presença ficam salvos neste sistema, controlado pelo professor da turma.</li>
+     <li>Este sistema é um apoio e <strong>não substitui</strong> a chamada oficial, que é registrada no SUAP.</li>
+     <li>Em caso de dúvida sobre seus dados, procure o professor da turma.</li>
+     <li>Para pedir acesso, correção ou exclusão dos seus dados, escreva para <a id="student-info-contact-link" href="#" class="font-semibold text-[#2B7A40] hover:underline">o e-mail do professor</a>.</li>
+    </ul>
+    <div class="mt-5 flex justify-end">
+     <button id="btn-close-student-info" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Entendi</button>
+    </div>
+   </section>
+  </div>
+
+  <!-- Modal: avisos importantes (privacidade/LGPD, segurança e limitações) -->
+  <div id="terms-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white max-w-lg" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF6EC] text-[#2B7A40]">
+     <i data-lucide="shield-alert" aria-hidden="true" class="h-6 w-6"></i>
+    </div>
+    <h2 id="terms-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Avisos importantes — leia antes de usar</h2>
+    <p class="mt-1 text-sm text-slate-500">Resumo para o professor.</p>
+
+    <div class="mt-4 space-y-4 text-sm text-slate-700 leading-relaxed">
+     <div>
+      <h3 class="font-bold text-[var(--ink)]">1. Isto é um apoio, não substitui o SUAP</h3>
+      <p class="mt-1">Este sistema foi feito para <strong>facilitar</strong> o controle do dia a dia em sala de aula. Ele <strong>não substitui</strong> os sistemas institucionais — a chamada oficial continua sendo lançada normalmente no SUAP, sempre depois de você validar os dados. Não confie apenas nos registros deste app como prova definitiva de frequência: vale sempre conferir também por chamada oral/visual em sala.</p>
+     </div>
+
+     <div>
+      <h3 class="font-bold text-[var(--ink)]">2. Dados pessoais tratados (LGPD)</h3>
+      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
+     </div>
+
+     <div>
+      <h3 class="font-bold text-[var(--ink)]">3. Segurança — o que é garantido e o que não é</h3>
+      <ul class="mt-1 list-disc list-inside space-y-1.5">
+       <li>O identificador de aparelho ("um aluno por celular, por dia") pode ser contornado por alguém que limpe os dados do navegador ou use outro aparelho/aba anônima.</li>
+       <li>A presença é marcada pelo próprio aluno, sem verificação de identidade — nada impede, tecnicamente, que uma pessoa marque a presença de outra.</li>
+      </ul>
+      <p class="mt-2">Por isso: <strong>não cadastre alunos com dados sensíveis</strong> além do nome, e trate a chamada deste sistema como um apoio operacional, nunca como prova incontestável.</p>
+     </div>
+
+     <div>
+      <h3 class="font-bold text-[var(--ink)]">4. Em caso de dúvida ou problema</h3>
+      <p class="mt-1">Fale com <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a>. O sistema está em fase de testes.</p>
+     </div>
+    </div>
+
+    <div class="mt-5 flex justify-end">
+     <button id="btn-close-terms" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Entendi</button>
+    </div>
+   </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import {
+      getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
+      onSnapshot, query, where, orderBy, getDocs, getDoc, writeBatch, serverTimestamp, Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import {
+      getAuth, setPersistence, browserSessionPersistence, onAuthStateChanged,
+      signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword,
+      reauthenticateWithCredential, EmailAuthProvider, updateProfile,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import {
+      initializeAppCheck, ReCaptchaEnterpriseProvider
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check.js";
+
+    // ======================================================================
+    // CONFIGURAÇÃO DO FIREBASE
+    // Substitua os valores abaixo pelos do SEU projeto Firebase.
+    // Veja o passo a passo no README.md do repositório.
+    // ======================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyC2fjsPh53xqqDuDtaw8SsVNksi9xLI_lo",
+      authDomain: "chamada-99924.firebaseapp.com",
+      projectId: "chamada-99924",
+      storageBucket: "chamada-99924.firebasestorage.app",
+      messagingSenderId: "677878477047",
+      appId: "1:677878477047:web:376fb2381a413dbf6723f2",
+      measurementId: "G-9LLEBRG3RH"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+
+    // ======================================================================
+    // APP CHECK (proteção extra contra uso fora do seu site)
+    // Chave do reCAPTCHA Enterprise, gerada em:
+    // console.cloud.google.com/security/recaptcha → registrada em
+    // Firebase Console → Build → App Check → app da Web.
+    // Enquanto ficar "SUA_RECAPTCHA_SITE_KEY", o App Check fica desativado
+    // (o app funciona normalmente, só sem essa camada extra).
+    // Veja o passo a passo no README.md do repositório.
+    // ======================================================================
+    const RECAPTCHA_SITE_KEY = "SUA_RECAPTCHA_SITE_KEY";
+    if (RECAPTCHA_SITE_KEY !== "SUA_RECAPTCHA_SITE_KEY") {
+      try {
+        initializeAppCheck(firebaseApp, {
+          provider: new ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY),
+          isTokenAutoRefreshEnabled: true
+        });
+      } catch (error) {
+        console.warn("Não foi possível iniciar o App Check:", error);
+      }
+    }
+
+    const db = getFirestore(firebaseApp);
+    const auth = getAuth(firebaseApp);
+    const turmasCollection = collection(db, "turmas");
+
+    // Login fica restrito a esta conta (criada manualmente no Firebase
+    // Console → Authentication → Users). A senha NUNCA fica no código.
+    const TEACHER_EMAIL = "douglascamargo@ifsul.edu.br";
+
+    // Encerra a sessão do professor ao fechar a aba (mais seguro em
+    // computador compartilhado da sala de aula).
+    setPersistence(auth, browserSessionPersistence).catch(() => {});
+
+    const TIME_ZONE = "America/Sao_Paulo";
+    const DEFAULT_CODE_DURATION_MIN = 180; // turmas antigas, sem codigoDuracaoMin salvo, continuam valendo 3h
+    const PRESENCA_RETENTION_MS = 72 * 60 * 60 * 1000; // presenças são apagadas automaticamente após 72h (TTL do Firestore)
+
+    // Lista genérica usada apenas como atalho para testar rapidamente a
+    // criação de uma turma (nenhum nome real de aluno fica no código-fonte).
+    const EXAMPLE_STUDENTS = Array.from({ length: 30 }, (_, i) => `Aluno ${i + 1}`);
+
+    // ---------------------------------------------------------------------
+    // DOM
+    // ---------------------------------------------------------------------
+    const viewTurmaSelect = document.getElementById("view-turma-select");
+    const viewAttendance = document.getElementById("view-attendance");
+    const viewTeacherDashboard = document.getElementById("view-teacher-dashboard");
+
+    const turmaSelectList = document.getElementById("turma-select-list");
+    const turmaSelectEmpty = document.getElementById("turma-select-empty");
+    const turmaSelectFilterEmpty = document.getElementById("turma-select-filter-empty");
+    const turmaSelectProfessorFilter = document.getElementById("turma-select-professor-filter");
+    const turmaSelectProfessorChips = document.getElementById("turma-select-professor-chips");
+
+    const btnTeacherArea = document.getElementById("btn-teacher-area");
+    const btnTeacherBack = document.getElementById("btn-teacher-back");
+    const btnTrocarTurma = document.getElementById("btn-trocar-turma");
+    const btnTeacherMode = document.getElementById("btn-teacher-mode");
+    const teacherModeLabel = document.getElementById("teacher-mode-label");
+    const btnExportCsv = document.getElementById("btn-export-csv");
+
+    const dbStatusBadge = document.getElementById("db-status-badge");
+    const dbStatusDot = document.getElementById("db-status-dot");
+    const dbStatusLabel = document.getElementById("db-status-label");
+
+    const attendanceTurmaName = document.getElementById("attendance-turma-name");
+    const rowTemplate = document.getElementById("student-row-template");
+    const studentList = document.getElementById("student-list");
+    const searchInput = document.getElementById("student-search");
+    const clearSearchButton = document.getElementById("clear-search");
+    const noResults = document.getElementById("no-results");
+    const presentCount = document.getElementById("present-count");
+    const studentCount = document.getElementById("student-count");
+    const progressFill = document.getElementById("progress-fill");
+    const progressTrack = document.querySelector(".progress-track");
+    const globalMessage = document.getElementById("global-message");
+    const globalMessageText = document.getElementById("global-message-text");
+    const globalMessageIcon = document.getElementById("global-message-icon");
+
+    const btnOpenTerms = document.getElementById("btn-open-terms");
+    const btnCloseTerms = document.getElementById("btn-close-terms");
+    const termsModalBackdrop = document.getElementById("terms-modal-backdrop");
+
+    // No primeiro acesso de cada professor, este modal abre sozinho e só
+    // fecha pelo botão "Concordo" (sem clique fora, sem Esc) — a confirmação
+    // é registrada uma única vez em acordosProfessor/{uid}, então nas
+    // próximas vezes o modal volta a ser só informativo (abre pelo botão
+    // "Avisos importantes" e fecha de qualquer jeito).
+    let termsMandatory = false;
+    let termsAcknowledgmentChecked = false;
+
+    function openTermsModal() {
+      btnCloseTerms.textContent = termsMandatory ? "Concordo" : "Entendi";
+      termsModalBackdrop.classList.remove("hidden");
+      termsModalBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeTermsModal() {
+      if (termsMandatory) return;
+      termsModalBackdrop.classList.add("hidden");
+      termsModalBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+    }
+
+    async function acceptMandatoryTerms() {
+      if (!auth.currentUser) return;
+      btnCloseTerms.disabled = true;
+      try {
+        await setDoc(doc(db, "acordosProfessor", auth.currentUser.uid), {
+          avisosAceitosEm: serverTimestamp(),
+          email: auth.currentUser.email
+        });
+      } catch (error) {
+        // se não conseguir salvar agora (ex: rede), libera o uso mesmo assim;
+        // o registro é só um histórico, não deve travar o professor de usar.
+      }
+      btnCloseTerms.disabled = false;
+      termsMandatory = false;
+      closeTermsModal();
+    }
+
+    async function checkMandatoryTermsIfNeeded() {
+      if (termsAcknowledgmentChecked || !auth.currentUser) return;
+      termsAcknowledgmentChecked = true;
+      try {
+        const snap = await getDoc(doc(db, "acordosProfessor", auth.currentUser.uid));
+        if (!snap.exists()) {
+          termsMandatory = true;
+          openTermsModal();
+        }
+      } catch (error) {
+        // se não conseguir verificar, não bloqueia o acesso do professor
+      }
+    }
+
+    btnOpenTerms.addEventListener("click", openTermsModal);
+    btnCloseTerms.addEventListener("click", () => {
+      if (termsMandatory) {
+        acceptMandatoryTerms();
+      } else {
+        closeTermsModal();
+      }
+    });
+    termsModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === termsModalBackdrop) closeTermsModal();
+    });
+
+    const btnOpenStudentInfo = document.getElementById("btn-open-student-info");
+    const btnCloseStudentInfo = document.getElementById("btn-close-student-info");
+    const studentInfoModalBackdrop = document.getElementById("student-info-modal-backdrop");
+    const studentInfoContactLink = document.getElementById("student-info-contact-link");
+
+    function openStudentInfoModal() {
+      const contactEmail = (selectedTurmaData && selectedTurmaData.professorEmail) || TEACHER_EMAIL;
+      studentInfoContactLink.textContent = contactEmail;
+      studentInfoContactLink.href = `mailto:${contactEmail}?subject=${encodeURIComponent("Solicitação LGPD - meus dados no Registro de Chamada")}`;
+      studentInfoModalBackdrop.classList.remove("hidden");
+      studentInfoModalBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeStudentInfoModal() {
+      studentInfoModalBackdrop.classList.add("hidden");
+      studentInfoModalBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+    }
+
+    btnOpenStudentInfo.addEventListener("click", openStudentInfoModal);
+    btnCloseStudentInfo.addEventListener("click", closeStudentInfoModal);
+    studentInfoModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === studentInfoModalBackdrop) closeStudentInfoModal();
+    });
+
+    const teacherGateModalBackdrop = document.getElementById("teacher-gate-modal-backdrop");
+    const teacherGateForm = document.getElementById("teacher-gate-form");
+    const teacherGateEmail = document.getElementById("teacher-gate-email");
+    const teacherGatePassword = document.getElementById("teacher-gate-password");
+    const teacherGateError = document.getElementById("teacher-gate-error");
+    const teacherGateErrorText = document.getElementById("teacher-gate-error-text");
+    const teacherGateInfo = document.getElementById("teacher-gate-info");
+    const teacherGateInfoText = document.getElementById("teacher-gate-info-text");
+    const teacherGateContext = document.getElementById("teacher-gate-context");
+    const teacherGateSubmit = document.getElementById("teacher-gate-submit");
+    const btnForgotPassword = document.getElementById("btn-forgot-password");
+    const cancelTeacherGate = document.getElementById("cancel-teacher-gate");
+
+    const btnSignOut = document.getElementById("btn-sign-out");
+    const teacherAccountEmail = document.getElementById("teacher-account-email");
+    const teacherDashboardMessage = document.getElementById("teacher-dashboard-message");
+    const teacherDashboardMessageIcon = document.getElementById("teacher-dashboard-message-icon");
+    const teacherDashboardMessageText = document.getElementById("teacher-dashboard-message-text");
+    const teacherDisplayNameInput = document.getElementById("teacher-display-name-input");
+    const btnSaveDisplayName = document.getElementById("btn-save-display-name");
+    const displayNameStatus = document.getElementById("display-name-status");
+    const teacherNameGate = document.getElementById("teacher-name-gate");
+    const teacherDashboardContent = document.getElementById("teacher-dashboard-content");
+    const firstAccessNameInput = document.getElementById("first-access-name-input");
+    const btnSaveFirstAccessName = document.getElementById("btn-save-first-access-name");
+    const firstAccessNameStatus = document.getElementById("first-access-name-status");
+    const newPasswordInput = document.getElementById("new-password-input");
+    const confirmPasswordInput = document.getElementById("confirm-password-input");
+    const btnChangePassword = document.getElementById("btn-change-password");
+    const changePasswordStatus = document.getElementById("change-password-status");
+
+    const adminPanelSection = document.getElementById("admin-panel-section");
+    const adminNewProfessorNome = document.getElementById("admin-new-professor-nome");
+    const adminNewProfessorEmail = document.getElementById("admin-new-professor-email");
+    const btnCreateProfessor = document.getElementById("btn-create-professor");
+    const createProfessorStatus = document.getElementById("create-professor-status");
+
+    const dailyCodeStatusBadge = document.getElementById("daily-code-status-badge");
+    const codeDot = document.getElementById("code-dot");
+    const codeBadgeLabel = document.getElementById("code-badge-label");
+    const dailyCodeSetupCard = document.getElementById("daily-code-setup-card");
+    const attendanceListLocked = document.getElementById("attendance-list-locked");
+    const attendanceListPanel = document.getElementById("attendance-list-panel");
+    const studentDailyCodeInput = document.getElementById("student-daily-code");
+    const btnVerifyCode = document.getElementById("btn-verify-code");
+
+    const newTurmaTurma = document.getElementById("new-turma-turma");
+    const newTurmaAno = document.getElementById("new-turma-ano");
+    const newTurmaDisciplina = document.getElementById("new-turma-disciplina");
+    const newTurmaNomePreview = document.getElementById("new-turma-nome-preview");
+    const newTurmaAlunos = document.getElementById("new-turma-alunos");
+    const btnFillExample = document.getElementById("btn-fill-example");
+    const btnSuapTip = document.getElementById("btn-suap-tip");
+    const suapTipBox = document.getElementById("suap-tip-box");
+    const suapTipAiSection = document.getElementById("suap-tip-ai-section");
+    const btnCopySuapPrompt = document.getElementById("btn-copy-suap-prompt");
+    const suapPromptText = document.getElementById("suap-prompt-text");
+    const btnCreateTurma = document.getElementById("btn-create-turma");
+    const teacherTurmasHeading = document.getElementById("teacher-turmas-heading");
+    const teacherTurmasProfessorFilter = document.getElementById("teacher-turmas-professor-filter");
+    const teacherTurmasProfessorChips = document.getElementById("teacher-turmas-professor-chips");
+    const teacherTurmasList = document.getElementById("teacher-turmas-list");
+    const teacherTurmasEmpty = document.getElementById("teacher-turmas-empty");
+
+    const teacherManagePanel = document.getElementById("teacher-manage-panel");
+    const btnManageBack = document.getElementById("btn-manage-back");
+    const manageTurmaTitleRow = document.getElementById("manage-turma-title-row");
+    const manageTurmaTitle = document.getElementById("manage-turma-title");
+    const btnEditTurmaNome = document.getElementById("btn-edit-turma-nome");
+    const manageTurmaEditForm = document.getElementById("manage-turma-edit-form");
+    const manageEditTurma = document.getElementById("manage-edit-turma");
+    const manageEditAno = document.getElementById("manage-edit-ano");
+    const manageEditDisciplina = document.getElementById("manage-edit-disciplina");
+    const manageEditNomePreview = document.getElementById("manage-edit-nome-preview");
+    const btnSaveTurmaNome = document.getElementById("btn-save-turma-nome");
+    const btnCancelTurmaNome = document.getElementById("btn-cancel-turma-nome");
+    const manageCodeInput = document.getElementById("manage-code-input");
+    const btnsGenerateCodeDuration = document.querySelectorAll(".btn-generate-code-duration");
+    const btnSaveCode = document.getElementById("btn-save-code");
+    const manageCodeHint = document.getElementById("manage-code-hint");
+    const manageCodeStatus = document.getElementById("manage-code-status");
+    const manageAlunoCount = document.getElementById("manage-aluno-count");
+    const manageAlunosList = document.getElementById("manage-alunos-list");
+    const manageAlunosEmpty = document.getElementById("manage-alunos-empty");
+    const manageAddAlunoNome = document.getElementById("manage-add-aluno-nome");
+    const btnAddAluno = document.getElementById("btn-add-aluno");
+    const manageImportAlunos = document.getElementById("manage-import-alunos");
+    const btnImportAlunos = document.getElementById("btn-import-alunos");
+
+    const btnLoadHistory = document.getElementById("btn-load-history");
+    const historyEmpty = document.getElementById("history-empty");
+    const historyDatesList = document.getElementById("history-dates-list");
+    const historyDayPanel = document.getElementById("history-day-panel");
+    const historyDayTitle = document.getElementById("history-day-title");
+    const historyDayList = document.getElementById("history-day-list");
+    const btnExportHistoryCsv = document.getElementById("btn-export-history-csv");
+    const btnDeleteTurma = document.getElementById("btn-delete-turma");
+
+    // ---------------------------------------------------------------------
+    // Estado
+    // ---------------------------------------------------------------------
+    let deviceId = "";
+    let busyName = "";
+    let pendingUndoRow = null;
+
+    let selectedTurmaId = null;
+    let selectedTurmaData = null;
+    let alunos = [];
+    let presencas = [];
+    let isDailyCodeVerified = false;
+    let isTeacherModeActive = false;
+    let isTeacherAuthenticated = false;
+    let isMasterAccount = false; // TEACHER_EMAIL: acesso a todas as turmas de todos os professores
+    let teacherGateIntent = "dashboard"; // "dashboard" | "teacher-mode" | "undo"
+
+    let teacherManagingTurmaId = null;
+    let teacherManagingTurmaData = null;
+    let teacherManagingAlunos = [];
+    let historyPresencas = [];
+    let historySelectedDate = null;
+
+    let unsubTurmasList = null;
+    let unsubMyTurmasList = null;
+    let unsubSelectedTurmaDoc = null;
+    let unsubAlunos = null;
+    let unsubPresencas = null;
+    let unsubManageTurmaDoc = null;
+    let unsubManageAlunos = null;
+
+    const DEVICE_ID_STORAGE_KEY = "chamada-device-id";
+
+    function generateUUID() {
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === "x" ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function getOrCreateDeviceId() {
+      let id = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+      if (!id) {
+        id = generateUUID();
+        localStorage.setItem(DEVICE_ID_STORAGE_KEY, id);
+      }
+      return id;
+    }
+
+    function normalize(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLocaleLowerCase("pt-BR")
+        .trim();
+    }
+
+    function getLocalParts(date = new Date()) {
+      const parts = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: TIME_ZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(date);
+
+      const values = {};
+      parts.forEach((part) => {
+        if (part.type !== "literal") values[part.type] = part.value;
+      });
+
+      return {
+        isoDate: `${values.year}-${values.month}-${values.day}`,
+        displayDate: `${values.day}/${values.month}/${values.year}`,
+        time: `${values.hour}:${values.minute}`
+      };
+    }
+
+    function showMessage(type, text) {
+      globalMessage.className = `notice mt-5 ${type === "success" ? "notice-success" : type === "error" ? "notice-error" : "notice-info"}`;
+      globalMessageText.textContent = text;
+      globalMessageIcon.setAttribute("data-lucide", type === "success" ? "circle-check" : type === "error" ? "circle-alert" : "info");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideMessage() {
+      globalMessage.classList.add("hidden");
+    }
+
+    function showTeacherMessage(type, text) {
+      teacherDashboardMessage.className = `notice mt-4 ${type === "success" ? "notice-success" : type === "error" ? "notice-error" : "notice-info"}`;
+      teacherDashboardMessageText.textContent = text;
+      teacherDashboardMessageIcon.setAttribute("data-lucide", type === "success" ? "circle-check" : type === "error" ? "circle-alert" : "info");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideTeacherMessage() {
+      teacherDashboardMessage.classList.add("hidden");
+    }
+
+    function updateDbStatusUI(state) {
+      if (state === "connected") {
+        dbStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-emerald-50 text-emerald-800 border-emerald-200";
+        dbStatusDot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500";
+        dbStatusLabel.textContent = "Conectado";
+      } else if (state === "error") {
+        dbStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-red-50 text-red-800 border-red-200";
+        dbStatusDot.className = "h-2.5 w-2.5 rounded-full bg-red-500";
+        dbStatusLabel.textContent = "Erro de conexão";
+      } else {
+        dbStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-amber-50 text-amber-800 border-amber-200";
+        dbStatusDot.className = "h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse";
+        dbStatusLabel.textContent = "Conectando…";
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Navegação entre telas
+    // ---------------------------------------------------------------------
+    function showView(name) {
+      viewTurmaSelect.classList.toggle("hidden", name !== "turma-select");
+      viewAttendance.classList.toggle("hidden", name !== "attendance");
+      viewTeacherDashboard.classList.toggle("hidden", name !== "teacher-dashboard");
+    }
+
+    // ---------------------------------------------------------------------
+    // Lista de turmas (global, fica sempre ativa)
+    // ---------------------------------------------------------------------
+    function subscribeTurmasList() {
+      const q = query(turmasCollection, orderBy("nome"));
+      unsubTurmasList = onSnapshot(
+        q,
+        (snapshot) => {
+          updateDbStatusUI("connected");
+          renderTurmaSelectList(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        },
+        () => {
+          updateDbStatusUI("error");
+          showMessage("error", "Não foi possível conectar ao banco de dados. Verifique a configuração do Firebase.");
+        }
+      );
+    }
+
+    // Migra turmas antigas (criadas antes de existir professorUid) para o
+    // professor que estiver logado agora, e mantém professorEmail/professorNome
+    // das turmas dele em dia (ex: depois de trocar o nome de exibição).
+    async function syncOwnedTurmasProfessorInfo() {
+      if (!auth.currentUser) return;
+      const myUid = auth.currentUser.uid;
+      const myEmail = auth.currentUser.email;
+      const myNome = auth.currentUser.displayName || myEmail;
+
+      try {
+        const snap = await getDocs(turmasCollection);
+        const batch = writeBatch(db);
+        let hasWrites = false;
+
+        snap.docs.forEach((d) => {
+          const data = d.data();
+          const isOrphan = !data.professorUid;
+          const isMine = data.professorUid === myUid;
+          if (!isOrphan && !isMine) return;
+          if (data.professorUid === myUid && data.professorEmail === myEmail && data.professorNome === myNome) return;
+          batch.update(d.ref, { professorUid: myUid, professorEmail: myEmail, professorNome: myNome });
+          hasWrites = true;
+        });
+
+        if (hasWrites) await batch.commit();
+      } catch (error) {
+        // se não conseguir sincronizar (ex: regras ainda antigas), as turmas
+        // simplesmente não aparecem certinho até ser resolvido
+      }
+    }
+
+    function myTurmasQuery() {
+      return isMasterAccount
+        ? query(turmasCollection, orderBy("nome"))
+        : query(turmasCollection, where("professorUid", "==", auth.currentUser.uid), orderBy("nome"));
+    }
+
+    // Sem o plano Blaze (faturamento habilitado), o Firestore não tem como
+    // apagar presenças vencidas sozinho em segundo plano (TTL nativo exige
+    // Blaze) — então essa limpeza roda aqui, sempre que o professor entra na
+    // Área do professor: para cada turma dele (ou de todos, se for a conta
+    // master), apaga as presenças cujo expiraEm já passou. Não é automático
+    // 24h por dia como o TTL nativo seria, mas não depende de faturamento.
+    async function cleanupExpiredPresencas() {
+      if (!auth.currentUser) return;
+      try {
+        const turmasSnap = await getDocs(myTurmasQuery());
+        const now = Timestamp.now();
+        for (const turmaDoc of turmasSnap.docs) {
+          const expiredQuery = query(
+            collection(db, "turmas", turmaDoc.id, "presencas"),
+            where("expiraEm", "<=", now)
+          );
+          const expiredSnap = await getDocs(expiredQuery);
+          if (expiredSnap.empty) continue;
+          const batch = writeBatch(db);
+          expiredSnap.docs.forEach((d) => batch.delete(d.ref));
+          await batch.commit();
+        }
+      } catch (error) {
+        // limpeza é só uma conveniência de retenção; se falhar (ex: sem
+        // permissão numa turma, ou instabilidade de rede), não deve travar
+        // o uso normal do professor.
+      }
+    }
+
+    function subscribeMyTurmasList() {
+      if (!auth.currentUser) return;
+      unsubMyTurmasList = onSnapshot(
+        myTurmasQuery(),
+        (snapshot) => {
+          renderTeacherTurmasList(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        },
+        () => {
+          showTeacherMessage("error", "Não foi possível atualizar a lista de turmas em tempo real. Recarregue a página (Ctrl+F5).");
+        }
+      );
+    }
+
+    function unsubscribeMyTurmasList() {
+      if (unsubMyTurmasList) { unsubMyTurmasList(); unsubMyTurmasList = null; }
+    }
+
+    // Atualização explícita, independente da escuta em tempo real — garante
+    // que a lista reflita a criação/exclusão mesmo se o listener falhar.
+    async function refreshMyTurmasList() {
+      if (!auth.currentUser) return;
+      try {
+        const snapshot = await getDocs(myTurmasQuery());
+        renderTeacherTurmasList(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      } catch (error) {
+        // a escuta em tempo real (ou o próximo recarregamento) ainda cobre isso
+      }
+    }
+
+    let allTurmasForSelect = [];
+    let turmaSelectFilterUid = null; // null = todos os professores
+
+    function professorLabel(turma) {
+      return turma.professorNome || turma.professorEmail || "Professor";
+    }
+
+    function renderTurmaSelectList(turmas) {
+      allTurmasForSelect = [...turmas].sort((a, b) =>
+        (a.nome || "").localeCompare(b.nome || "", "pt-BR")
+      );
+      renderTurmaSelectProfessorFilter();
+      renderFilteredTurmaSelectCards();
+    }
+
+    function renderTurmaSelectProfessorFilter() {
+      const professoresPorUid = new Map();
+      allTurmasForSelect.forEach((t) => {
+        if (t.professorUid && !professoresPorUid.has(t.professorUid)) {
+          professoresPorUid.set(t.professorUid, professorLabel(t));
+        }
+      });
+      const professores = [...professoresPorUid.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+
+      if (professores.length < 2) {
+        turmaSelectProfessorFilter.classList.add("hidden");
+        turmaSelectProfessorChips.innerHTML = "";
+        turmaSelectFilterUid = null;
+        return;
+      }
+
+      if (turmaSelectFilterUid && !professoresPorUid.has(turmaSelectFilterUid)) {
+        turmaSelectFilterUid = null;
+      }
+
+      turmaSelectProfessorFilter.classList.remove("hidden");
+      turmaSelectProfessorChips.innerHTML = "";
+      turmaSelectProfessorChips.appendChild(createProfessorFilterChip(null, "Todos"));
+      professores.forEach(([uid, nome]) => turmaSelectProfessorChips.appendChild(createProfessorFilterChip(uid, nome)));
+    }
+
+    function createProfessorFilterChip(uid, label) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      const active = turmaSelectFilterUid === uid;
+      chip.className = `action-button focus-ring rounded-full px-3 py-1.5 text-xs font-semibold ${active ? "bg-[#2B7A40] text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`;
+      chip.textContent = label;
+      chip.addEventListener("click", () => {
+        turmaSelectFilterUid = uid;
+        renderTurmaSelectProfessorFilter();
+        renderFilteredTurmaSelectCards();
+      });
+      return chip;
+    }
+
+    function renderFilteredTurmaSelectCards() {
+      const filtered = turmaSelectFilterUid
+        ? allTurmasForSelect.filter((t) => t.professorUid === turmaSelectFilterUid)
+        : allTurmasForSelect;
+
+      turmaSelectList.innerHTML = "";
+      turmaSelectEmpty.classList.toggle("hidden", allTurmasForSelect.length > 0);
+      turmaSelectFilterEmpty.classList.toggle("hidden", !(allTurmasForSelect.length > 0 && filtered.length === 0));
+      filtered.forEach((turma) => turmaSelectList.appendChild(createTurmaSelectCard(turma)));
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function createTurmaSelectCard(turma) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "turma-card flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-5 py-4 text-left";
+      const info = document.createElement("div");
+      info.className = "min-w-0";
+      const title = document.createElement("div");
+      title.className = "font-bold text-[var(--ink)] truncate";
+      title.textContent = turma.nome || "Turma sem nome";
+      info.appendChild(title);
+      if (turma.professorNome || turma.professorEmail) {
+        const subtitle = document.createElement("div");
+        subtitle.className = "text-xs text-slate-400 truncate";
+        subtitle.textContent = professorLabel(turma);
+        info.appendChild(subtitle);
+      }
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", "chevron-right");
+      icon.className = "h-5 w-5 text-slate-400 shrink-0";
+      card.appendChild(info);
+      card.appendChild(icon);
+      card.addEventListener("click", () => enterTurma(turma.id));
+      return card;
+    }
+
+    // ---------------------------------------------------------------------
+    // Entrar / sair de uma turma (tela de chamada)
+    // ---------------------------------------------------------------------
+    function enterTurma(turmaId) {
+      exitAttendanceIfAny();
+      selectedTurmaId = turmaId;
+      hideMessage();
+      showView("attendance");
+
+      unsubSelectedTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
+        if (!snap.exists()) return;
+        selectedTurmaData = { id: snap.id, ...snap.data() };
+        attendanceTurmaName.textContent = selectedTurmaData.nome || "Turma";
+        updateDailyCodeStatusUI();
+        renderAttendance();
+      });
+
+      // TESTE (branch teste/codigo-ativo, não publicado): a lista de alunos
+      // e as presenças só são buscadas depois que o código do dia é
+      // validado (ou em Modo professor/login) — veja
+      // startAttendanceSubscriptionsIfNeeded(). As regras do Firestore
+      // precisam aplicar exatamente essa mesma condição do lado do
+      // servidor (função codigoAtivo()) para isso funcionar.
+      startAttendanceSubscriptionsIfNeeded();
+    }
+
+    function startAttendanceSubscriptionsIfNeeded() {
+      if (!selectedTurmaId) return;
+      if (!(isDailyCodeVerified || isTeacherModeActive || isTeacherAuthenticated)) return;
+      if (unsubAlunos || unsubPresencas) return;
+
+      const alunosQuery = query(collection(db, "turmas", selectedTurmaId, "alunos"), orderBy("nome"));
+      unsubAlunos = onSnapshot(
+        alunosQuery,
+        (snap) => {
+          alunos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          syncStudentRows();
+          renderAttendance();
+        },
+        (error) => {
+          console.error("[teste/codigo-ativo] erro ao ler alunos:", error.code, error.message);
+          showMessage("error", `Não foi possível carregar a lista de alunos (${error.code}). Veja o Console (F12) para detalhes.`);
+        }
+      );
+
+      unsubPresencas = onSnapshot(
+        collection(db, "turmas", selectedTurmaId, "presencas"),
+        (snap) => {
+          presencas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          renderAttendance();
+        },
+        (error) => {
+          console.error("[teste/codigo-ativo] erro ao ler presenças:", error.code, error.message);
+          showMessage("error", `Não foi possível carregar as presenças (${error.code}). Veja o Console (F12) para detalhes.`);
+        }
+      );
+    }
+
+    function exitAttendanceIfAny() {
+      if (unsubSelectedTurmaDoc) { unsubSelectedTurmaDoc(); unsubSelectedTurmaDoc = null; }
+      if (unsubAlunos) { unsubAlunos(); unsubAlunos = null; }
+      if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
+      selectedTurmaId = null;
+      selectedTurmaData = null;
+      alunos = [];
+      presencas = [];
+      isDailyCodeVerified = false;
+      studentDailyCodeInput.value = "";
+      studentList.innerHTML = "";
+      setTeacherModeActive(false);
+    }
+
+    btnTrocarTurma.addEventListener("click", () => {
+      exitAttendanceIfAny();
+      showView("turma-select");
+    });
+
+    // ---------------------------------------------------------------------
+    // Código do dia (por turma)
+    // ---------------------------------------------------------------------
+    function codeDefinedAtMillis(turma) {
+      const ts = turma && turma.codigoDefinidoEm;
+      return ts && typeof ts.toMillis === "function" ? ts.toMillis() : null;
+    }
+
+    function codeDurationMin(turma) {
+      return turma && typeof turma.codigoDuracaoMin === "number" ? turma.codigoDuracaoMin : DEFAULT_CODE_DURATION_MIN;
+    }
+
+    function codeValidityMs(turma) {
+      return codeDurationMin(turma) * 60 * 1000;
+    }
+
+    function formatDurationLabel(min) {
+      return min % 60 === 0 ? `${min / 60}h` : `${min}min`;
+    }
+
+    // Cada presença guarda até quando ela deve existir; uma política de TTL
+    // configurada no Firestore Console apaga automaticamente o documento
+    // depois desse horário (retenção de 72h, ver README).
+    function presencaExpiraEm() {
+      return Timestamp.fromMillis(Date.now() + PRESENCA_RETENTION_MS);
+    }
+
+    function isCodeActive(turma) {
+      if (!turma || !turma.codigoDoDia) return false;
+      const definedAtMillis = codeDefinedAtMillis(turma);
+      if (!definedAtMillis) return false;
+      return Date.now() - definedAtMillis < codeValidityMs(turma);
+    }
+
+    function formatTimeOfDay(millis) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: TIME_ZONE,
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(millis));
+    }
+
+    function formatDateTimeOfDay(millis) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: TIME_ZONE,
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(millis));
+    }
+
+    function updateDailyCodeStatusUI() {
+      const unlocked = isTeacherModeActive || isDailyCodeVerified;
+      attendanceListPanel.classList.toggle("hidden", !unlocked);
+      attendanceListLocked.classList.toggle("hidden", unlocked);
+
+      if (isTeacherModeActive) {
+        dailyCodeStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-[#EEF6EC] text-[#235f32] border-[#CFE6C8]";
+        codeDot.className = "h-2.5 w-2.5 rounded-full bg-[#349A46] animate-none";
+        codeBadgeLabel.textContent = "Modo Professor";
+        dailyCodeSetupCard.classList.add("hidden");
+      } else if (isDailyCodeVerified) {
+        dailyCodeStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-emerald-50 text-emerald-800 border-emerald-200";
+        codeDot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 animate-none";
+        codeBadgeLabel.textContent = "Código Validado";
+        dailyCodeSetupCard.classList.add("hidden");
+      } else {
+        dailyCodeStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-amber-50 text-amber-800 border-amber-200";
+        codeDot.className = "h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse";
+        codeBadgeLabel.textContent = "Código Pendente";
+        dailyCodeSetupCard.classList.remove("hidden");
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Modo professor: marcar presença direto com a senha do professor,
+    // sem precisar do código do dia (útil para aluno sem celular, chamada
+    // oral, etc). Enquanto ativo, também não trava por dispositivo.
+    // ---------------------------------------------------------------------
+    function setTeacherModeActive(active) {
+      isTeacherModeActive = active;
+      if (active) {
+        btnTeacherMode.className = "status-pill action-button flex items-center gap-2 rounded-full px-4 py-2 bg-[#2B7A40] text-white font-semibold text-xs";
+        teacherModeLabel.textContent = "Modo professor (ativo)";
+        startAttendanceSubscriptionsIfNeeded();
+      } else {
+        btnTeacherMode.className = "status-pill action-button flex items-center gap-2 rounded-full px-4 py-2 bg-white/85 text-slate-700 font-semibold text-xs";
+        teacherModeLabel.textContent = "Modo professor";
+      }
+      updateDailyCodeStatusUI();
+      renderAttendance();
+    }
+
+    btnTeacherMode.addEventListener("click", () => {
+      if (isTeacherModeActive) {
+        setTeacherModeActive(false);
+        return;
+      }
+      if (isTeacherAuthenticated) {
+        setTeacherModeActive(true);
+        return;
+      }
+      teacherGateIntent = "teacher-mode";
+      openTeacherGateModal();
+    });
+
+    function verifyDailyCode(showMessages = true) {
+      if (!selectedTurmaData) return false;
+
+      if (!isCodeActive(selectedTurmaData)) {
+        if (showMessages) {
+          showMessage("error", "O código do dia dessa turma expirou ou ainda não foi definido. Peça para o professor gerar um novo na Área do professor.");
+        }
+        return false;
+      }
+
+      const code = studentDailyCodeInput.value.trim();
+      if (code === selectedTurmaData.codigoDoDia) {
+        isDailyCodeVerified = true;
+        updateDailyCodeStatusUI();
+        startAttendanceSubscriptionsIfNeeded();
+        if (showMessages) {
+          showMessage("success", "Código do Dia validado com sucesso! Você já pode registrar sua presença.");
+          setTimeout(hideMessage, 4000);
+        }
+        renderAttendance();
+        return true;
+      }
+
+      if (showMessages) {
+        showMessage("error", "Código do Dia incorreto. Peça ao professor o código correto escrito no quadro.");
+      }
+      return false;
+    }
+
+    btnVerifyCode.addEventListener("click", () => verifyDailyCode(true));
+
+    studentDailyCodeInput.addEventListener("input", () => {
+      studentDailyCodeInput.value = studentDailyCodeInput.value.replace(/\D/g, "").slice(0, 4);
+      if (studentDailyCodeInput.value.length === 4) verifyDailyCode(true);
+    });
+
+    // ---------------------------------------------------------------------
+    // Lista de alunos / presença
+    // ---------------------------------------------------------------------
+    function getTodayRecord(name) {
+      const today = getLocalParts().isoDate;
+      return presencas.find((record) =>
+        record.data === today && normalize(record.nome) === normalize(name)
+      );
+    }
+
+    function syncStudentRows() {
+      studentList.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      alunos.forEach((aluno) => {
+        const clone = rowTemplate.content.cloneNode(true);
+        const row = clone.querySelector(".student-row");
+        row.dataset.studentName = aluno.nome;
+        row.querySelector(".student-avatar").textContent = aluno.nome.charAt(0).toLocaleUpperCase("pt-BR");
+        row.querySelector(".student-name").textContent = aluno.nome;
+        row.querySelector(".identity-name").textContent = aluno.nome;
+        fragment.appendChild(clone);
+      });
+      studentList.appendChild(fragment);
+      bindStudentEvents();
+      filterRows();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function getRows() {
+      return [...studentList.querySelectorAll(".student-row")];
+    }
+
+    function setRowBusy(row, active) {
+      row.querySelectorAll("button").forEach((button) => { button.disabled = active; });
+    }
+
+    function renderRow(row) {
+      const name = row.dataset.studentName;
+      const isPresent = Boolean(getTodayRecord(name));
+      const markButton = row.querySelector(".mark-button");
+      const presentActions = row.querySelector(".present-actions");
+      const identityActions = row.querySelector(".identity-actions");
+      const waitingStatus = row.querySelector(".waiting-status");
+      const presentStatus = row.querySelector(".present-status");
+
+      row.classList.toggle("is-present", isPresent);
+      markButton.classList.toggle("hidden", isPresent);
+      presentActions.classList.toggle("hidden", !isPresent);
+      presentActions.classList.toggle("flex", isPresent);
+      identityActions.classList.add("hidden");
+      identityActions.classList.remove("flex");
+      waitingStatus.classList.toggle("hidden", isPresent);
+      presentStatus.classList.toggle("hidden", !isPresent);
+      presentStatus.classList.toggle("inline-flex", isPresent);
+
+      const unavailable = Boolean(busyName) || (!isDailyCodeVerified && !isTeacherModeActive) || !selectedTurmaId;
+      markButton.disabled = unavailable;
+      row.querySelector(".undo-button").disabled = Boolean(busyName);
+    }
+
+    function renderAttendance() {
+      const rows = getRows();
+      let totalPresent = 0;
+
+      rows.forEach((row) => {
+        if (getTodayRecord(row.dataset.studentName)) totalPresent += 1;
+        renderRow(row);
+      });
+
+      rows.sort((a, b) => {
+        const recordA = getTodayRecord(a.dataset.studentName);
+        const recordB = getTodayRecord(b.dataset.studentName);
+
+        if (recordA && !recordB) return -1;
+        if (!recordA && recordB) return 1;
+
+        if (recordA && recordB) {
+          const dateTimeA = `${recordA.data}T${recordA.horario}`;
+          const dateTimeB = `${recordB.data}T${recordB.horario}`;
+          if (dateTimeA !== dateTimeB) return dateTimeB.localeCompare(dateTimeA);
+        }
+
+        return a.dataset.studentName.localeCompare(b.dataset.studentName, "pt-BR");
+      });
+
+      rows.forEach((row) => studentList.appendChild(row));
+
+      presentCount.textContent = String(totalPresent);
+      studentCount.textContent = String(rows.length);
+      progressFill.style.width = `${rows.length ? (totalPresent / rows.length) * 100 : 0}%`;
+      progressTrack.setAttribute("aria-valuemax", String(rows.length));
+      progressTrack.setAttribute("aria-valuenow", String(totalPresent));
+    }
+
+    function filterRows() {
+      const term = normalize(searchInput.value);
+      let visibleCount = 0;
+
+      getRows().forEach((row) => {
+        const visible = normalize(row.dataset.studentName).includes(term);
+        row.classList.toggle("hidden", !visible);
+        if (visible) visibleCount += 1;
+      });
+
+      noResults.classList.toggle("hidden", visibleCount > 0);
+      clearSearchButton.classList.toggle("hidden", !searchInput.value);
+    }
+
+    searchInput.addEventListener("input", filterRows);
+    clearSearchButton.addEventListener("click", () => {
+      searchInput.value = "";
+      filterRows();
+      searchInput.focus();
+    });
+
+    function openIdentityConfirmation(row) {
+      row.querySelector(".mark-button").classList.add("hidden");
+      const actions = row.querySelector(".identity-actions");
+      actions.classList.remove("hidden");
+      actions.classList.add("flex");
+      actions.querySelector(".confirm-attendance").focus();
+    }
+
+    function closeIdentityConfirmation(row) {
+      row.querySelector(".identity-actions").classList.add("hidden");
+      row.querySelector(".identity-actions").classList.remove("flex");
+      row.querySelector(".mark-button").classList.remove("hidden");
+      row.querySelector(".mark-button").focus();
+    }
+
+    async function markAttendance(row) {
+      const name = row.dataset.studentName;
+      hideMessage();
+
+      if (!selectedTurmaId) return;
+
+      if (getTodayRecord(name)) {
+        showMessage("info", "Essa presença já foi registrada hoje.");
+        renderAttendance();
+        return;
+      }
+
+      const current = getLocalParts();
+
+      // Modo professor: marca direto com a senha do professor, sem código do
+      // dia e sem a trava de "um aparelho por aluno" (o professor pode marcar
+      // vários alunos seguidos no mesmo celular/computador).
+      if (isTeacherModeActive) {
+        busyName = name;
+        setRowBusy(row, true);
+        try {
+          await addDoc(collection(db, "turmas", selectedTurmaId, "presencas"), {
+            nome: name,
+            data: current.isoDate,
+            horario: current.time,
+            maquina: "professor",
+            expiraEm: presencaExpiraEm()
+          });
+          showMessage("success", `Presença de ${name} registrada pelo professor.`);
+        } catch (error) {
+          showMessage("error", "Não foi possível registrar a presença. Tente novamente.");
+        } finally {
+          busyName = "";
+          setRowBusy(row, false);
+        }
+        renderAttendance();
+        return;
+      }
+
+      if (!isDailyCodeVerified) {
+        showMessage("error", "Código do Dia pendente ou inválido. Por favor, digite o código de hoje no topo da página.");
+        return;
+      }
+
+      const deviceRecordToday = presencas.find(
+        (record) => record.data === current.isoDate && record.maquina === deviceId
+      );
+      if (deviceRecordToday && normalize(deviceRecordToday.nome) !== normalize(name)) {
+        showMessage(
+          "error",
+          `Este dispositivo já foi usado hoje para marcar a presença de ${deviceRecordToday.nome}. Cada aluno deve marcar a própria presença no seu próprio celular ou computador.`
+        );
+        renderAttendance();
+        return;
+      }
+
+      busyName = name;
+      setRowBusy(row, true);
+
+      // Um documento por dispositivo+dia: se o mesmo aparelho já tiver marcado
+      // presença hoje nesta turma, esta escrita é bloqueada pelas regras do
+      // Firestore (allow update: if false), mesmo que o JS seja burlado.
+      const presencaId = `${current.isoDate}_${deviceId}`;
+
+      try {
+        await setDoc(doc(db, "turmas", selectedTurmaId, "presencas", presencaId), {
+          nome: name,
+          data: current.isoDate,
+          horario: current.time,
+          maquina: deviceId,
+          codigoUsado: selectedTurmaData.codigoDoDia,
+          expiraEm: presencaExpiraEm()
+        });
+        showMessage("success", `Presença de ${name} registrada com sucesso.`);
+      } catch (error) {
+        showMessage("error", "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
+      } finally {
+        busyName = "";
+        setRowBusy(row, false);
+      }
+
+      renderAttendance();
+    }
+
+    async function undoAttendance(row) {
+      const name = row.dataset.studentName;
+      const record = getTodayRecord(name);
+
+      if (!record || !selectedTurmaId) {
+        renderAttendance();
+        return;
+      }
+
+      busyName = name;
+      hideMessage();
+      setRowBusy(row, true);
+
+      try {
+        await deleteDoc(doc(db, "turmas", selectedTurmaId, "presencas", record.id));
+        showMessage("info", `A presença de ${name} foi desfeita pelo professor.`);
+      } catch (error) {
+        console.error("[undoAttendance] erro ao desfazer presença:", error.code, error.message);
+        showMessage("error", `Não foi possível desfazer a presença (${error.code}). Veja o Console (F12) para detalhes.`);
+      }
+
+      busyName = "";
+      setRowBusy(row, false);
+      renderAttendance();
+    }
+
+    function bindStudentEvents() {
+      getRows().forEach((row) => {
+        row.querySelector(".mark-button").addEventListener("click", () => openIdentityConfirmation(row));
+        row.querySelector(".cancel-attendance").addEventListener("click", () => closeIdentityConfirmation(row));
+        row.querySelector(".confirm-attendance").addEventListener("click", () => markAttendance(row));
+        row.querySelector(".undo-button").addEventListener("click", () => {
+          // Sempre exige a senha do professor de novo para desfazer, mesmo
+          // com o Modo professor ativo — evita que outro aluno no mesmo
+          // aparelho desfaça a presença de alguém sem confirmar a senha.
+          pendingUndoRow = row;
+          teacherGateIntent = "undo";
+          openTeacherGateModal();
+        });
+      });
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !teacherGateModalBackdrop.classList.contains("hidden")) {
+        closeTeacherGateModal();
+      }
+      if (event.key === "Escape" && !termsModalBackdrop.classList.contains("hidden")) {
+        closeTermsModal();
+      }
+      if (event.key === "Escape" && !studentInfoModalBackdrop.classList.contains("hidden")) {
+        closeStudentInfoModal();
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Acesso à área do professor (login com Firebase Authentication)
+    // ---------------------------------------------------------------------
+    function authErrorMessage(error) {
+      switch (error.code) {
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+          return "E-mail ou senha incorretos. Tente novamente.";
+        case "auth/invalid-email":
+          return "Digite um e-mail válido.";
+        case "auth/too-many-requests":
+          return "Muitas tentativas seguidas. Aguarde um pouco e tente de novo.";
+        case "auth/network-request-failed":
+          return "Falha de conexão. Verifique sua internet e tente novamente.";
+        default:
+          return "Não foi possível entrar. Tente novamente.";
+      }
+    }
+
+    function openTeacherGateModal() {
+      if (!teacherGateEmail.value) teacherGateEmail.value = TEACHER_EMAIL;
+      teacherGatePassword.value = "";
+      teacherGateError.classList.add("hidden");
+      teacherGateInfo.classList.add("hidden");
+      if (teacherGateIntent === "undo" && pendingUndoRow) {
+        teacherGateContext.textContent = `Você está prestes a desfazer a presença de ${pendingUndoRow.dataset.studentName}.`;
+        teacherGateContext.classList.remove("hidden");
+      } else {
+        teacherGateContext.classList.add("hidden");
+      }
+      teacherGateModalBackdrop.classList.remove("hidden");
+      teacherGateModalBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      setTimeout(() => teacherGateEmail.focus(), 0);
+    }
+
+    function closeTeacherGateModal() {
+      teacherGateModalBackdrop.classList.add("hidden");
+      teacherGateModalBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+      pendingUndoRow = null;
+    }
+
+    // Só a conta master vê a etapa de enviar a lista de alunos para uma IA
+    // (envolve mandar dados de alunos para um serviço externo) — os demais
+    // professores veem só até "salvar o PDF" e digitam a lista manualmente.
+    function updateSuapTipVisibility() {
+      suapTipAiSection.classList.toggle("hidden", !isMasterAccount);
+    }
+
+    function enterTeacherDashboard() {
+      exitAttendanceIfAny();
+      showView("teacher-dashboard");
+      hideTeacherMessage();
+      checkMandatoryTermsIfNeeded();
+      cleanupExpiredPresencas();
+      teacherTurmasHeading.textContent = isMasterAccount
+        ? "Todas as turmas (todos os professores)"
+        : "Turmas cadastradas";
+      adminPanelSection.classList.toggle("hidden", !isMasterAccount);
+      updateSuapTipVisibility();
+
+      const hasName = Boolean(auth.currentUser && auth.currentUser.displayName);
+      teacherDisplayNameInput.value = auth.currentUser ? (auth.currentUser.displayName || "") : "";
+
+      if (!hasName) {
+        firstAccessNameInput.value = "";
+        firstAccessNameStatus.textContent = "";
+        teacherNameGate.classList.remove("hidden");
+        teacherDashboardContent.classList.add("hidden");
+        return;
+      }
+
+      teacherNameGate.classList.add("hidden");
+      teacherDashboardContent.classList.remove("hidden");
+      syncOwnedTurmasProfessorInfo();
+      subscribeMyTurmasList();
+    }
+
+    btnTeacherArea.addEventListener("click", () => {
+      if (isTeacherAuthenticated) {
+        enterTeacherDashboard();
+        return;
+      }
+      teacherGateIntent = "dashboard";
+      openTeacherGateModal();
+    });
+    cancelTeacherGate.addEventListener("click", closeTeacherGateModal);
+    teacherGateModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === teacherGateModalBackdrop) closeTeacherGateModal();
+    });
+
+    teacherGatePassword.addEventListener("input", () => {
+      teacherGateError.classList.add("hidden");
+    });
+
+    btnForgotPassword.addEventListener("click", async () => {
+      teacherGateError.classList.add("hidden");
+      const email = teacherGateEmail.value.trim();
+      if (!email) {
+        teacherGateErrorText.textContent = "Digite seu e-mail primeiro.";
+        teacherGateError.classList.remove("hidden");
+        teacherGateEmail.focus();
+        return;
+      }
+      btnForgotPassword.disabled = true;
+      try {
+        await sendPasswordResetEmail(auth, email);
+        teacherGateInfoText.textContent = `Enviamos um link de redefinição de senha para ${email}. Verifique sua caixa de entrada (e o spam).`;
+        teacherGateInfo.classList.remove("hidden");
+      } catch (error) {
+        teacherGateErrorText.textContent = "Não foi possível enviar o e-mail agora. Confira se o e-mail está correto e tente novamente.";
+        teacherGateError.classList.remove("hidden");
+      } finally {
+        btnForgotPassword.disabled = false;
+      }
+    });
+
+    teacherGateForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      teacherGateError.classList.add("hidden");
+      teacherGateSubmit.disabled = true;
+
+      try {
+        await signInWithEmailAndPassword(auth, teacherGateEmail.value.trim(), teacherGatePassword.value);
+      } catch (error) {
+        teacherGateErrorText.textContent = authErrorMessage(error);
+        teacherGateError.classList.remove("hidden");
+        teacherGatePassword.select();
+        teacherGateSubmit.disabled = false;
+        return;
+      }
+
+      teacherGateSubmit.disabled = false;
+      // Captura a linha antes de fechar o modal: closeTeacherGateModal() zera
+      // pendingUndoRow, então lê-lo depois de fechar sempre resultava em null
+      // e o Desfazer não fazia nada (sem erro, sem sucesso).
+      const undoRow = teacherGateIntent === "undo" ? pendingUndoRow : null;
+      closeTeacherGateModal();
+
+      if (teacherGateIntent === "teacher-mode") {
+        setTeacherModeActive(true);
+        showMessage("info", "Modo professor ativado. Você pode marcar presença de qualquer aluno sem o código do dia.");
+      } else if (teacherGateIntent === "undo") {
+        if (undoRow) undoAttendance(undoRow);
+      } else {
+        enterTeacherDashboard();
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Estado de login, sair e trocar senha
+    // ---------------------------------------------------------------------
+    onAuthStateChanged(auth, (user) => {
+      isTeacherAuthenticated = Boolean(user);
+      isMasterAccount = Boolean(user) && user.email === TEACHER_EMAIL;
+      teacherAccountEmail.textContent = user ? user.email : "—";
+      btnExportCsv.classList.toggle("hidden", !isTeacherAuthenticated);
+
+      if (!isTeacherAuthenticated) {
+        setTeacherModeActive(false);
+        unsubscribeMyTurmasList();
+        if (!viewTeacherDashboard.classList.contains("hidden")) {
+          stopManagingTurma();
+          showView("turma-select");
+        }
+      } else {
+        startAttendanceSubscriptionsIfNeeded();
+      }
+    });
+
+    btnSignOut.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        // ignora — onAuthStateChanged já atualiza a interface quando aplicável
+      }
+    });
+
+    async function saveTeacherDisplayName(novoNome, button, statusEl) {
+      if (!novoNome) {
+        statusEl.textContent = "Digite um nome.";
+        statusEl.className = "mt-1 text-xs text-red-600 font-semibold";
+        return false;
+      }
+      button.disabled = true;
+      try {
+        await updateProfile(auth.currentUser, { displayName: novoNome });
+        await syncOwnedTurmasProfessorInfo();
+        statusEl.textContent = "Nome salvo! Já atualizado nas suas turmas.";
+        statusEl.className = "mt-1 text-xs text-emerald-600 font-semibold";
+        return true;
+      } catch (error) {
+        statusEl.textContent = "Não foi possível salvar o nome. Tente novamente.";
+        statusEl.className = "mt-1 text-xs text-red-600 font-semibold";
+        return false;
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    btnSaveDisplayName.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      await saveTeacherDisplayName(teacherDisplayNameInput.value.trim(), btnSaveDisplayName, displayNameStatus);
+    });
+
+    btnSaveFirstAccessName.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      const ok = await saveTeacherDisplayName(firstAccessNameInput.value.trim(), btnSaveFirstAccessName, firstAccessNameStatus);
+      if (ok) enterTeacherDashboard();
+    });
+
+    btnChangePassword.addEventListener("click", async () => {
+      changePasswordStatus.textContent = "";
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (newPassword.length < 6) {
+        changePasswordStatus.textContent = "A nova senha precisa ter pelo menos 6 caracteres.";
+        changePasswordStatus.className = "text-xs text-red-600 font-semibold";
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        changePasswordStatus.textContent = "As senhas digitadas não são iguais.";
+        changePasswordStatus.className = "text-xs text-red-600 font-semibold";
+        return;
+      }
+      if (!auth.currentUser) return;
+
+      btnChangePassword.disabled = true;
+      try {
+        await updatePassword(auth.currentUser, newPassword);
+        newPasswordInput.value = "";
+        confirmPasswordInput.value = "";
+        changePasswordStatus.textContent = "Senha alterada com sucesso!";
+        changePasswordStatus.className = "text-xs text-emerald-600 font-semibold";
+      } catch (error) {
+        changePasswordStatus.textContent = error.code === "auth/requires-recent-login"
+          ? "Por segurança, saia e entre novamente antes de trocar a senha."
+          : "Não foi possível trocar a senha. Tente novamente.";
+        changePasswordStatus.className = "text-xs text-red-600 font-semibold";
+      } finally {
+        btnChangePassword.disabled = false;
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Painel admin (só a conta master vê): criar login de professor sem
+    // precisar abrir o Firebase Console. Usa uma instância secundária do
+    // Firebase Auth só para criar a conta, assim a sessão logada (a sua)
+    // não é afetada. O novo professor recebe um e-mail para definir a
+    // própria senha — a gente nunca vê nem escolhe a senha dele.
+    // ---------------------------------------------------------------------
+    function generateTempPassword() {
+      return Array.from(crypto.getRandomValues(new Uint32Array(4)), (n) => n.toString(36)).join("");
+    }
+
+    btnCreateProfessor.addEventListener("click", async () => {
+      if (!isMasterAccount) return;
+      createProfessorStatus.textContent = "";
+      const nome = adminNewProfessorNome.value.trim();
+      const email = adminNewProfessorEmail.value.trim().toLowerCase();
+
+      if (!nome) {
+        createProfessorStatus.textContent = "Digite o nome do professor.";
+        createProfessorStatus.className = "text-xs text-red-600 font-semibold";
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        createProfessorStatus.textContent = "Digite um e-mail válido.";
+        createProfessorStatus.className = "text-xs text-red-600 font-semibold";
+        return;
+      }
+
+      btnCreateProfessor.disabled = true;
+      createProfessorStatus.textContent = "Criando...";
+      createProfessorStatus.className = "text-xs text-slate-500";
+
+      const secondaryApp = initializeApp(firebaseConfig, `admin-create-${Date.now()}`);
+      const secondaryAuth = getAuth(secondaryApp);
+      try {
+        const credential = await createUserWithEmailAndPassword(secondaryAuth, email, generateTempPassword());
+        await updateProfile(credential.user, { displayName: nome });
+        await sendPasswordResetEmail(secondaryAuth, email);
+        await signOut(secondaryAuth);
+        createProfessorStatus.textContent = `Professor "${nome}" criado! Um e-mail foi enviado para ${email} para ele(a) definir a própria senha.`;
+        createProfessorStatus.className = "text-xs text-emerald-600 font-semibold";
+        adminNewProfessorNome.value = "";
+        adminNewProfessorEmail.value = "";
+      } catch (error) {
+        const messages = {
+          "auth/email-already-in-use": "Já existe uma conta com esse e-mail.",
+          "auth/invalid-email": "E-mail inválido."
+        };
+        createProfessorStatus.textContent = messages[error.code] || "Não foi possível criar o professor. Tente novamente.";
+        createProfessorStatus.className = "text-xs text-red-600 font-semibold";
+      } finally {
+        try {
+          await deleteApp(secondaryApp);
+        } catch (_) {}
+        btnCreateProfessor.disabled = false;
+      }
+    });
+
+    btnTeacherBack.addEventListener("click", () => {
+      stopManagingTurma();
+      unsubscribeMyTurmasList();
+      showView("turma-select");
+    });
+
+    // ---------------------------------------------------------------------
+    // Painel do professor: turmas
+    // ---------------------------------------------------------------------
+    let allTeacherTurmas = [];
+    let teacherTurmasFilterUid = null; // null = todos os professores
+
+    function renderTeacherTurmasList(turmas) {
+      allTeacherTurmas = [...turmas].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+      renderTeacherTurmasProfessorFilter();
+      renderFilteredTeacherTurmasRows();
+    }
+
+    function renderTeacherTurmasProfessorFilter() {
+      const professoresPorUid = new Map();
+      allTeacherTurmas.forEach((t) => {
+        if (t.professorUid && !professoresPorUid.has(t.professorUid)) {
+          professoresPorUid.set(t.professorUid, professorLabel(t));
+        }
+      });
+      const professores = [...professoresPorUid.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+
+      if (professores.length < 2) {
+        teacherTurmasProfessorFilter.classList.add("hidden");
+        teacherTurmasProfessorChips.innerHTML = "";
+        teacherTurmasFilterUid = null;
+        return;
+      }
+
+      if (teacherTurmasFilterUid && !professoresPorUid.has(teacherTurmasFilterUid)) {
+        teacherTurmasFilterUid = null;
+      }
+
+      teacherTurmasProfessorFilter.classList.remove("hidden");
+      teacherTurmasProfessorChips.innerHTML = "";
+      teacherTurmasProfessorChips.appendChild(createTeacherProfessorFilterChip(null, "Todos"));
+      professores.forEach(([uid, nome]) => teacherTurmasProfessorChips.appendChild(createTeacherProfessorFilterChip(uid, nome)));
+    }
+
+    function createTeacherProfessorFilterChip(uid, label) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      const active = teacherTurmasFilterUid === uid;
+      chip.className = `action-button focus-ring rounded-full px-3 py-1.5 text-xs font-semibold ${active ? "bg-[#2B7A40] text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`;
+      chip.textContent = label;
+      chip.addEventListener("click", () => {
+        teacherTurmasFilterUid = uid;
+        renderTeacherTurmasProfessorFilter();
+        renderFilteredTeacherTurmasRows();
+      });
+      return chip;
+    }
+
+    function renderFilteredTeacherTurmasRows() {
+      const filtered = teacherTurmasFilterUid
+        ? allTeacherTurmas.filter((t) => t.professorUid === teacherTurmasFilterUid)
+        : allTeacherTurmas;
+
+      teacherTurmasList.innerHTML = "";
+      teacherTurmasEmpty.classList.toggle("hidden", filtered.length > 0);
+      filtered.forEach((turma) => teacherTurmasList.appendChild(createTeacherTurmaRow(turma)));
+    }
+
+    function createTeacherTurmaRow(turma) {
+      const row = document.createElement("div");
+      row.className = "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/90 px-4 py-3";
+      const info = document.createElement("div");
+      info.className = "min-w-0";
+      const name = document.createElement("div");
+      name.className = "font-semibold text-[var(--ink)] truncate";
+      name.textContent = turma.nome || "Turma sem nome";
+      info.appendChild(name);
+      if (isMasterAccount && turma.professorUid !== auth.currentUser.uid) {
+        const owner = document.createElement("div");
+        owner.className = "text-xs text-slate-400 truncate";
+        owner.textContent = professorLabel(turma);
+        info.appendChild(owner);
+      }
+      const codeLine = document.createElement("div");
+      codeLine.className = "text-xs mt-0.5";
+      if (turma.codigoDoDia) {
+        const active = isCodeActive(turma);
+        codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-400";
+        codeLine.textContent = active
+          ? `Código: ${turma.codigoDoDia} (expira em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`
+          : `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`;
+      } else {
+        codeLine.className += " text-slate-400";
+        codeLine.textContent = "Nenhum código definido";
+      }
+      info.appendChild(codeLine);
+
+      const actions = document.createElement("div");
+      actions.className = "flex shrink-0 flex-wrap items-center gap-2";
+
+      function makeQuickCodeButton(minutes, label) {
+        const quickBtn = document.createElement("button");
+        quickBtn.type = "button";
+        quickBtn.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]";
+        quickBtn.textContent = label;
+        quickBtn.addEventListener("click", async () => {
+          quickBtn.disabled = true;
+          const originalText = quickBtn.textContent;
+          quickBtn.textContent = "Gerando...";
+          const code = String(Math.floor(1000 + Math.random() * 9000));
+          try {
+            await updateDoc(doc(db, "turmas", turma.id), {
+              codigoDoDia: code,
+              codigoDefinidoEm: serverTimestamp(),
+              codigoDuracaoMin: minutes
+            });
+            showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
+          } catch (error) {
+            showTeacherMessage("error", "Não foi possível gerar o código. Tente novamente.");
+          } finally {
+            quickBtn.disabled = false;
+            quickBtn.textContent = originalText;
+          }
+        });
+        return quickBtn;
+      }
+
+      const btnCode1h = makeQuickCodeButton(60, "Gerar código 1h");
+      const btnCode3h = makeQuickCodeButton(180, "Gerar código 3h");
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+      btn.textContent = "Gerenciar";
+      btn.addEventListener("click", () => manageTurma(turma.id));
+
+      actions.appendChild(btnCode1h);
+      actions.appendChild(btnCode3h);
+      actions.appendChild(btn);
+      row.appendChild(info);
+      row.appendChild(actions);
+      return row;
+    }
+
+    btnFillExample.addEventListener("click", () => {
+      newTurmaAlunos.value = EXAMPLE_STUDENTS.join("\n");
+    });
+
+    btnSuapTip.addEventListener("click", () => {
+      const isNowHidden = suapTipBox.classList.toggle("hidden");
+      btnSuapTip.setAttribute("aria-expanded", String(!isNowHidden));
+    });
+
+    btnCopySuapPrompt.addEventListener("click", async () => {
+      const text = suapPromptText.textContent;
+      const originalLabel = btnCopySuapPrompt.textContent;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const helper = document.createElement("textarea");
+          helper.value = text;
+          helper.style.position = "fixed";
+          helper.style.opacity = "0";
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand("copy");
+          document.body.removeChild(helper);
+        }
+        btnCopySuapPrompt.textContent = "✅ Copiado!";
+      } catch (error) {
+        btnCopySuapPrompt.textContent = "Não foi possível copiar";
+      }
+      setTimeout(() => {
+        btnCopySuapPrompt.textContent = originalLabel;
+      }, 1800);
+    });
+
+    function buildNewTurmaNome() {
+      const turma = newTurmaTurma.value.trim();
+      const ano = newTurmaAno.value.trim();
+      const disciplina = newTurmaDisciplina.value.trim();
+      return [[turma, ano].filter(Boolean).join(" "), disciplina].filter(Boolean).join(" - ");
+    }
+
+    function updateNewTurmaNomePreview() {
+      const nome = buildNewTurmaNome();
+      newTurmaNomePreview.querySelector("span").textContent = nome || "—";
+    }
+
+    [newTurmaTurma, newTurmaAno, newTurmaDisciplina].forEach((input) => {
+      input.addEventListener("input", updateNewTurmaNomePreview);
+    });
+
+    btnCreateTurma.addEventListener("click", async () => {
+      const nome = buildNewTurmaNome();
+      if (!newTurmaTurma.value.trim()) {
+        showTeacherMessage("error", "Digite o nome/código da turma (ex: INF2M).");
+        return;
+      }
+      if (!auth.currentUser) return;
+      hideTeacherMessage();
+      btnCreateTurma.disabled = true;
+      try {
+        const turmaRef = await addDoc(turmasCollection, {
+          nome,
+          codigoDoDia: "",
+          codigoDefinidoEm: null,
+          professorUid: auth.currentUser.uid,
+          professorEmail: auth.currentUser.email,
+          professorNome: auth.currentUser.displayName || auth.currentUser.email
+        });
+
+        const lines = newTurmaAlunos.value.split("\n").map((s) => s.trim()).filter(Boolean);
+        if (lines.length) {
+          const batch = writeBatch(db);
+          const alunosCol = collection(db, "turmas", turmaRef.id, "alunos");
+          lines.forEach((nomeAluno) => batch.set(doc(alunosCol), { nome: nomeAluno }));
+          await batch.commit();
+        }
+
+        newTurmaTurma.value = "";
+        newTurmaAno.value = "";
+        newTurmaDisciplina.value = "";
+        updateNewTurmaNomePreview();
+        newTurmaAlunos.value = "";
+        showTeacherMessage("success", `Turma "${nome}" criada com sucesso.`);
+        await refreshMyTurmasList();
+        manageTurma(turmaRef.id);
+      } catch (error) {
+        showTeacherMessage("error", "Não foi possível criar a turma. Verifique a conexão com o Firebase.");
+      } finally {
+        btnCreateTurma.disabled = false;
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Painel do professor: gerenciar turma (código + alunos)
+    // ---------------------------------------------------------------------
+    function manageTurma(turmaId) {
+      stopManagingTurma();
+      teacherManagingTurmaId = turmaId;
+      teacherManagePanel.classList.remove("hidden");
+      manageCodeStatus.textContent = "";
+
+      unsubManageTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
+        if (!snap.exists()) return;
+        teacherManagingTurmaData = { id: snap.id, ...snap.data() };
+        manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
+        manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
+        const definedAtMillis = codeDefinedAtMillis(teacherManagingTurmaData);
+        if (isCodeActive(teacherManagingTurmaData)) {
+          const durationMin = codeDurationMin(teacherManagingTurmaData);
+          const expiresAt = definedAtMillis + codeValidityMs(teacherManagingTurmaData);
+          manageCodeHint.textContent = `Este código está ativo e expira em ${formatDateTimeOfDay(expiresAt)} (${formatDurationLabel(durationMin)} após ter sido definido).`;
+        } else if (definedAtMillis) {
+          manageCodeHint.textContent = `Este código expirou em ${formatDateTimeOfDay(definedAtMillis + codeValidityMs(teacherManagingTurmaData))}. Gere e salve um novo para liberar a chamada da turma.`;
+        } else {
+          manageCodeHint.textContent = "Nenhum código ativo. Defina e salve um código para liberar a chamada da turma.";
+        }
+      });
+
+      const alunosQuery = query(collection(db, "turmas", turmaId, "alunos"), orderBy("nome"));
+      unsubManageAlunos = onSnapshot(alunosQuery, (snap) => {
+        teacherManagingAlunos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderManageAlunosList();
+      });
+
+      teacherManagePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function stopManagingTurma() {
+      if (unsubManageTurmaDoc) { unsubManageTurmaDoc(); unsubManageTurmaDoc = null; }
+      if (unsubManageAlunos) { unsubManageAlunos(); unsubManageAlunos = null; }
+      teacherManagingTurmaId = null;
+      teacherManagingTurmaData = null;
+      teacherManagingAlunos = [];
+      teacherManagePanel.classList.add("hidden");
+      closeEditTurmaNomeForm();
+      resetHistoryUI();
+    }
+
+    // ---------------------------------------------------------------------
+    // Painel do professor: histórico de chamadas anteriores
+    // ---------------------------------------------------------------------
+    function resetHistoryUI() {
+      historyPresencas = [];
+      historySelectedDate = null;
+      historyDatesList.innerHTML = "";
+      historyEmpty.classList.add("hidden");
+      historyDayPanel.classList.add("hidden");
+      btnLoadHistory.classList.remove("hidden");
+      btnLoadHistory.disabled = false;
+      btnLoadHistory.textContent = "Carregar histórico";
+    }
+
+    function formatDisplayDate(isoDate) {
+      const [year, month, day] = isoDate.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    // Gera e baixa um .xlsx (Excel de verdade, com largura de coluna definida
+    // e a coluna "Status" em vermelho nas linhas de aluno ausente).
+    async function downloadAttendanceXlsx(header, rows, colWidths, filename) {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Chamada");
+      worksheet.columns = colWidths.map((width) => ({ width }));
+
+      const headerRow = worksheet.addRow(header);
+      headerRow.font = { bold: true };
+
+      const statusColIndex = header.indexOf("Status");
+      rows.forEach((rowData) => {
+        const row = worksheet.addRow(rowData);
+        if (statusColIndex >= 0 && rowData[statusColIndex] === "Ausente") {
+          row.eachCell((cell) => {
+            cell.font = { color: { argb: "FFDC2626" } };
+          });
+        }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    async function loadHistory() {
+      if (!teacherManagingTurmaId) return;
+      btnLoadHistory.disabled = true;
+      btnLoadHistory.textContent = "Carregando…";
+      historyEmpty.classList.add("hidden");
+
+      try {
+        const snap = await getDocs(collection(db, "turmas", teacherManagingTurmaId, "presencas"));
+        historyPresencas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } catch (error) {
+        alert("Não foi possível carregar o histórico. Tente novamente.");
+        btnLoadHistory.disabled = false;
+        btnLoadHistory.textContent = "Carregar histórico";
+        return;
+      }
+
+      const dates = [...new Set(historyPresencas.map((r) => r.data))].sort((a, b) => b.localeCompare(a));
+
+      historyDatesList.innerHTML = "";
+      historyDayPanel.classList.add("hidden");
+      btnLoadHistory.classList.add("hidden");
+
+      if (!dates.length) {
+        historyEmpty.classList.remove("hidden");
+        return;
+      }
+
+      dates.forEach((isoDate) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "rounded-full px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 action-button focus-ring";
+        chip.textContent = formatDisplayDate(isoDate);
+        chip.addEventListener("click", () => showHistoryDay(isoDate));
+        historyDatesList.appendChild(chip);
+      });
+
+      showHistoryDay(dates[0]);
+    }
+
+    function showHistoryDay(isoDate) {
+      historySelectedDate = isoDate;
+      const dayRecords = historyPresencas.filter((r) => r.data === isoDate);
+      const recordByAluno = new Map(dayRecords.map((r) => [normalize(r.nome), r]));
+
+      const roster = teacherManagingAlunos
+        .slice()
+        .sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+
+      historyDayTitle.textContent = `${formatDisplayDate(isoDate)} — ${dayRecords.length} presente(s) de ${roster.length}`;
+      historyDayList.innerHTML = "";
+      roster.forEach((aluno) => {
+        const record = recordByAluno.get(normalize(aluno.nome));
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-2 py-2 text-sm";
+        const name = document.createElement("span");
+        name.className = `truncate ${record ? "text-slate-700" : "text-red-600"}`;
+        name.textContent = aluno.nome;
+        const status = document.createElement("span");
+        status.className = `shrink-0 font-semibold ${record ? "text-slate-500" : "text-red-600"}`;
+        status.textContent = record ? record.horario || "" : "Ausente";
+        row.appendChild(name);
+        row.appendChild(status);
+        historyDayList.appendChild(row);
+      });
+      historyDayPanel.classList.remove("hidden");
+    }
+
+    btnLoadHistory.addEventListener("click", loadHistory);
+
+    btnExportHistoryCsv.addEventListener("click", async () => {
+      if (!historySelectedDate || !teacherManagingTurmaData) return;
+      const dayRecords = historyPresencas.filter((r) => r.data === historySelectedDate);
+      const recordByAluno = new Map(dayRecords.map((r) => [normalize(r.nome), r]));
+      const displayDate = formatDisplayDate(historySelectedDate);
+
+      const header = ["Turma", "Aluno", "Status", "Horário", "Data"];
+      const rows = teacherManagingAlunos
+        .slice()
+        .sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"))
+        .map((aluno) => {
+          const record = recordByAluno.get(normalize(aluno.nome));
+          return [
+            teacherManagingTurmaData.nome || "",
+            aluno.nome,
+            record ? "Presente" : "Ausente",
+            record ? record.horario || "" : "",
+            displayDate
+          ];
+        });
+      const safeName = normalize(teacherManagingTurmaData.nome || "turma").replace(/\s+/g, "-");
+      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 14], `chamada-${safeName}-${historySelectedDate}.xlsx`);
+    });
+
+    btnManageBack.addEventListener("click", stopManagingTurma);
+
+    async function deleteAllDocsIn(collectionRef) {
+      const snap = await getDocs(collectionRef);
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += 450) {
+        const batch = writeBatch(db);
+        docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    }
+
+    btnDeleteTurma.addEventListener("click", async () => {
+      if (!teacherManagingTurmaId || !teacherManagingTurmaData || !auth.currentUser) return;
+      const nomeTurma = teacherManagingTurmaData.nome || "esta turma";
+
+      const confirmado = confirm(
+        `Tem certeza que deseja excluir "${nomeTurma}"?\n\nIsso apaga TODOS os alunos e TODO o histórico de presenças dessa turma, para sempre. Essa ação não pode ser desfeita.`
+      );
+      if (!confirmado) return;
+
+      const senha = prompt(`Para confirmar, digite sua senha de professor (${auth.currentUser.email}):`);
+      if (!senha) return;
+
+      const turmaId = teacherManagingTurmaId;
+      btnDeleteTurma.disabled = true;
+      btnDeleteTurma.textContent = "Excluindo…";
+
+      try {
+        await reauthenticateWithCredential(
+          auth.currentUser,
+          EmailAuthProvider.credential(auth.currentUser.email, senha)
+        );
+      } catch (error) {
+        alert("Senha incorreta. A turma não foi excluída.");
+        btnDeleteTurma.disabled = false;
+        btnDeleteTurma.textContent = "Excluir turma";
+        return;
+      }
+
+      try {
+        await deleteAllDocsIn(collection(db, "turmas", turmaId, "presencas"));
+        await deleteAllDocsIn(collection(db, "turmas", turmaId, "alunos"));
+        await deleteDoc(doc(db, "turmas", turmaId));
+        stopManagingTurma();
+        showTeacherMessage("success", `Turma "${nomeTurma}" excluída com sucesso.`);
+        await refreshMyTurmasList();
+      } catch (error) {
+        alert("Não foi possível excluir a turma completamente. Tente novamente.");
+      } finally {
+        btnDeleteTurma.disabled = false;
+        btnDeleteTurma.textContent = "Excluir turma";
+      }
+    });
+
+    function renderManageAlunosList() {
+      manageAlunoCount.textContent = String(teacherManagingAlunos.length);
+      manageAlunosEmpty.classList.toggle("hidden", teacherManagingAlunos.length > 0);
+      manageAlunosList.innerHTML = "";
+      teacherManagingAlunos.forEach((aluno) => {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between gap-2 px-3 py-2 hover:bg-slate-50";
+        const name = document.createElement("span");
+        name.className = "text-sm text-slate-700 truncate";
+        name.textContent = aluno.nome;
+        const actions = document.createElement("div");
+        actions.className = "flex shrink-0 items-center gap-1";
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring";
+        edit.setAttribute("aria-label", `Editar nome de ${aluno.nome}`);
+        edit.innerHTML = '<i data-lucide="pencil" class="h-4 w-4"></i>';
+        edit.addEventListener("click", async () => {
+          const novoNome = prompt("Novo nome do aluno:", aluno.nome);
+          if (novoNome === null) return;
+          const nomeLimpo = novoNome.trim();
+          if (!nomeLimpo || nomeLimpo === aluno.nome) return;
+          try {
+            await updateDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id), { nome: nomeLimpo });
+          } catch (error) {
+            alert("Não foi possível renomear o aluno. Tente novamente.");
+          }
+        });
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 focus-ring";
+        del.setAttribute("aria-label", `Remover ${aluno.nome}`);
+        del.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4"></i>';
+        del.addEventListener("click", async () => {
+          if (!confirm(`Remover ${aluno.nome} desta turma?`)) return;
+          try {
+            await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id));
+          } catch (error) {
+            alert("Não foi possível remover o aluno. Tente novamente.");
+          }
+        });
+        actions.appendChild(edit);
+        actions.appendChild(del);
+        row.appendChild(name);
+        row.appendChild(actions);
+        manageAlunosList.appendChild(row);
+      });
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Tenta separar um nome existente no formato "Turma Ano - Disciplina"
+    // de volta em 3 partes. Se não encaixar nesse padrão (nome antigo,
+    // digitado livre, etc.), joga tudo em "Turma" e deixa Ano/Disciplina
+    // vazios — sem perder nada, o professor reorganiza se quiser.
+    function splitTurmaNome(nome) {
+      const match = /^(.+?)\s+(\d{4})\s*-\s*(.+)$/.exec(nome || "");
+      if (match) return { turma: match[1].trim(), ano: match[2].trim(), disciplina: match[3].trim() };
+      return { turma: (nome || "").trim(), ano: "", disciplina: "" };
+    }
+
+    function buildEditTurmaNome() {
+      const turma = manageEditTurma.value.trim();
+      const ano = manageEditAno.value.trim();
+      const disciplina = manageEditDisciplina.value.trim();
+      return [[turma, ano].filter(Boolean).join(" "), disciplina].filter(Boolean).join(" - ");
+    }
+
+    function updateEditTurmaNomePreview() {
+      manageEditNomePreview.querySelector("span").textContent = buildEditTurmaNome() || "—";
+    }
+
+    [manageEditTurma, manageEditAno, manageEditDisciplina].forEach((input) => {
+      input.addEventListener("input", updateEditTurmaNomePreview);
+    });
+
+    function openEditTurmaNomeForm() {
+      const { turma, ano, disciplina } = splitTurmaNome(teacherManagingTurmaData.nome);
+      manageEditTurma.value = turma;
+      manageEditAno.value = ano;
+      manageEditDisciplina.value = disciplina;
+      updateEditTurmaNomePreview();
+      manageTurmaTitleRow.classList.add("hidden");
+      manageTurmaEditForm.classList.remove("hidden");
+      manageEditTurma.focus();
+    }
+
+    function closeEditTurmaNomeForm() {
+      manageTurmaEditForm.classList.add("hidden");
+      manageTurmaTitleRow.classList.remove("hidden");
+    }
+
+    btnEditTurmaNome.addEventListener("click", () => {
+      if (!teacherManagingTurmaId || !teacherManagingTurmaData) return;
+      openEditTurmaNomeForm();
+    });
+
+    btnCancelTurmaNome.addEventListener("click", closeEditTurmaNomeForm);
+
+    btnSaveTurmaNome.addEventListener("click", async () => {
+      if (!teacherManagingTurmaId) return;
+      const nomeLimpo = buildEditTurmaNome();
+      if (!manageEditTurma.value.trim()) {
+        manageEditTurma.focus();
+        return;
+      }
+      if (nomeLimpo === teacherManagingTurmaData.nome) {
+        closeEditTurmaNomeForm();
+        return;
+      }
+      btnSaveTurmaNome.disabled = true;
+      try {
+        await updateDoc(doc(db, "turmas", teacherManagingTurmaId), { nome: nomeLimpo });
+        closeEditTurmaNomeForm();
+      } catch (error) {
+        alert("Não foi possível renomear a turma. Tente novamente.");
+      } finally {
+        btnSaveTurmaNome.disabled = false;
+      }
+    });
+
+    async function saveTurmaCode(code, minutes) {
+      if (!teacherManagingTurmaId) return;
+      try {
+        await updateDoc(doc(db, "turmas", teacherManagingTurmaId), {
+          codigoDoDia: code,
+          codigoDefinidoEm: serverTimestamp(),
+          codigoDuracaoMin: minutes
+        });
+        manageCodeStatus.textContent = `Código salvo! A turma já pode usá-lo pelas próximas ${formatDurationLabel(minutes)}.`;
+        manageCodeStatus.className = "mt-1 text-xs text-emerald-600 font-semibold";
+      } catch (error) {
+        manageCodeStatus.textContent = "Não foi possível salvar o código. Tente novamente.";
+        manageCodeStatus.className = "mt-1 text-xs text-red-600 font-semibold";
+      }
+    }
+
+    btnsGenerateCodeDuration.forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const minutes = Number(btn.dataset.minutes);
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        manageCodeInput.value = code;
+        await saveTurmaCode(code, minutes);
+      });
+    });
+
+    manageCodeInput.addEventListener("input", () => {
+      manageCodeInput.value = manageCodeInput.value.replace(/\D/g, "").slice(0, 4);
+    });
+
+    btnSaveCode.addEventListener("click", async () => {
+      const code = manageCodeInput.value.trim();
+      if (!/^\d{4}$/.test(code)) {
+        manageCodeStatus.textContent = "Digite um código de 4 dígitos.";
+        manageCodeStatus.className = "mt-1 text-xs text-red-600 font-semibold";
+        return;
+      }
+      await saveTurmaCode(code, DEFAULT_CODE_DURATION_MIN);
+    });
+
+    btnAddAluno.addEventListener("click", async () => {
+      if (!teacherManagingTurmaId) return;
+      const nome = manageAddAlunoNome.value.trim();
+      if (!nome) return;
+      try {
+        await addDoc(collection(db, "turmas", teacherManagingTurmaId, "alunos"), { nome });
+        manageAddAlunoNome.value = "";
+        manageAddAlunoNome.focus();
+      } catch (error) {
+        alert("Não foi possível adicionar o aluno. Tente novamente.");
+      }
+    });
+
+    manageAddAlunoNome.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        btnAddAluno.click();
+      }
+    });
+
+    btnImportAlunos.addEventListener("click", async () => {
+      if (!teacherManagingTurmaId) return;
+      const lines = manageImportAlunos.value.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (!lines.length) return;
+      btnImportAlunos.disabled = true;
+      try {
+        const batch = writeBatch(db);
+        const alunosCol = collection(db, "turmas", teacherManagingTurmaId, "alunos");
+        lines.forEach((nome) => batch.set(doc(alunosCol), { nome }));
+        await batch.commit();
+        manageImportAlunos.value = "";
+      } catch (error) {
+        alert("Não foi possível importar a lista. Tente novamente.");
+      } finally {
+        btnImportAlunos.disabled = false;
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Exportar CSV da chamada de hoje
+    // ---------------------------------------------------------------------
+    async function exportAttendanceCsv() {
+      if (!isTeacherAuthenticated) return; // botão só some da tela pro aluno; isto é a segunda trava
+      if (!selectedTurmaId || !selectedTurmaData) return;
+      if (!alunos.length) {
+        showMessage("info", "Não há alunos nesta turma para exportar.");
+        return;
+      }
+
+      const today = getLocalParts();
+      const header = ["Turma", "Aluno", "Status", "Horário", "Data"];
+      const rows = alunos.map((aluno) => {
+        const record = getTodayRecord(aluno.nome);
+        return [
+          selectedTurmaData.nome || "",
+          aluno.nome,
+          record ? "Presente" : "Ausente",
+          record ? record.horario : "",
+          today.displayDate
+        ];
+      });
+
+      const safeName = normalize(selectedTurmaData.nome || "turma").replace(/\s+/g, "-");
+      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 14], `chamada-${safeName}-${today.isoDate}.xlsx`);
+    }
+
+    btnExportCsv.addEventListener("click", exportAttendanceCsv);
+
+    // ---------------------------------------------------------------------
+    // Inicialização
+    // ---------------------------------------------------------------------
+    function initialize() {
+      deviceId = getOrCreateDeviceId();
+      document.getElementById("current-date").textContent = getLocalParts().displayDate;
+      const currentYear = getLocalParts().isoDate.slice(0, 4);
+      document.getElementById("footer-credit").textContent = `${currentYear} - Desenvolvido por Prof. Douglas Camargo Carvalho, docente do IFSul — Campus Sapiranga.`;
+      updateDbStatusUI("connecting");
+      showView("turma-select");
+      subscribeTurmasList();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    initialize();
+  </script>
+ </body>
+</html>
