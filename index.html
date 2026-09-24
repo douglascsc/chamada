@@ -781,7 +781,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <div class="mx-auto flex max-w-6xl flex-col items-center gap-1 text-center text-slate-500 text-sm">
      <span class="text-xs text-slate-400">Este projeto é de iniciativa docente. Não substitui os sistemas institucionais do IFSul — a chamada oficial é registrada no SUAP, após validação do professor.</span>
      <span class="text-xs text-slate-400">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a></span>
-     <span id="footer-credit" class="text-xs text-slate-400">Desenvolvido por Prof. Douglas Camargo Carvalho, docente do IFSul — Campus Sapiranga.</span>
+     <span id="footer-credit" class="text-xs text-slate-400"><span id="footer-year"></span> - Desenvolvido por <a href="https://douglasc.top/sobre/" target="_blank" rel="noopener" class="underline hover:text-slate-600">Prof. Douglas Camargo Carvalho</a>, docente do IFSul — Campus Sapiranga.</span>
     </div>
    </footer>
   </div>
@@ -3041,7 +3041,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       deviceId = getOrCreateDeviceId();
       document.getElementById("current-date").textContent = getLocalParts().displayDate;
       const currentYear = getLocalParts().isoDate.slice(0, 4);
-      document.getElementById("footer-credit").textContent = `${currentYear} - Desenvolvido por Prof. Douglas Camargo Carvalho, docente do IFSul — Campus Sapiranga.`;
+      document.getElementById("footer-year").textContent = currentYear;
       updateDbStatusUI("connecting");
       showView("turma-select");
       subscribeTurmasList();
