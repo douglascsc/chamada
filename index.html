@@ -409,6 +409,13 @@
       #print-sheet tr { break-inside: avoid; }
       #print-sheet thead { display: table-header-group; }
       #print-sheet .ps-foot { margin-top: 3mm; font-size: 9pt; color: #444; }
+      #print-sheet.ps-poster { text-align: center; padding-top: 6mm; }
+      #print-sheet .pp-kicker { font-size: 14pt; font-weight: 700; color: #2b7a40; letter-spacing: 0.08em; text-transform: uppercase; }
+      #print-sheet .pp-turma { font-size: 26pt; font-weight: 800; line-height: 1.15; margin: 4mm 0 2mm; }
+      #print-sheet .pp-prof { font-size: 13pt; color: #333; }
+      #print-sheet .pp-qr { width: 120mm; height: 120mm; margin: 9mm auto 6mm; image-rendering: pixelated; display: block; }
+      #print-sheet .pp-steps { font-size: 14pt; line-height: 1.5; margin: 0 auto; max-width: 150mm; }
+      #print-sheet .pp-link { margin-top: 6mm; font-size: 10pt; color: #444; word-break: break-all; }
     }
   </style>
  </head>
@@ -708,6 +715,9 @@
        <div class="mt-2 flex flex-wrap gap-2">
         <button id="btn-copy-turma-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar link</button>
         <button id="btn-show-turma-qr" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Mostrar QR Code</button>
+        <button id="btn-print-turma-poster" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha A4 com o QR grande para colar na sala ou no mural">
+         <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir cartaz
+        </button>
        </div>
       </div>
 
@@ -753,6 +763,10 @@
            <button id="btn-copy-history-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar ausentes</button>
            <button id="btn-export-history-csv" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Exportar Excel</button>
           </div>
+         </div>
+         <div id="history-day-atrasos" class="hidden mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-900"><i data-lucide="camera" class="h-3.5 w-3.5" aria-hidden="true"></i> <span id="history-day-atrasos-text"></span></span>
+          <button id="btn-history-day-atrasos" class="action-button focus-ring rounded-lg px-3 py-1.5 text-xs font-bold bg-white hover:bg-amber-100 text-amber-900 border border-amber-200" type="button">Ver fotos</button>
          </div>
          <div id="history-day-list" class="mt-2 divide-y divide-slate-100"></div>
         </div>
@@ -1132,6 +1146,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    <div id="toast-box" class="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl">
     <span id="toast-icon" aria-hidden="true"></span>
     <span id="toast-text" class="min-w-0 flex-1"></span>
+    <button id="btn-toast-action" class="hidden shrink-0 rounded-lg bg-white/15 px-3 py-1 text-sm font-bold underline-offset-2 hover:bg-white/25 focus-ring" type="button"></button>
     <button id="btn-close-toast" class="shrink-0 rounded-lg px-1 text-lg leading-none opacity-70 hover:opacity-100 focus-ring" type="button" aria-label="Fechar aviso">×</button>
    </div>
   </div>
@@ -1240,7 +1255,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import {
       getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
-      onSnapshot, query, where, orderBy, getDocs, getDoc, writeBatch, serverTimestamp, Timestamp, Bytes
+      onSnapshot, query, where, orderBy, getDocs, getDoc, getCountFromServer, writeBatch, serverTimestamp, Timestamp, Bytes
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import {
       getAuth, setPersistence, browserSessionPersistence, browserLocalPersistence, onAuthStateChanged,
@@ -1675,8 +1690,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Aviso flutuante na parte de baixo da tela: aparece por cima de tudo,
     // mesmo se o professor estiver rolado lá embaixo na lista de turmas.
     let toastTimer = null;
-    function showToast(type, text) {
+    let toastActionHandler = null;
+    // action (opcional): { label, onClick, ms } — botão dentro do aviso, ex. "Desfazer"
+    function showToast(type, text, action) {
       const toast = document.getElementById("toast");
+      const actionButton = document.getElementById("btn-toast-action");
+      toastActionHandler = action ? action.onClick : null;
+      actionButton.textContent = action ? action.label : "";
+      actionButton.classList.toggle("hidden", !action);
       const box = document.getElementById("toast-box");
       box.className = `flex items-start gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl ${type === "error" ? "bg-red-600 text-white" : type === "success" ? "bg-[#1f5f30] text-white" : "bg-slate-800 text-white"}`;
       document.getElementById("toast-icon").textContent = type === "error" ? "✕" : type === "success" ? "✓" : "ℹ";
@@ -1684,13 +1705,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       toast.setAttribute("role", type === "error" ? "alert" : "status");
       toast.classList.remove("hidden");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(hideToast, type === "error" ? 8000 : 4500);
+      toastTimer = setTimeout(hideToast, action && action.ms ? action.ms : type === "error" ? 8000 : 4500);
     }
 
     function hideToast() {
       clearTimeout(toastTimer);
+      toastActionHandler = null;
       document.getElementById("toast").classList.add("hidden");
     }
+
+    document.getElementById("btn-toast-action").addEventListener("click", () => {
+      const handler = toastActionHandler;
+      hideToast();
+      if (handler) handler();
+    });
 
     document.getElementById("btn-close-toast").addEventListener("click", hideToast);
 
@@ -2059,6 +2087,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function exitAttendanceIfAny() {
+      if (toastActionHandler) hideToast(); // o "Desfazer" rápido é só para a tela da chamada
       if (unsubSelectedTurmaDoc) { unsubSelectedTurmaDoc(); unsubSelectedTurmaDoc = null; }
       if (unsubAlunos) { unsubAlunos(); unsubAlunos = null; }
       if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
@@ -2437,14 +2466,22 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         setRowBusy(row, true);
         const slowTeacher = setTimeout(showSlowConnectionMessage, 8000);
         try {
-          await addDoc(collection(db, "turmas", selectedTurmaId, "presencas"), {
+          const presencaRef = await addDoc(collection(db, "turmas", selectedTurmaId, "presencas"), {
             nome: name,
             data: current.isoDate,
             horario: current.time,
             maquina: "professor",
             expiraEm: presencaExpiraEm()
           });
-          showMessage("success", `Presença de ${name} registrada pelo professor.`);
+          // Toque errado? "Desfazer" no aviso, por alguns segundos, sem senha
+          // (foi o próprio professor que acabou de marcar). Depois disso o
+          // Desfazer da linha pede a senha, como antes.
+          const turmaDaMarcacao = selectedTurmaId;
+          showToast("success", `${name} marcado(a) como presente.`, {
+            label: "Desfazer",
+            ms: QUICK_UNDO_MS,
+            onClick: () => quickUndoTeacherMark(turmaDaMarcacao, presencaRef.id, name)
+          });
         } catch (error) {
           showMessage("error", "Não foi possível registrar a presença. Tente novamente.");
         } finally {
@@ -2518,6 +2555,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     window.addEventListener("offline", updateOnlineBanner);
     updateOnlineBanner();
 
+    const QUICK_UNDO_MS = 8000;
+    async function quickUndoTeacherMark(turmaId, presencaId, name) {
+      try {
+        await deleteDoc(doc(db, "turmas", turmaId, "presencas", presencaId));
+        showToast("info", `Presença de ${name} desfeita.`);
+      } catch (error) {
+        showToast("error", "Não foi possível desfazer. Use o botão Desfazer na linha do aluno.");
+      }
+    }
+
     async function undoAttendance(row) {
       const name = row.dataset.studentName;
       const record = getTodayRecord(name);
@@ -2550,10 +2597,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         row.querySelector(".mark-button").addEventListener("click", () => (isTeacherModeActive ? markAttendance(row) : openIdentityConfirmation(row)));
         row.querySelector(".cancel-attendance").addEventListener("click", () => closeIdentityConfirmation(row));
         row.querySelector(".confirm-attendance").addEventListener("click", () => markAttendance(row));
-        row.querySelector(".undo-button").addEventListener("click", () => {
+        row.querySelector(".undo-button").addEventListener("click", async () => {
           // Sempre exige a senha do professor de novo para desfazer, mesmo
           // com o Modo professor ativo — evita que outro aluno no mesmo
           // aparelho desfaça a presença de alguém sem confirmar a senha.
+          // Já logado: pede só a senha (sem a tela de login inteira).
+          if (auth.currentUser) {
+            const ok = await askPasswordConfirmation({
+              title: "Desfazer presença",
+              message: `Desfazer a presença de ${row.dataset.studentName} hoje?`,
+              confirmLabel: "Desfazer"
+            });
+            if (ok) undoAttendance(row);
+            return;
+          }
           pendingUndoRow = row;
           teacherGateIntent = "undo";
           openTeacherGateModal();
@@ -3566,8 +3623,42 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
+    // Fotos de atraso tiradas no dia escolhido do histórico (só a contagem;
+    // as fotos abrem na tela de atrasos já filtrada nesse dia)
+    const historyDayAtrasos = document.getElementById("history-day-atrasos");
+    let historyAtrasosToken = 0;
+    async function updateHistoryDayAtrasos(isoDate) {
+      const token = ++historyAtrasosToken;
+      historyDayAtrasos.classList.add("hidden");
+      const turmaId = teacherManagingTurmaId;
+      if (!turmaId) return;
+      const inicio = Date.parse(`${isoDate}T00:00:00-03:00`);
+      try {
+        const snap = await getCountFromServer(query(
+          collection(db, "turmas", turmaId, "atrasos"),
+          where("criadoEm", ">=", Timestamp.fromMillis(inicio)),
+          where("criadoEm", "<", Timestamp.fromMillis(inicio + 86400000))
+        ));
+        if (token !== historyAtrasosToken) return;
+        const n = snap.data().count;
+        if (!n) return;
+        document.getElementById("history-day-atrasos-text").textContent = `${n} foto${n === 1 ? "" : "s"} de atraso neste dia`;
+        historyDayAtrasos.classList.remove("hidden");
+        if (window.lucide) lucide.createIcons();
+      } catch (error) {
+        // sem a contagem, o histórico continua funcionando normalmente
+      }
+    }
+
+    document.getElementById("btn-history-day-atrasos").addEventListener("click", () => {
+      if (teacherManagingTurmaData && historySelectedDate) {
+        openAtrasosModal(teacherManagingTurmaData, historySelectedDate);
+      }
+    });
+
     function showHistoryDay(isoDate) {
       historySelectedDate = isoDate;
+      updateHistoryDayAtrasos(isoDate);
       const dayRecords = historyPresencas.filter((r) => r.data === isoDate);
       const recordByAluno = new Map(dayRecords.map((r) => [normalize(r.nome), r]));
 
@@ -3792,6 +3883,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       foot.className = "ps-foot";
       foot.textContent = `${nomes.length} alunos · IFSul — Registro de Chamada`;
       sheet.append(titulo, turma, meta, table, foot);
+      printSheetElement(sheet);
+    }
+
+    // Imprime só a folha (o resto da página some na impressão, ver CSS)
+    function printSheetElement(sheet) {
       document.body.appendChild(sheet);
       document.body.classList.add("printing-sheet");
       const limpar = () => {
@@ -3802,6 +3898,52 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       window.addEventListener("afterprint", limpar);
       window.print();
     }
+
+    // Cartaz A4 com o QR da turma, para colar na sala/mural
+    async function printTurmaPoster() {
+      if (!teacherManagingTurmaData || !teacherManagingTurmaId) return;
+      const link = turmaLink(teacherManagingTurmaId);
+      let qrUrl;
+      try {
+        await loadQrLib();
+        const qr = window.qrcode(0, "M");
+        qr.addData(link);
+        qr.make();
+        qrUrl = qr.createDataURL(12, 2);
+      } catch (error) {
+        showToast("error", "Não foi possível gerar o QR agora (sem internet?). Tente de novo.");
+        return;
+      }
+      document.getElementById("print-sheet")?.remove();
+      const sheet = document.createElement("div");
+      sheet.id = "print-sheet";
+      sheet.className = "ps-poster";
+      const kicker = document.createElement("div");
+      kicker.className = "pp-kicker";
+      kicker.textContent = "Chamada — IFSul";
+      const turma = document.createElement("div");
+      turma.className = "pp-turma";
+      turma.textContent = teacherManagingTurmaData.nome || "Turma";
+      const prof = document.createElement("div");
+      prof.className = "pp-prof";
+      prof.textContent = `Professor(a): ${professorLabel(teacherManagingTurmaData)}`;
+      const img = document.createElement("img");
+      img.className = "pp-qr";
+      img.alt = "QR Code da turma";
+      img.src = qrUrl;
+      const steps = document.createElement("p");
+      steps.className = "pp-steps";
+      steps.textContent = "Aponte a câmera do celular para o QR, digite o código do dia que o professor passar em aula e toque no seu nome.";
+      const linkEl = document.createElement("p");
+      linkEl.className = "pp-link";
+      linkEl.textContent = link;
+      sheet.append(kicker, turma, prof, img, steps, linkEl);
+      // espera a imagem do QR carregar antes de abrir a impressão
+      if (!img.complete) await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+      printSheetElement(sheet);
+    }
+
+    document.getElementById("btn-print-turma-poster").addEventListener("click", printTurmaPoster);
 
     document.getElementById("btn-print-sign-sheet").addEventListener("click", printSignSheet);
 
@@ -5148,7 +5290,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (window.lucide) lucide.createIcons();
     }
 
-    async function openAtrasosModal(turma) {
+    async function openAtrasosModal(turma, isoDate) {
       if (!auth.currentUser) return;
       const token = ++atrasosLoadToken;
       atrasosTurma = turma || null;
@@ -5158,7 +5300,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       atrasosModalTitle.textContent = atrasosTurma ? `Atrasos — ${atrasosTurma.nome || "Turma"}` : "Todos os atrasos";
       btnAddAtraso.classList.toggle("hidden", !atrasosTurma);
       atrasosTurmaFilterWrap.classList.toggle("hidden", Boolean(atrasosTurma));
-      atrasosDateFilter.value = "";
+      atrasosDateFilter.value = isoDate || "";
       if (!atrasosTurma) {
         atrasosTurmaFilter.value = "";
         renderAtrasosTurmaFilter();
