@@ -34,6 +34,9 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **tempo restante do código** sempre à vista ("expira em 12 min (15:33)") no cartão da turma, na janela do código e na tela Chamada;
   - **marcar com 1 toque** na tela Chamada / Modo professor (o "Sim, sou eu" é só para o aluno);
   - **corrigir o histórico**: num dia anterior, "Marcar presente" (lançada como "manual") ou "Desfazer" (com senha);
+  - **copiar alunos de outra turma** ao criar uma turma nova (Nova turma → "Copiar alunos de outra turma"): a lista entra no campo de alunos, sem repetir nomes, para conferir antes de criar;
+  - **lista para assinatura** (no Gerenciar, "Imprimir lista para assinatura"): folha A4 com os nomes em ordem alfabética, numerados, e uma coluna para assinar — plano B se a internet da sala cair;
+  - **ausentes primeiro** na tela Chamada / Modo professor: quem ainda não marcou fica no topo da lista;
   - **arquivar turma** (no Gerenciar): esconde a turma da lista do professor e da tela dos alunos **sem apagar nada**; fica em "Turmas arquivadas", no fim da lista, com "Reativar";
   - **encerrar o código antes do prazo** (botão "Encerrar" no cartão da turma e na tela Chamada): ninguém mais consegue marcar presença com ele;
   - **copiar ausentes** (na tela Chamada e no histórico) para colar no SUAP, e **exportar os 7 dias** do histórico num único Excel (uma coluna por dia, com total de presenças e faltas);
