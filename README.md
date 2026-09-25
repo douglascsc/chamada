@@ -30,6 +30,9 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **📷 Atrasos**: guardar fotos de comprovantes/autorizações de atraso de cada turma — sem formulário, só a foto — e consultá-las depois, por turma ou todas juntas ("Ver todos os atrasos", com filtro por turma), filtrando por dia e baixando todas de uma vez em `.zip`. Cada foto é apagada automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**;
   - consultar o **histórico de chamadas** da turma — presentes e ausentes por dia, com exportação em `.xlsx`. Essa tela só é exibida, na interface, ao professor dono da turma ou à conta master; o que as regras do Firestore efetivamente permitem ler sobre esses mesmos dados está descrito em **[Isolamento entre professores](#isolamento-entre-professores)**;
   - **(só a conta master)** criar login de outros professores direto pelo site, sem precisar do Firebase Console — ver **[Adicionar mais professores](#adicionar-mais-professores-no-mesmo-sitebanco-de-dados)**;
+  - **link e QR Code de cada turma** (`<site>#turma=<id>`): abre direto a turma para o aluno — o código do dia continua sendo pedido. Aparece na janela do código grande (com o QR) e no Gerenciar ("Copiar link", "Mostrar QR Code");
+  - **encerrar o código antes do prazo** (botão "Encerrar" no cartão da turma e na tela Chamada): ninguém mais consegue marcar presença com ele;
+  - **copiar ausentes** (na tela Chamada e no histórico) para colar no SUAP, e **exportar os 7 dias** do histórico num único Excel (uma coluna por dia, com total de presenças e faltas);
   - **(só a conta master)** administrar professores em ⚙️ Opções → **Painel admin — professores**: ver a lista, **enviar e-mail de redefinição de senha**, **remover** um professor (transferindo as turmas dele para outro professor ou excluindo-as) e, no **Gerenciar** de qualquer turma, **transferir a turma** para outro professor — ver **[Administrar professores](#administrar-professores-conta-master)**.
 - **Painel do professor pensado para o celular**: as turmas aparecem logo no topo; as opções usadas raramente (Minha conta, Nova turma, Painel admin, Atalho no celular) ficam numa tela à parte, **⚙️ Opções** (botão ao lado de "Sair"), com "Voltar para as turmas" — o botão Voltar do celular também volta para as turmas. Ao gerar ou salvar um código do dia, ele aparece **em tamanho grande** com a validade, para mostrar aos alunos ou projetar.
 - **Atalho direto para a Área do professor**: o endereço do site com `#professor` no fim (ex.: `https://<usuário>.github.io/chamada/#professor`) abre direto nas turmas (ou no login, se ninguém estiver conectado). Dá para salvar como ícone na tela inicial do celular — o passo a passo está em ⚙️ Opções → 📱 Atalho no celular. Com "Manter conectado neste aparelho", o atalho abre direto nas turmas, sem senha.
@@ -146,6 +149,7 @@ Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteç
 - **Fotos de atrasos**: guardadas sem acesso público (sem URL pública, sem Firebase Storage), acessíveis só ao professor dono da turma e à conta master, sem metadados EXIF (a foto é redesenhada no navegador, o que descarta inclusive a localização GPS) e apagadas automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - **Retenção**: presenças são apagadas automaticamente cerca de 7 dias após serem criadas (as marcadas antes dessa mudança, com 72h), na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
 - **Transparência com o professor**: no primeiro acesso à Área do professor, o sistema exibe um aviso obrigatório resumindo esses pontos, que só é dispensado depois de o professor clicar em "Concordo"; essa confirmação é registrada em `acordosProfessor/{uid}` (ver **[Modelo de dados](#modelo-de-dados)**).
+- **Link da turma**: o link/QR de cada turma só leva à tela da turma; não dá acesso a alunos, presenças nem fotos sem o código do dia (a lista de turmas já é pública hoje, para a tela inicial).
 - **Transparência com o aluno**: na tela de chamada, o link "ℹ️ Sobre seus dados" abre um aviso curto explicando o que é salvo e que o sistema não substitui o SUAP, com um canal para pedir acesso, correção ou exclusão dos próprios dados — um link de e-mail pré-preenchido para o professor daquela turma (`professorEmail`). Diferente do aviso do professor, este não é obrigatório: o aluno precisa clicar para ver.
 - **Responsabilidade institucional**: cabe ao professor e/ou à instituição que utiliza este sistema observar as próprias políticas de proteção de dados e a legislação aplicável, incluindo, quando pertinente, informar os alunos sobre esse tratamento complementar de dados.
 
@@ -284,6 +288,12 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
          // a conta master apaga o registro ao remover um professor do sistema
          allow delete: if isMaster();
        }
+
+       // Professores criados pelo Painel admin que ainda não entraram no
+       // sistema (lista "aguardando 1º acesso"): só a conta master.
+       match /professoresPendentes/{pendenteId} {
+         allow read, write: if isMaster();
+       }
      }
    }
    ```
@@ -389,7 +399,7 @@ Se a ideia é que os professores não tenham nenhum vínculo entre si, o caminho
 
 Em ⚙️ Opções → **Painel admin — professores** (só a conta master vê):
 
-- **Lista de professores**: vem de `acordosProfessor` (todo professor que já acessou o sistema e aceitou os avisos, com nome e e-mail) somada aos donos de turmas existentes. Sem backend, o site não consegue listar as contas do Firebase Authentication — por isso um professor recém-criado só aparece depois do primeiro acesso.
+- **Lista de professores**: vem de `acordosProfessor` (todo professor que já acessou o sistema e aceitou os avisos, com nome, e-mail e **último acesso**) somada aos donos de turmas existentes e aos professores **criados pelo Painel admin que ainda não entraram** (`professoresPendentes`, mostrados como "aguardando 1º acesso" e retirados dessa lista automaticamente no primeiro acesso). Sem backend, o site não consegue listar as contas do Firebase Authentication: um professor criado direto no Console só aparece depois do primeiro acesso — ou se a conta master "criar" de novo com o mesmo e-mail (a conta não é duplicada, só entra na lista). O "último acesso" ajuda a achar registros que sobraram de logins apagados direto no Console (é o que acontece quando alguém apaga no Console sem usar "Remover" no site).
 - **Redefinir senha**: envia para o professor o e-mail padrão do Firebase para ele definir uma senha nova. A conta master nunca define nem vê a senha de ninguém; a senha atual continua valendo até a pessoa definir a nova.
 - **Transferir turma**: no **Gerenciar** de qualquer turma, a conta master escolhe o novo professor. Alunos, histórico de presenças, código do dia e fotos de atrasos vão junto (as regras de acesso seguem o dono atual da turma), e o professor anterior deixa de ver a turma na hora.
 - **Remover professor**: pede a senha da conta master; transfere as turmas dele para outro professor **ou** as exclui por completo (alunos, presenças e fotos); e apaga o registro dele em `acordosProfessor` (sai da lista). **O login em si continua existindo** até ser apagado no Firebase Console (Authentication → Users → ⋮ → Excluir conta) — o site mostra o link no final. Enquanto o login existir, a pessoa ainda consegue entrar (vê o painel vazio e poderia criar turmas novas).
@@ -411,7 +421,9 @@ turmas/{turmaId}
   atrasosImg/{atrasoId}
     img
 acordosProfessor/{uid}
-  avisosAceitosEm, email
+  avisosAceitosEm, email, nome, ultimoAcesso
+professoresPendentes/{email}
+  nome, email, criadoEm
 ```
 
 - `nome` (em `alunos`) e `nome` (em `presencas`) são independentes por decisão de modelagem: a presença guarda uma **cópia** do nome no momento em que foi marcada, não uma referência ao documento do aluno. Isso preserva o registro histórico como estava no momento da chamada — renomear um aluno depois não altera presenças já registradas, só as futuras. Ver **[Renomear aluno](#renomear-aluno)**.

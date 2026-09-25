@@ -387,13 +387,17 @@
    <div class="accent-disc accent-disc--lime" aria-hidden="true"></div>
    <div class="accent-disc accent-disc--teal" aria-hidden="true"></div>
 
-   <header class="relative z-10 w-full px-5 pt-6 sm:px-8 sm:pt-8">
+   <div id="offline-banner" class="hidden sticky top-0 z-40 w-full bg-amber-500 px-4 py-2 text-center text-sm font-semibold text-amber-950" role="alert">
+    Sem internet. O que você fizer agora só será enviado quando a conexão voltar — não feche a página.
+   </div>
+
+   <header class="relative z-10 w-full px-5 pt-4 sm:px-8 sm:pt-8">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5">
      <div class="flex min-w-0 items-center gap-4">
-      <img src="data:image/png;base64,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" alt="Instituto Federal Sul-rio-grandense" class="brand-mark h-14 w-auto shrink-0">
+      <img src="data:image/png;base64,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" alt="Instituto Federal Sul-rio-grandense" class="brand-mark h-10 w-auto shrink-0 sm:h-14">
       <div class="min-w-0">
-       <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Sistema de apoio ao registro de chamada</h1>
-       <p class="mt-1 text-sm text-slate-500">Controle de presença por turma</p>
+       <h1 class="text-lg sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Sistema de apoio ao registro de chamada</h1>
+       <p class="mt-1 hidden text-sm text-slate-500 sm:block">Controle de presença por turma</p>
       </div>
      </div>
      <div class="flex flex-wrap items-center gap-2">
@@ -419,7 +423,12 @@
        <span class="text-xs font-semibold text-slate-500">Filtrar por professor:</span>
        <div id="turma-select-professor-chips" class="flex flex-wrap gap-2"></div>
       </div>
+      <div id="turma-select-search-wrap" class="hidden mt-4">
+       <label class="sr-only" for="turma-select-search">Buscar turma</label>
+       <input id="turma-select-search" class="text-field" type="search" autocomplete="off" placeholder="Buscar sua turma (ex.: INF2M)">
+      </div>
       <div id="turma-select-list" class="mt-5 grid gap-3 sm:grid-cols-2"></div>
+      <p id="turma-select-search-empty" class="hidden mt-5 text-sm text-slate-500">Nenhuma turma encontrada com esse nome.</p>
       <p id="turma-select-empty" class="hidden mt-5 text-sm text-slate-500">Nenhuma turma cadastrada ainda. Peça ao professor para criar uma turma na Área do professor.</p>
       <p id="turma-select-filter-empty" class="hidden mt-5 text-sm text-slate-500">Nenhuma turma encontrada para esse professor.</p>
      </section>
@@ -495,7 +504,7 @@
          <span class="h-2 w-8 rounded-full bg-[#2B7A40]" aria-hidden="true"></span> <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Chamada de hoje</span>
         </div>
         <h2 id="list-heading" class="text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Lista de Presença</h2>
-        <p class="mt-2 text-sm text-slate-500 leading-relaxed">Marque sua presença abaixo. Você precisa do código do dia, informado pelo professor em sala de aula.</p>
+        <p id="list-student-hint" class="mt-2 text-sm text-slate-500 leading-relaxed">Marque sua presença abaixo. Você precisa do código do dia, informado pelo professor em sala de aula.</p>
        </div>
        <div class="min-w-0 md:w-72">
         <div class="mb-2 flex items-center justify-between gap-4">
@@ -504,6 +513,14 @@
         <div class="progress-track" role="progressbar" aria-label="Progresso da chamada" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
          <div id="progress-fill" class="progress-fill"></div>
         </div>
+       </div>
+      </div>
+      <div id="teacher-code-bar" class="hidden mt-5 flex flex-col gap-3 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4 sm:flex-row sm:items-center sm:justify-between">
+       <p id="teacher-code-bar-text" class="text-sm font-semibold text-[var(--ink)]"></p>
+       <div class="flex flex-wrap gap-2">
+        <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código agora</button>
+        <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button">Gerar código 1h</button>
+        <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
        </div>
       </div>
       <div id="global-message" class="notice notice-info mt-5 hidden" role="status" aria-live="polite">
@@ -541,7 +558,7 @@
      <p class="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
       <i data-lucide="info" aria-hidden="true" class="h-3.5 w-3.5 shrink-0 text-[#2B7A40]"></i>
       <span>Apoio ao professor — não substitui o SUAP.</span>
-      <button id="btn-open-terms" type="button" class="focus-ring rounded font-semibold text-[#2B7A40] underline hover:text-[#235f32]">📖 Avisos importantes</button>
+      <button id="btn-open-terms" type="button" class="focus-ring inline-flex items-center gap-1 rounded font-semibold text-[#2B7A40] underline hover:text-[#235f32]"><i data-lucide="book-open" class="h-3.5 w-3.5" aria-hidden="true"></i> Avisos importantes</button>
      </p>
 
      <div id="teacher-dashboard-message" class="notice mt-4 hidden" role="status" aria-live="polite">
@@ -562,7 +579,7 @@
      <section id="teacher-turmas-section" class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <div class="flex flex-wrap items-center justify-between gap-2">
        <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
-       <button id="btn-open-all-atrasos" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">📷 Ver todos os atrasos</button>
+       <button id="btn-open-all-atrasos" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button"><i data-lucide="camera" class="h-3.5 w-3.5" aria-hidden="true"></i> Ver todos os atrasos</button>
       </div>
       <div id="teacher-turmas-search-wrap" class="hidden mt-3">
        <label class="sr-only" for="teacher-turmas-search">Buscar turma</label>
@@ -631,9 +648,19 @@
        <p id="manage-code-status" class="mt-1 text-xs"></p>
       </div>
 
+      <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+       <label class="mb-1 block text-sm font-semibold text-slate-700">Link da turma</label>
+       <p class="text-xs text-slate-500">Abre direto esta turma (o código do dia continua sendo pedido). Dá para colocar no Moodle, no grupo da turma ou num cartaz com o QR.</p>
+       <code id="manage-turma-link" class="mt-2 block break-all rounded-lg bg-slate-100 px-2 py-1.5 text-xs text-slate-700"></code>
+       <div class="mt-2 flex flex-wrap gap-2">
+        <button id="btn-copy-turma-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar link</button>
+        <button id="btn-show-turma-qr" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Mostrar QR Code</button>
+       </div>
+      </div>
+
       <div class="mt-6">
        <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Alunos (<span id="manage-aluno-count">0</span>)</h4>
-       <div id="manage-alunos-list" class="mt-2 max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-100"></div>
+       <div id="manage-alunos-list" class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 sm:max-h-72 sm:overflow-y-auto"></div>
        <p id="manage-alunos-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum aluno cadastrado nesta turma ainda.</p>
 
        <div class="mt-4 flex flex-wrap gap-2">
@@ -657,11 +684,17 @@
          <span>As presenças ficam disponíveis por <strong>7 dias</strong> e depois são apagadas automaticamente. Para guardar, use <strong>Exportar Excel</strong> antes de lançar no SUAP.</span>
         </p>
         <p id="history-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum registro de presença encontrado para esta turma ainda.</p>
-        <div id="history-dates-list" class="mt-3 flex flex-wrap gap-2"></div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+         <div id="history-dates-list" class="flex flex-wrap gap-2"></div>
+         <button id="btn-export-week" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Exportar os 7 dias (Excel)</button>
+        </div>
         <div id="history-day-panel" class="hidden mt-4 rounded-xl border border-slate-200 bg-white/70 p-4">
          <div class="flex flex-wrap items-center justify-between gap-2">
           <h5 id="history-day-title" class="font-bold text-[var(--ink)]"></h5>
-          <button id="btn-export-history-csv" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Exportar Excel</button>
+          <div class="flex flex-wrap gap-2">
+           <button id="btn-copy-history-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar ausentes</button>
+           <button id="btn-export-history-csv" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Exportar Excel</button>
+          </div>
          </div>
          <div id="history-day-list" class="mt-2 divide-y divide-slate-100"></div>
         </div>
@@ -699,7 +732,7 @@
       <div>
      <details id="shortcut-details" class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">📱 Atalho no celular</span>
+       <span class="flex items-center gap-2 text-lg font-bold text-[var(--ink)]"><i data-lucide="smartphone" class="h-5 w-5" aria-hidden="true"></i> Atalho no celular</span>
        <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
       </summary>
       <div class="px-5 pb-5 sm:px-6 sm:pb-6">
@@ -866,7 +899,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
          <h4 class="font-bold text-[var(--ink)]">Professores</h4>
          <button id="btn-refresh-professores" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar lista</button>
         </div>
-        <p class="mt-1 text-xs text-slate-500">Um professor aparece aqui depois do primeiro acesso ao sistema (ou se já tiver alguma turma).</p>
+        <p class="mt-1 text-xs text-slate-500">Professores criados por aqui aparecem na hora, como "aguardando 1º acesso". Se alguém criado antes não aparecer, crie de novo com o mesmo e-mail: a conta não é duplicada, só entra na lista.</p>
         <div id="admin-professores-list" class="mt-3 flex flex-col gap-2"></div>
         <p id="admin-professores-status" class="mt-2 text-xs"></p>
        </div>
@@ -979,7 +1012,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
      <div>
       <h3 class="font-bold text-[var(--ink)]">2. Dados pessoais tratados (LGPD)</h3>
-      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. As fotos de comprovantes de atraso que você guardar (botão "📷 Atrasos") também ficam lá, visíveis só para você (e para a conta master do sistema), e são apagadas automaticamente após 180 dias. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
+      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. As fotos de comprovantes de atraso que você guardar (botão "Atrasos") também ficam lá, visíveis só para você (e para a conta master do sistema), e são apagadas automaticamente após 180 dias. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
      </div>
 
      <div>
@@ -1034,6 +1067,17 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    </div>
   </div>
 
+  <!-- Modal: QR Code da turma em tamanho grande -->
+  <div id="turma-qr-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="turma-qr-title">
+    <h2 id="turma-qr-title" class="text-lg font-extrabold text-[var(--ink)]">Turma</h2>
+    <p class="mt-1 text-sm text-slate-500">Aponte a câmera do celular para abrir a turma. O código do dia continua sendo pedido.</p>
+    <div id="turma-qr-image" class="mx-auto mt-4 flex h-64 w-64 items-center justify-center rounded-2xl bg-white text-sm text-slate-500">Gerando…</div>
+    <p id="turma-qr-link" class="mt-3 break-all text-xs text-slate-500"></p>
+    <button id="btn-close-turma-qr" class="action-button focus-ring mt-5 w-full rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
+   </section>
+  </div>
+
   <!-- Modal: código do dia em tamanho grande, para mostrar aos alunos -->
   <div id="code-display-backdrop" class="modal-backdrop hidden" aria-hidden="true">
    <section class="teacher-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="code-display-label">
@@ -1041,6 +1085,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Código do dia</p>
     <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(4rem, 24vw, 7.5rem); line-height: 1; letter-spacing: .12em;">—</p>
     <p id="code-display-validity" class="mt-4 text-base font-semibold text-emerald-700"></p>
+    <div class="mt-5 flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left">
+     <div id="code-display-qr" class="flex h-28 w-28 shrink-0 items-center justify-center rounded-xl bg-white text-xs text-slate-500" aria-hidden="true">QR…</div>
+     <div class="min-w-0 text-sm text-slate-600">
+      <p class="font-semibold text-[var(--ink)]">Alunos: apontem a câmera</p>
+      <p class="mt-0.5 text-xs">O QR abre direto esta turma. O código acima continua sendo pedido.</p>
+      <button id="btn-code-display-copy-link" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar link da turma</button>
+     </div>
+    </div>
     <div class="mt-6 grid gap-2 sm:grid-cols-2">
      <button id="btn-code-display-chamada" class="action-button focus-ring rounded-xl px-4 py-3 bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold" type="button">Ver chamada</button>
      <button id="btn-close-code-display" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
@@ -1297,7 +1349,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await setDoc(doc(db, "acordosProfessor", auth.currentUser.uid), {
           avisosAceitosEm: serverTimestamp(),
           email: auth.currentUser.email,
-          nome: auth.currentUser.displayName || ""
+          nome: auth.currentUser.displayName || "",
+          ultimoAcesso: serverTimestamp()
         });
       } catch (error) {
         // se não conseguir salvar agora (ex: rede), libera o uso mesmo assim;
@@ -1581,6 +1634,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function updateDbStatusUI(state) {
+      applyDbStatusUI(state);
+      dbStatusBadge.classList.toggle("hidden", state === "connected"); // só aparece se estiver conectando ou com erro
+    }
+
+    function applyDbStatusUI(state) {
       if (state === "connected") {
         dbStatusBadge.className = "status-pill flex items-center gap-2 rounded-full px-4 py-2 bg-emerald-50 text-emerald-800 border-emerald-200";
         dbStatusDot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500";
@@ -1600,6 +1658,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Navegação entre telas
     // ---------------------------------------------------------------------
     function showView(name) {
+      btnTeacherArea.classList.toggle("hidden", name === "teacher-dashboard");
       viewTurmaSelect.classList.toggle("hidden", name !== "turma-select");
       viewAttendance.classList.toggle("hidden", name !== "attendance");
       viewTeacherDashboard.classList.toggle("hidden", name !== "teacher-dashboard");
@@ -1637,8 +1696,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (!snap.exists()) return;
         const nome = auth.currentUser.displayName || "";
         const data = snap.data();
-        if (data.email !== auth.currentUser.email || (data.nome || "") !== nome) {
-          await updateDoc(ref, { email: auth.currentUser.email, nome });
+        // "último acesso" para a lista da conta master (no máximo a cada 6h)
+        const ultimo = data.ultimoAcesso && data.ultimoAcesso.toMillis ? data.ultimoAcesso.toMillis() : 0;
+        const acessoVelho = Date.now() - ultimo > 6 * 60 * 60 * 1000;
+        if (data.email !== auth.currentUser.email || (data.nome || "") !== nome || acessoVelho) {
+          await updateDoc(ref, { email: auth.currentUser.email, nome, ultimoAcesso: serverTimestamp() });
         }
       } catch (error) {
         // só alimenta a lista da conta master; não deve travar o professor
@@ -1818,16 +1880,27 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function renderFilteredTurmaSelectCards() {
-      const filtered = turmaSelectFilterUid
+      const searchWrap = document.getElementById("turma-select-search-wrap");
+      const searchInput = document.getElementById("turma-select-search");
+      const many = allTurmasForSelect.length > 6;
+      searchWrap.classList.toggle("hidden", !many);
+      if (!many) searchInput.value = "";
+      const term = normalize(searchInput.value);
+
+      let filtered = turmaSelectFilterUid
         ? allTurmasForSelect.filter((t) => t.professorUid === turmaSelectFilterUid)
         : allTurmasForSelect;
+      if (term) filtered = filtered.filter((t) => normalize(`${t.nome} ${professorLabel(t)}`).includes(term));
 
       turmaSelectList.innerHTML = "";
       turmaSelectEmpty.classList.toggle("hidden", allTurmasForSelect.length > 0);
-      turmaSelectFilterEmpty.classList.toggle("hidden", !(allTurmasForSelect.length > 0 && filtered.length === 0));
+      turmaSelectFilterEmpty.classList.toggle("hidden", Boolean(term) || !(allTurmasForSelect.length > 0 && filtered.length === 0));
+      document.getElementById("turma-select-search-empty").classList.toggle("hidden", !term || filtered.length > 0);
       filtered.forEach((turma) => turmaSelectList.appendChild(createTurmaSelectCard(turma)));
       if (window.lucide) lucide.createIcons();
     }
+
+    document.getElementById("turma-select-search").addEventListener("input", renderFilteredTurmaSelectCards);
 
     function createTurmaSelectCard(turma) {
       const card = document.createElement("button");
@@ -1850,7 +1923,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       icon.className = "h-5 w-5 text-slate-500 shrink-0";
       card.appendChild(info);
       card.appendChild(icon);
-      card.addEventListener("click", () => enterTurma(turma.id));
+      card.addEventListener("click", () => {
+        enterTurma(turma.id);
+        setTurmaHash(turma.id); // o endereço da página vira o link da turma
+      });
       return card;
     }
 
@@ -1935,6 +2011,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
       exitAttendanceIfAny();
       showView("turma-select");
+      setTurmaHash(null);
     });
 
     // Aberta pelo botão "Chamada" do painel: o botão de voltar leva às turmas
@@ -1942,6 +2019,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function applyAttendanceModeUI() {
       btnTrocarTurma.lastChild.textContent = attendanceFromDashboard ? " Voltar às turmas" : " Trocar turma";
       btnTeacherMode.classList.toggle("hidden", attendanceFromDashboard);
+      btnTeacherArea.classList.toggle("hidden", attendanceFromDashboard || !viewTeacherDashboard.classList.contains("hidden"));
     }
 
     // ---------------------------------------------------------------------
@@ -1997,6 +2075,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function updateDailyCodeStatusUI() {
+      if (typeof renderTeacherCodeBar === "function") renderTeacherCodeBar();
       const unlocked = isTeacherModeActive || isDailyCodeVerified;
       attendanceListPanel.classList.toggle("hidden", !unlocked);
       attendanceListLocked.classList.toggle("hidden", unlocked);
@@ -2183,6 +2262,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       presentCount.textContent = String(totalPresent);
       studentCount.textContent = String(rows.length);
+      renderTeacherCodeBar();
       progressFill.style.width = `${rows.length ? (totalPresent / rows.length) * 100 : 0}%`;
       progressTrack.setAttribute("aria-valuemax", String(rows.length));
       progressTrack.setAttribute("aria-valuenow", String(totalPresent));
@@ -2244,6 +2324,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (isTeacherModeActive) {
         busyName = name;
         setRowBusy(row, true);
+        const slowTeacher = setTimeout(showSlowConnectionMessage, 8000);
         try {
           await addDoc(collection(db, "turmas", selectedTurmaId, "presencas"), {
             nome: name,
@@ -2256,6 +2337,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         } catch (error) {
           showMessage("error", "Não foi possível registrar a presença. Tente novamente.");
         } finally {
+          clearTimeout(slowTeacher);
           busyName = "";
           setRowBusy(row, false);
         }
@@ -2287,6 +2369,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       // presença hoje nesta turma, esta escrita é bloqueada pelas regras do
       // Firestore (allow update: if false), mesmo que o JS seja burlado.
       const presencaId = `${current.isoDate}_${deviceId}`;
+      const slowStudent = setTimeout(showSlowConnectionMessage, 8000);
 
       try {
         await setDoc(doc(db, "turmas", selectedTurmaId, "presencas", presencaId), {
@@ -2303,12 +2386,26 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       } catch (error) {
         showMessage("error", "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
       } finally {
+        clearTimeout(slowStudent);
         busyName = "";
         setRowBusy(row, false);
       }
 
       renderAttendance();
     }
+
+    // Se a presença demora para ser confirmada pelo servidor (internet lenta
+    // ou caiu), avisa em vez de deixar a pessoa achando que travou.
+    function showSlowConnectionMessage() {
+      showMessage("info", "A internet está lenta ou caiu. A presença será enviada assim que a conexão voltar — não feche esta página.");
+    }
+
+    function updateOnlineBanner() {
+      document.getElementById("offline-banner").classList.toggle("hidden", navigator.onLine !== false);
+    }
+    window.addEventListener("online", updateOnlineBanner);
+    window.addEventListener("offline", updateOnlineBanner);
+    updateOnlineBanner();
 
     async function undoAttendance(row) {
       const name = row.dataset.studentName;
@@ -2716,8 +2813,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await updateProfile(credential.user, { displayName: nome });
         await sendPasswordResetEmail(secondaryAuth, email);
         await signOut(secondaryAuth);
-        createProfessorStatus.textContent = `Professor "${nome}" criado! Um e-mail foi enviado para ${email} para ele(a) definir a própria senha.`;
+        const naLista = await addPendingProfessor(nome, email);
+        createProfessorStatus.textContent = `Professor "${nome}" criado! Um e-mail foi enviado para ${email} para ele(a) definir a própria senha.${naLista ? " Já aparece na lista como “aguardando 1º acesso”." : ""}`;
         createProfessorStatus.className = "text-xs text-emerald-600 font-semibold";
+        refreshAdminProfessores();
         adminNewProfessorNome.value = "";
         adminNewProfessorEmail.value = "";
       } catch (error) {
@@ -2725,8 +2824,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           "auth/email-already-in-use": "Já existe uma conta com esse e-mail.",
           "auth/invalid-email": "E-mail inválido."
         };
-        createProfessorStatus.textContent = messages[error.code] || "Não foi possível criar o professor. Tente novamente.";
-        createProfessorStatus.className = "text-xs text-red-600 font-semibold";
+        if (error.code === "auth/email-already-in-use") {
+          // A conta já existe (ex.: criada antes desta versão): só entra na lista
+          const naLista = await addPendingProfessor(nome, email);
+          createProfessorStatus.textContent = naLista
+            ? `Já existe uma conta com ${email}. Ela foi adicionada à lista (se ainda não entrou no sistema, aparece como “aguardando 1º acesso”).`
+            : messages[error.code];
+          createProfessorStatus.className = naLista ? "text-xs text-emerald-600 font-semibold" : "text-xs text-red-600 font-semibold";
+          if (naLista) refreshAdminProfessores();
+        } else {
+          createProfessorStatus.textContent = messages[error.code] || "Não foi possível criar o professor. Tente novamente.";
+          createProfessorStatus.className = "text-xs text-red-600 font-semibold";
+        }
       } finally {
         try {
           await deleteApp(secondaryApp);
@@ -2838,6 +2947,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherTurmasEmpty.classList.toggle("hidden", Boolean(term) || filtered.length > 0);
       teacherTurmasSearchEmpty.classList.toggle("hidden", !term || filtered.length > 0);
       filtered.forEach((turma) => teacherTurmasList.appendChild(createTeacherTurmaRow(turma)));
+      if (window.lucide) lucide.createIcons();
     }
 
     teacherTurmasSearch.addEventListener("input", renderFilteredTeacherTurmasRows);
@@ -2881,9 +2991,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         codeLine.textContent = active
           ? `Código: ${turma.codigoDoDia} (expira em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`
           : `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`;
+        if (active) {
+          // Encerrar antes do prazo (ex.: a aula já começou)
+          codeLine.className += " flex flex-wrap items-center gap-x-2 gap-y-1";
+          const endBtn = document.createElement("button");
+          endBtn.type = "button";
+          endBtn.className = "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700";
+          endBtn.textContent = "Encerrar";
+          endBtn.setAttribute("aria-label", `Encerrar o código de ${turma.nome}`);
+          endBtn.addEventListener("click", () => endCodeForTurma(turma));
+          codeLine.appendChild(endBtn);
+        }
       } else {
         codeLine.className += " text-slate-500";
-        codeLine.textContent = "Nenhum código definido";
+        codeLine.textContent = "Nenhum código ativo";
       }
       info.appendChild(codeLine);
 
@@ -2901,17 +3022,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           quickBtn.disabled = true;
           const originalText = quickBtn.textContent;
           quickBtn.textContent = "Gerando...";
-          const code = String(Math.floor(1000 + Math.random() * 9000));
           try {
-            await updateDoc(doc(db, "turmas", turma.id), {
-              codigoDoDia: code,
-              codigoDefinidoEm: serverTimestamp(),
-              codigoDuracaoMin: minutes
-            });
-            showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
-            showCodeDisplay(turma, code, minutes);
-          } catch (error) {
-            showTeacherMessage("error", "Não foi possível gerar o código. Tente novamente.");
+            await generateCodeForTurma(turma, minutes);
           } finally {
             quickBtn.disabled = false;
             quickBtn.textContent = originalText;
@@ -2938,7 +3050,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const btnAtrasos = document.createElement("button");
       btnAtrasos.type = "button";
       btnAtrasos.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
-      btnAtrasos.textContent = "📷 Atrasos";
+      btnAtrasos.classList.add("flex", "items-center", "justify-center", "gap-1", "whitespace-nowrap");
+      btnAtrasos.innerHTML = '<i data-lucide="camera" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i><span>Atrasos</span>';
       btnAtrasos.addEventListener("click", () => openAtrasosModal(turma));
 
       // Celular: "Gerar código" 1h e 3h em cima; Chamada, Atrasos e Gerenciar embaixo
@@ -3060,6 +3173,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       unsubManageTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
         if (!snap.exists()) return;
         teacherManagingTurmaData = { id: snap.id, ...snap.data() };
+        document.getElementById("manage-turma-link").textContent = turmaLink(snap.id);
         renderManageTransfer();
         manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
         manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
@@ -3170,6 +3284,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       historyDatesList.innerHTML = "";
       historyDayPanel.classList.add("hidden");
+      document.getElementById("btn-export-week").classList.toggle("hidden", !dates.length);
 
       if (!dates.length) {
         historyEmpty.classList.remove("hidden");
@@ -3364,32 +3479,79 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         actions.className = "flex shrink-0 items-center gap-1";
         const edit = document.createElement("button");
         edit.type = "button";
-        edit.className = "rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring";
+        edit.className = "flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring sm:h-8 sm:w-8";
         edit.setAttribute("aria-label", `Editar nome de ${aluno.nome}`);
-        edit.innerHTML = '<i data-lucide="pencil" class="h-4 w-4"></i>';
-        edit.addEventListener("click", async () => {
-          const novoNome = prompt("Novo nome do aluno:", aluno.nome);
-          if (novoNome === null) return;
-          const nomeLimpo = novoNome.trim();
-          if (!nomeLimpo || nomeLimpo === aluno.nome) return;
-          try {
-            await updateDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id), { nome: nomeLimpo });
-          } catch (error) {
-            showToast("error", "Não foi possível renomear o aluno. Tente novamente.");
-          }
+        edit.innerHTML = '<i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>';
+        // Editar e remover direto na linha (sem as janelinhas do navegador)
+        edit.addEventListener("click", () => {
+          const input = document.createElement("input");
+          input.className = "text-field min-w-0 flex-1";
+          input.value = aluno.nome;
+          input.setAttribute("aria-label", `Novo nome de ${aluno.nome}`);
+          const save = document.createElement("button");
+          save.type = "button";
+          save.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]";
+          save.textContent = "Salvar";
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+          cancel.textContent = "Cancelar";
+          const doSave = async () => {
+            const nomeLimpo = input.value.trim();
+            if (!nomeLimpo || nomeLimpo === aluno.nome) { renderManageAlunosList(); return; }
+            save.disabled = true;
+            try {
+              await updateDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id), { nome: nomeLimpo });
+              showToast("success", `Nome alterado para ${nomeLimpo}.`);
+            } catch (error) {
+              showToast("error", "Não foi possível renomear o aluno. Tente novamente.");
+              renderManageAlunosList();
+            }
+          };
+          save.addEventListener("click", doSave);
+          cancel.addEventListener("click", renderManageAlunosList);
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") doSave();
+            if (event.key === "Escape") { event.stopPropagation(); renderManageAlunosList(); }
+          });
+          row.innerHTML = "";
+          row.className = "flex flex-wrap items-center gap-2 px-3 py-2 bg-slate-50";
+          row.append(input, save, cancel);
+          input.focus();
+          input.select();
         });
         const del = document.createElement("button");
         del.type = "button";
-        del.className = "rounded-lg p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 focus-ring";
+        del.className = "flex h-11 w-11 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 focus-ring sm:h-8 sm:w-8";
         del.setAttribute("aria-label", `Remover ${aluno.nome}`);
-        del.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4"></i>';
-        del.addEventListener("click", async () => {
-          if (!confirm(`Remover ${aluno.nome} desta turma?`)) return;
-          try {
-            await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id));
-          } catch (error) {
-            showToast("error", "Não foi possível remover o aluno. Tente novamente.");
-          }
+        del.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>';
+        del.addEventListener("click", () => {
+          const question = document.createElement("span");
+          question.className = "text-sm font-semibold text-red-700";
+          question.textContent = `Remover ${aluno.nome}?`;
+          const yes = document.createElement("button");
+          yes.type = "button";
+          yes.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700";
+          yes.textContent = "Remover";
+          const no = document.createElement("button");
+          no.type = "button";
+          no.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+          no.textContent = "Cancelar";
+          yes.addEventListener("click", async () => {
+            yes.disabled = true;
+            try {
+              await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id));
+              showToast("success", `${aluno.nome} removido(a) da turma.`);
+            } catch (error) {
+              showToast("error", "Não foi possível remover o aluno. Tente novamente.");
+              renderManageAlunosList();
+            }
+          });
+          no.addEventListener("click", renderManageAlunosList);
+          row.innerHTML = "";
+          row.className = "flex flex-wrap items-center gap-2 px-3 py-2 bg-red-50";
+          row.append(question, yes, no);
+          no.focus();
         });
         actions.appendChild(edit);
         actions.appendChild(del);
@@ -3607,7 +3769,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const snap = await getDocs(collection(db, "acordosProfessor"));
       snap.docs.forEach((d) => {
         const data = d.data();
-        map.set(d.id, { uid: d.id, email: data.email || "", nome: data.nome || "" });
+        map.set(d.id, { uid: d.id, email: data.email || "", nome: data.nome || "", ultimoAcesso: data.ultimoAcesso && data.ultimoAcesso.toMillis ? data.ultimoAcesso.toMillis() : 0 });
       });
       allTeacherTurmas.forEach((t) => {
         if (!t.professorUid) return;
@@ -3619,12 +3781,38 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (auth.currentUser && !map.has(auth.currentUser.uid)) {
         map.set(auth.currentUser.uid, { uid: auth.currentUser.uid, email: auth.currentUser.email, nome: auth.currentUser.displayName || "" });
       }
-      professoresCache = [...map.values()].sort((a, b) => professorDisplay(a).localeCompare(professorDisplay(b), "pt-BR"));
+      // Professores criados pelo Painel admin que ainda não entraram no sistema
+      const registrados = new Set([...map.values()].map((p) => (p.email || "").toLowerCase()));
+      const pendentes = [];
+      try {
+        const pendSnap = await getDocs(collection(db, "professoresPendentes"));
+        for (const d of pendSnap.docs) {
+          const data = d.data();
+          const email = (data.email || "").toLowerCase();
+          if (registrados.has(email)) {
+            deleteDoc(d.ref).catch(() => {}); // já entrou: sai da lista de pendentes
+            continue;
+          }
+          pendentes.push({ uid: null, pendingId: d.id, email, nome: data.nome || "", pendente: true });
+        }
+      } catch (error) {
+        // regras antigas (sem professoresPendentes): segue só com os registrados
+      }
+      professoresCache = [...map.values(), ...pendentes].sort((a, b) => professorDisplay(a).localeCompare(professorDisplay(b), "pt-BR"));
       professoresLoaded = true;
     }
 
     function turmasDoProfessor(uid) {
-      return allTeacherTurmas.filter((t) => t.professorUid === uid);
+      return uid ? allTeacherTurmas.filter((t) => t.professorUid === uid) : [];
+    }
+
+    async function addPendingProfessor(nome, email) {
+      try {
+        await setDoc(doc(db, "professoresPendentes", email.toLowerCase()), { nome, email: email.toLowerCase(), criadoEm: serverTimestamp() });
+        return true;
+      } catch (error) {
+        return false; // regras ainda sem professoresPendentes
+      }
     }
 
     function setAdminStatus(type, text) {
@@ -3634,7 +3822,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     function fillProfessorSelect(select, excludeUid, preferredUid) {
       select.innerHTML = "";
-      professoresCache.filter((p) => p.uid !== excludeUid).forEach((p) => {
+      professoresCache.filter((p) => p.uid && p.uid !== excludeUid).forEach((p) => {
         const option = document.createElement("option");
         option.value = p.uid;
         option.textContent = p.email && p.nome ? `${professorDisplay(p)} — ${p.email}` : professorDisplay(p);
@@ -3690,7 +3878,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       name.textContent = professorDisplay(p);
       const meta = document.createElement("div");
       meta.className = "text-xs text-slate-500 break-all";
-      meta.textContent = `${p.email || "e-mail desconhecido"} · ${turmas.length} turma${turmas.length === 1 ? "" : "s"}`;
+      if (p.pendente) {
+        meta.textContent = `${p.email} · aguardando 1º acesso`;
+        row.classList.add("border-dashed");
+      } else {
+        const acesso = p.ultimoAcesso ? getLocalParts(new Date(p.ultimoAcesso)).displayDate : "sem registro";
+        meta.textContent = `${p.email || "e-mail desconhecido"} · ${turmas.length} turma${turmas.length === 1 ? "" : "s"} · último acesso: ${acesso}`;
+      }
       info.append(name, meta);
 
       const actions = document.createElement("div");
@@ -3702,7 +3896,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnReset.disabled = !p.email;
       btnReset.addEventListener("click", () => sendProfessorPasswordReset(p, btnReset));
       actions.appendChild(btnReset);
-      if (!isSelf) {
+      if (p.pendente) {
+        const btnRemovePending = document.createElement("button");
+        btnRemovePending.type = "button";
+        btnRemovePending.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700";
+        btnRemovePending.textContent = "Remover";
+        btnRemovePending.addEventListener("click", () => removePendingProfessor(p));
+        actions.appendChild(btnRemovePending);
+      } else if (!isSelf) {
         const btnRemove = document.createElement("button");
         btnRemove.type = "button";
         btnRemove.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700";
@@ -3713,6 +3914,22 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       top.append(info, actions);
       row.appendChild(top);
       return row;
+    }
+
+    async function removePendingProfessor(p) {
+      const ok = await askPasswordConfirmation({
+        title: "Remover da lista",
+        message: `Tirar ${p.nome || p.email} da lista de professores?\n\nO login (${p.email}) continua existindo: para apagar, use o Firebase Console → Authentication → Users.`,
+        confirmLabel: "Remover"
+      });
+      if (!ok) return;
+      try {
+        await deleteDoc(doc(db, "professoresPendentes", p.pendingId));
+        await refreshAdminProfessores();
+        setAdminStatus("success", `${p.nome || p.email} saiu da lista. Para apagar o login, use o Firebase Console (Authentication → Users).`);
+      } catch (error) {
+        setAdminStatus("error", "Não foi possível remover da lista. Tente novamente.");
+      }
     }
 
     async function sendProfessorPasswordReset(p, button) {
@@ -3904,6 +4121,237 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     // ---------------------------------------------------------------------
+    // Código do dia: gerar, encerrar e barra do professor na chamada
+    // ---------------------------------------------------------------------
+    async function generateCodeForTurma(turma, minutes) {
+      const code = String(Math.floor(1000 + Math.random() * 9000));
+      try {
+        await updateDoc(doc(db, "turmas", turma.id), {
+          codigoDoDia: code,
+          codigoDefinidoEm: serverTimestamp(),
+          codigoDuracaoMin: minutes
+        });
+        showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
+        showCodeDisplay(turma, code, minutes);
+        return code;
+      } catch (error) {
+        showTeacherMessage("error", "Não foi possível gerar o código. Tente novamente.");
+        return null;
+      }
+    }
+
+    // Encerra o código antes do prazo: ninguém mais consegue marcar presença
+    // com ele (as regras do Firestore exigem um código não vazio e ativo).
+    async function endCodeForTurma(turma) {
+      try {
+        await updateDoc(doc(db, "turmas", turma.id), { codigoDoDia: "" });
+        showTeacherMessage("success", `Código de "${turma.nome || "a turma"}" encerrado: ninguém mais consegue marcar presença com ele.`);
+      } catch (error) {
+        showTeacherMessage("error", "Não foi possível encerrar o código. Tente novamente.");
+      }
+    }
+
+    const teacherCodeBar = document.getElementById("teacher-code-bar");
+    const teacherCodeBarText = document.getElementById("teacher-code-bar-text");
+    const btnBarEndCode = document.getElementById("btn-bar-end-code");
+    const btnBarNewCode = document.getElementById("btn-bar-new-code");
+    const btnBarCopyAbsent = document.getElementById("btn-bar-copy-absent");
+
+    function renderTeacherCodeBar() {
+      document.getElementById("list-student-hint").classList.toggle("hidden", isTeacherModeActive); // instrução é para o aluno
+      const show = Boolean(selectedTurmaData) && (attendanceFromDashboard || (isTeacherModeActive && isTeacherAuthenticated));
+      teacherCodeBar.classList.toggle("hidden", !show);
+      if (!show) return;
+      const active = isCodeActive(selectedTurmaData);
+      teacherCodeBarText.textContent = active
+        ? `Código ${selectedTurmaData.codigoDoDia} · válido até ${formatTimeOfDay(codeDefinedAtMillis(selectedTurmaData) + codeValidityMs(selectedTurmaData))}`
+        : "Nenhum código ativo: os alunos não conseguem marcar presença.";
+      btnBarEndCode.classList.toggle("hidden", !active);
+      btnBarNewCode.classList.toggle("hidden", active);
+      const ausentes = alunos.filter((a) => !getTodayRecord(a.nome)).length;
+      btnBarCopyAbsent.textContent = `Copiar ausentes (${ausentes})`;
+    }
+    setInterval(() => { if (!teacherCodeBar.classList.contains("hidden")) renderTeacherCodeBar(); }, 30000);
+
+    btnBarEndCode.addEventListener("click", () => { if (selectedTurmaData) endCodeForTurma(selectedTurmaData); });
+    btnBarNewCode.addEventListener("click", () => { if (selectedTurmaData) generateCodeForTurma(selectedTurmaData, 60); });
+
+    // ---------------------------------------------------------------------
+    // Copiar ausentes (para lançar no SUAP)
+    // ---------------------------------------------------------------------
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (error) {
+        const helper = document.createElement("textarea");
+        helper.value = text;
+        helper.style.position = "fixed";
+        helper.style.opacity = "0";
+        document.body.appendChild(helper);
+        helper.select();
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (_) {}
+        helper.remove();
+        return ok;
+      }
+    }
+
+    async function copyAbsentList(turmaNome, displayDate, nomesAusentes, total) {
+      if (!nomesAusentes.length) {
+        showToast("info", "Ninguém ausente: todos marcaram presença.");
+        return;
+      }
+      const text = [`Ausentes — ${turmaNome} — ${displayDate} (${nomesAusentes.length} de ${total})`, ...nomesAusentes].join("\n");
+      const ok = await copyText(text);
+      showToast(ok ? "success" : "error", ok ? `${nomesAusentes.length} ausente(s) copiado(s). É só colar.` : "Não foi possível copiar. Tente de novo.");
+    }
+
+    btnBarCopyAbsent.addEventListener("click", () => {
+      if (!selectedTurmaData) return;
+      const nomes = alunos.map((a) => a.nome).filter((nome) => !getTodayRecord(nome)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+      copyAbsentList(selectedTurmaData.nome || "Turma", getLocalParts().displayDate, nomes, alunos.length);
+    });
+
+    document.getElementById("btn-copy-history-absent").addEventListener("click", () => {
+      if (!historySelectedDate || !teacherManagingTurmaData) return;
+      const presentes = new Set(historyPresencas.filter((r) => r.data === historySelectedDate).map((r) => normalize(r.nome)));
+      const nomes = teacherManagingAlunos.map((a) => a.nome).filter((nome) => !presentes.has(normalize(nome))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+      copyAbsentList(teacherManagingTurmaData.nome || "Turma", formatDisplayDate(historySelectedDate), nomes, teacherManagingAlunos.length);
+    });
+
+    // ---------------------------------------------------------------------
+    // Exportar os 7 dias do histórico num único Excel (uma coluna por dia)
+    // ---------------------------------------------------------------------
+    document.getElementById("btn-export-week").addEventListener("click", async () => {
+      if (!teacherManagingTurmaData || !historyPresencas.length) return;
+      const dates = [...new Set(historyPresencas.map((r) => r.data))].sort();
+      const byDate = new Map(dates.map((d) => [d, new Map(historyPresencas.filter((r) => r.data === d).map((r) => [normalize(r.nome), r]))]));
+      const nomes = teacherManagingAlunos.map((a) => a.nome).sort((a, b) => a.localeCompare(b, "pt-BR"));
+      const conhecidos = new Set(nomes.map(normalize));
+      historyPresencas.forEach((r) => { if (!conhecidos.has(normalize(r.nome))) { conhecidos.add(normalize(r.nome)); nomes.push(r.nome); } });
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Chamadas");
+      sheet.columns = [{ width: 34 }, ...dates.map(() => ({ width: 12 })), { width: 11 }, { width: 9 }];
+      const title = sheet.addRow([`Turma: ${teacherManagingTurmaData.nome || ""}`]);
+      title.font = { bold: true, size: 13 };
+      sheet.addRow([]);
+      const header = sheet.addRow(["Aluno", ...dates.map(formatDisplayDate), "Presenças", "Faltas"]);
+      header.font = { bold: true };
+      nomes.forEach((nome) => {
+        const cells = dates.map((d) => { const r = byDate.get(d).get(normalize(nome)); return r ? (r.horario || "P") : "Falta"; });
+        const faltas = cells.filter((c) => c === "Falta").length;
+        const row = sheet.addRow([nome, ...cells, cells.length - faltas, faltas]);
+        cells.forEach((c, i) => { if (c === "Falta") row.getCell(i + 2).font = { color: { argb: "FFDC2626" }, bold: true }; });
+      });
+      const buffer = await workbook.xlsx.writeBuffer();
+      const safeName = normalize(teacherManagingTurmaData.nome || "turma").replace(/\s+/g, "-");
+      saveBlobAs(new Blob([buffer], { type: "application/octet-stream" }), `chamada-${safeName}-${dates[0]}_a_${dates[dates.length - 1]}.xlsx`);
+      showToast("success", `Excel com ${dates.length} dia(s) baixado.`);
+    });
+
+    // ---------------------------------------------------------------------
+    // Link e QR Code de cada turma: <site>#turma=<id> abre direto a turma
+    // (o código do dia continua sendo pedido). A biblioteca do QR só é
+    // baixada quando um QR é mostrado.
+    // ---------------------------------------------------------------------
+    const QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+    let qrLibPromise = null;
+
+    function loadQrLib() {
+      if (window.qrcode) return Promise.resolve();
+      if (!qrLibPromise) {
+        qrLibPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = QR_LIB_URL;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => { qrLibPromise = null; reject(new Error("qr-lib")); };
+          document.head.appendChild(script);
+        });
+      }
+      return qrLibPromise;
+    }
+
+    function turmaLink(turmaId) {
+      return `${location.origin}${location.pathname}#turma=${encodeURIComponent(turmaId)}`;
+    }
+
+    async function renderQrInto(container, text, cellSize) {
+      container.textContent = "Gerando QR…";
+      try {
+        await loadQrLib();
+        const qr = window.qrcode(0, "M");
+        qr.addData(text);
+        qr.make();
+        const img = document.createElement("img");
+        img.src = qr.createDataURL(cellSize, 2);
+        img.alt = "QR Code que abre esta turma";
+        img.className = "h-full w-full";
+        img.style.imageRendering = "pixelated";
+        container.innerHTML = "";
+        container.appendChild(img);
+      } catch (error) {
+        container.textContent = "QR indisponível agora (sem internet?). Use o link.";
+      }
+    }
+
+    async function copyTurmaLink(turmaId) {
+      const ok = await copyText(turmaLink(turmaId));
+      showToast(ok ? "success" : "error", ok ? "Link da turma copiado." : "Não foi possível copiar o link.");
+    }
+
+    const turmaQrBackdrop = document.getElementById("turma-qr-backdrop");
+    function showTurmaQr(turma) {
+      document.getElementById("turma-qr-title").textContent = turma.nome || "Turma";
+      document.getElementById("turma-qr-link").textContent = turmaLink(turma.id);
+      turmaQrBackdrop.classList.remove("hidden");
+      turmaQrBackdrop.setAttribute("aria-hidden", "false");
+      renderQrInto(document.getElementById("turma-qr-image"), turmaLink(turma.id), 7);
+    }
+    function closeTurmaQr() {
+      turmaQrBackdrop.classList.add("hidden");
+      turmaQrBackdrop.setAttribute("aria-hidden", "true");
+    }
+    document.getElementById("btn-close-turma-qr").addEventListener("click", closeTurmaQr);
+    turmaQrBackdrop.addEventListener("click", (event) => { if (event.target === turmaQrBackdrop) closeTurmaQr(); });
+    document.getElementById("btn-copy-turma-link").addEventListener("click", () => { if (teacherManagingTurmaId) copyTurmaLink(teacherManagingTurmaId); });
+    document.getElementById("btn-show-turma-qr").addEventListener("click", () => { if (teacherManagingTurmaData) showTurmaQr(teacherManagingTurmaData); });
+
+    // Abrir a turma pelo link
+    function turmaIdFromHash() {
+      const match = /^#turma=(.+)$/.exec(location.hash);
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    function setTurmaHash(turmaId) {
+      const url = location.pathname + location.search + (turmaId ? `#turma=${encodeURIComponent(turmaId)}` : "");
+      if (location.pathname + location.search + location.hash !== url) history.replaceState(null, "", url);
+    }
+
+    async function openTurmaFromHash() {
+      const turmaId = turmaIdFromHash();
+      if (!turmaId || turmaId === selectedTurmaId) return;
+      try {
+        const snap = await getDoc(doc(db, "turmas", turmaId));
+        if (!snap.exists()) {
+          setTurmaHash(null);
+          showView("turma-select");
+          showToast("error", "Essa turma não existe mais. Escolha sua turma na lista.");
+          return;
+        }
+        enterTurma(turmaId);
+      } catch (error) {
+        showToast("error", "Não foi possível abrir a turma do link. Escolha sua turma na lista.");
+      }
+    }
+
+    window.addEventListener("hashchange", () => {
+      if (turmaIdFromHash() && !attendanceFromDashboard) openTurmaFromHash();
+    });
+
+    // ---------------------------------------------------------------------
     // Tela de Opções (⚙️), atalho no celular e código grande
     // ---------------------------------------------------------------------
     const newTurmaDetails = document.getElementById("new-turma-details");
@@ -4051,6 +4499,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(Date.now() + minutes * 60 * 1000)} (${formatDurationLabel(minutes)})`;
       codeDisplayBackdrop.classList.remove("hidden");
       codeDisplayBackdrop.setAttribute("aria-hidden", "false");
+      if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLink(codeDisplayTurmaId), 3);
       document.body.style.overflow = "hidden";
     }
 
@@ -4062,6 +4511,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     document.getElementById("btn-close-code-display").addEventListener("click", closeCodeDisplay);
+    document.getElementById("btn-code-display-copy-link").addEventListener("click", () => {
+      if (codeDisplayTurmaId) copyTurmaLink(codeDisplayTurmaId);
+    });
     document.getElementById("btn-code-display-chamada").addEventListener("click", () => {
       if (codeDisplayTurmaId) openTeacherChamada(codeDisplayTurmaId);
     });
@@ -4672,8 +5124,55 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       updateDbStatusUI("connecting");
       showView("turma-select");
       subscribeTurmasList();
+      openTurmaFromHash();
       if (window.lucide) lucide.createIcons();
     }
+
+    // Acessibilidade das janelas: ao abrir, o foco vai para dentro dela e o
+    // Tab não sai dela; ao fechar, o foco volta para o botão que a abriu.
+    const openModals = [];
+    function focusablesIn(el) {
+      return [...el.querySelectorAll('button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])')]
+        .filter((e) => !e.disabled && e.offsetParent !== null);
+    }
+    document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+      new MutationObserver(() => {
+        const isOpen = !backdrop.classList.contains("hidden");
+        const index = openModals.findIndex((m) => m.el === backdrop);
+        if (isOpen && index < 0) {
+          openModals.push({ el: backdrop, returnTo: document.activeElement });
+          setTimeout(() => {
+            if (!backdrop.contains(document.activeElement)) {
+              const first = focusablesIn(backdrop)[0];
+              if (first) first.focus();
+            }
+          }, 0);
+        } else if (!isOpen && index >= 0) {
+          const [closed] = openModals.splice(index, 1);
+          if (closed.returnTo && document.contains(closed.returnTo) && typeof closed.returnTo.focus === "function") {
+            closed.returnTo.focus({ preventScroll: true });
+          }
+        }
+      }).observe(backdrop, { attributes: true, attributeFilter: ["class"] });
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Tab" || !openModals.length) return;
+      const top = openModals[openModals.length - 1].el;
+      const items = focusablesIn(top);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!top.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
 
     initialize();
   </script>
