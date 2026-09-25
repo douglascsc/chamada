@@ -522,7 +522,7 @@
        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar
       </button>
       <div class="flex items-center gap-2">
-       <button id="btn-open-more-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" aria-label="Mais opções">
+       <button id="btn-open-more-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" aria-label="Opções">
         <i data-lucide="settings" class="h-3.5 w-3.5" aria-hidden="true"></i> Opções
        </button>
        <button id="btn-sign-out" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
@@ -554,7 +554,7 @@
      </section>
 
      <div id="teacher-dashboard-content" class="hidden">
-     <section class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
+     <section id="teacher-turmas-section" class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <div class="flex flex-wrap items-center justify-between gap-2">
        <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
        <button id="btn-open-all-atrasos" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">📷 Ver todos os atrasos</button>
@@ -673,15 +673,15 @@
       </div>
      </section>
 
-     <details id="more-options" class="group/more mt-5">
-      <summary class="glass-surface flex cursor-pointer list-none items-center justify-between gap-2 rounded-2xl p-5 sm:p-6 focus-ring">
-       <span class="min-w-0">
-        <span class="block text-lg font-bold text-[var(--ink)]">⚙️ Mais opções</span>
-        <span class="block text-xs text-slate-500">Nova turma, minha conta, atalho no celular<span id="more-options-admin-hint" class="hidden">, painel admin</span></span>
-       </span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open/more:rotate-180"></i>
-      </summary>
-      <div class="pl-3 sm:pl-5">
+     <!-- Tela "Opções": substitui a lista de turmas enquanto está aberta -->
+     <section id="teacher-options-view" class="hidden mt-5">
+      <div class="flex flex-wrap items-center gap-3">
+       <button id="btn-close-teacher-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para as turmas
+       </button>
+      </div>
+      <h3 class="mt-4 flex items-center gap-2 text-xl font-extrabold text-[var(--ink)]"><i data-lucide="settings" class="h-5 w-5" aria-hidden="true"></i> Opções</h3>
+      <div>
      <details class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
        <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
@@ -859,7 +859,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       </div>
      </details>
       </div>
-     </details>
+     </section>
      </div>
     </section>
 
@@ -2349,7 +2349,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         ? "Todas as turmas (todos os professores)"
         : "Turmas cadastradas";
       adminPanelSection.classList.toggle("hidden", !isMasterAccount);
-      moreOptionsAdminHint.classList.toggle("hidden", !isMasterAccount);
+      teacherOptionsHistoryPushed = false;
+      showTeacherTurmasView();
       updateSuapTipVisibility();
       setTeacherAreaHash(true);
       teacherShortcutUrl.textContent = location.origin + location.pathname + TEACHER_AREA_HASH;
@@ -2868,6 +2869,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         newTurmaAlunos.value = "";
         showTeacherMessage("success", `Turma "${nome}" criada com sucesso.`);
         await refreshMyTurmasList();
+        if (!teacherOptionsView.classList.contains("hidden")) {
+          teacherOptionsHistoryPushed = false; // a entrada extra do histórico fica inofensiva
+          showTeacherTurmasView();
+        }
         manageTurma(turmaRef.id);
       } catch (error) {
         showTeacherMessage("error", "Não foi possível criar a turma. Verifique a conexão com o Firebase.");
@@ -3693,10 +3698,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     // ---------------------------------------------------------------------
-    // Mais opções (⚙️), atalho no celular e código grande
+    // Tela de Opções (⚙️), atalho no celular e código grande
     // ---------------------------------------------------------------------
-    const moreOptions = document.getElementById("more-options");
-    const moreOptionsAdminHint = document.getElementById("more-options-admin-hint");
     const newTurmaDetails = document.getElementById("new-turma-details");
     const teacherShortcutUrl = document.getElementById("teacher-shortcut-url");
     const btnCopyTeacherShortcut = document.getElementById("btn-copy-teacher-shortcut");
@@ -3704,15 +3707,58 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const codeDisplayTurma = document.getElementById("code-display-turma");
     const codeDisplayValue = document.getElementById("code-display-value");
     const codeDisplayValidity = document.getElementById("code-display-validity");
+    const teacherOptionsView = document.getElementById("teacher-options-view");
+    const teacherTurmasSection = document.getElementById("teacher-turmas-section");
+    const btnOpenTeacherOptions = document.getElementById("btn-open-more-options");
+    let teacherOptionsHistoryPushed = false;
 
-    function openMoreOptions(section) {
-      moreOptions.open = true;
-      if (section) section.open = true;
-      (section || moreOptions).scrollIntoView({ behavior: "smooth", block: "start" });
+    // "⚙️ Opções" troca a lista de turmas pela tela de opções (Minha conta,
+    // Nova turma, Painel admin, Atalho). O "Voltar" do celular volta para as
+    // turmas, em vez de sair do site.
+    function showTeacherOptionsView(section) {
+      stopManagingTurma();
+      teacherTurmasSection.classList.add("hidden");
+      teacherOptionsView.classList.remove("hidden");
+      btnOpenTeacherOptions.classList.add("hidden");
+      btnTeacherBack.classList.add("invisible"); // só "Voltar para as turmas" nesta tela
+      if (!teacherOptionsHistoryPushed) {
+        history.pushState({ teacherOptions: true }, "", location.href);
+        teacherOptionsHistoryPushed = true;
+      }
+      if (section) {
+        section.open = true;
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      if (window.lucide) lucide.createIcons();
     }
 
-    document.getElementById("btn-open-more-options").addEventListener("click", () => openMoreOptions(null));
-    document.getElementById("btn-empty-new-turma").addEventListener("click", () => openMoreOptions(newTurmaDetails));
+    function showTeacherTurmasView() {
+      teacherOptionsView.classList.add("hidden");
+      teacherTurmasSection.classList.remove("hidden");
+      btnOpenTeacherOptions.classList.remove("hidden");
+      btnTeacherBack.classList.remove("invisible");
+    }
+
+    function closeTeacherOptionsView() {
+      if (teacherOptionsHistoryPushed) {
+        history.back(); // o popstate abaixo troca a tela
+      } else {
+        showTeacherTurmasView();
+      }
+    }
+
+    window.addEventListener("popstate", () => {
+      if (!teacherOptionsHistoryPushed) return;
+      teacherOptionsHistoryPushed = false;
+      showTeacherTurmasView();
+      window.scrollTo({ top: 0 });
+    });
+
+    btnOpenTeacherOptions.addEventListener("click", () => showTeacherOptionsView(null));
+    document.getElementById("btn-close-teacher-options").addEventListener("click", closeTeacherOptionsView);
+    document.getElementById("btn-empty-new-turma").addEventListener("click", () => showTeacherOptionsView(newTurmaDetails));
 
     btnCopyTeacherShortcut.addEventListener("click", async () => {
       const original = btnCopyTeacherShortcut.textContent;
