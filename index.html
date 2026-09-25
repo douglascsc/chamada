@@ -8,6 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <!-- Ícone de aplicativo ao "Adicionar à tela inicial" (sem start_url no
+       manifesto: o atalho abre a página em que foi criado, ex. #professor) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2B7A40">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Chamada">
   <style>
     :root {
       /* Paleta oficial do IFSul (extraída da marca) */
@@ -495,6 +504,17 @@
       </div>
      </section>
 
+     <!-- Aluno: depois de marcar, uma confirmação grande no lugar da lista -->
+     <section id="student-done-panel" class="hidden reveal mt-4 rounded-[30px] border-2 border-emerald-300 bg-emerald-50 p-6 text-center shadow-md sm:mt-6 sm:p-8" role="status" aria-live="polite">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-4xl font-bold text-white" aria-hidden="true">✓</div>
+      <h2 class="mt-4 text-2xl font-extrabold text-emerald-900">Presença registrada</h2>
+      <p id="student-done-name" class="mt-2 text-xl font-bold text-[var(--ink)]"></p>
+      <p id="student-done-when" class="mt-1 text-base font-semibold text-emerald-800"></p>
+      <p id="student-done-turma" class="mt-1 text-sm text-slate-600"></p>
+      <p class="mt-4 text-sm text-slate-600">Pronto! Pode fechar esta página.</p>
+      <button id="btn-student-done-list" class="action-button focus-ring mt-5 rounded-xl px-4 py-3 text-sm font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button">Ver a lista da turma</button>
+     </section>
+
      <section id="attendance-list-locked" class="glass-surface reveal delay-1 mt-6 rounded-[30px] p-8 text-center">
       <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
        <i data-lucide="lock" aria-hidden="true" class="h-7 w-7"></i>
@@ -598,6 +618,13 @@
       </div>
       <div id="teacher-turmas-list" class="mt-3 flex flex-col gap-2"></div>
       <p id="teacher-turmas-search-empty" class="hidden mt-2 text-sm text-slate-500">Nenhuma turma encontrada com esse nome.</p>
+      <details id="archived-turmas" class="hidden group/arch mt-4 rounded-xl border border-dashed border-slate-300">
+       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-slate-600 focus-ring rounded-xl">
+        <span>Turmas arquivadas (<span id="archived-count">0</span>)</span>
+        <i data-lucide="chevron-down" aria-hidden="true" class="h-4 w-4 shrink-0 transition-transform group-open/arch:rotate-180"></i>
+       </summary>
+       <div id="archived-turmas-list" class="flex flex-col gap-2 px-3 pb-3"></div>
+      </details>
       <div id="teacher-turmas-empty" class="hidden mt-2">
        <p class="text-sm text-slate-500">Nenhuma turma cadastrada ainda.</p>
        <button id="btn-empty-new-turma" class="action-button focus-ring mt-3 rounded-xl px-4 py-3 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">+ Criar primeira turma</button>
@@ -706,6 +733,12 @@
         </div>
        </div>
 
+       <div id="manage-archive-section" class="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
+        <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Arquivar turma</h4>
+        <p id="manage-archive-text" class="mt-1 text-sm text-slate-600">Fim do semestre? Arquivar esconde a turma da sua lista e da tela dos alunos, <strong>sem apagar nada</strong> (alunos, histórico e fotos continuam). Dá para reativar depois.</p>
+        <button id="btn-archive-turma" class="action-button focus-ring mt-3 rounded-lg px-4 py-2.5 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Arquivar turma</button>
+       </div>
+
        <div id="manage-transfer-section" class="hidden mt-6 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4">
         <h4 class="text-sm font-bold uppercase tracking-wider text-[#2B7A40]">Transferir turma (conta master)</h4>
         <p class="mt-1 text-sm text-slate-600">Dono atual: <strong id="manage-transfer-owner">—</strong>. Alunos, histórico de presenças, código do dia e fotos de atrasos vão junto para o novo professor.</p>
@@ -754,7 +787,8 @@
          <code id="teacher-shortcut-url" class="min-w-0 break-all rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700"></code>
          <button id="btn-copy-teacher-shortcut" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar endereço</button>
         </div>
-        <p class="mt-3 text-xs text-slate-500">Dica: no login, marque <strong>“Manter conectado neste aparelho”</strong> (só no seu celular pessoal) para o atalho já abrir nas suas turmas, sem pedir senha.</p>
+        <p class="mt-3 text-xs text-slate-500">O ícone fica com o símbolo do IFSul e o nome "Chamada", e abre em tela cheia, como um aplicativo.</p>
+        <p class="mt-2 text-xs text-slate-500">Dica: no login, marque <strong>“Manter conectado neste aparelho”</strong> (só no seu celular pessoal) para o atalho já abrir nas suas turmas, sem pedir senha.</p>
        </div>
       </div>
      </details>
@@ -1838,7 +1872,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function renderTurmaSelectList(turmas) {
-      allTurmasForSelect = [...turmas].sort((a, b) =>
+      allTurmasForSelect = turmas.filter((t) => !t.arquivada).sort((a, b) =>
         (a.nome || "").localeCompare(b.nome || "", "pt-BR")
       );
       renderTurmaSelectProfessorFilter();
@@ -2006,6 +2040,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       isDailyCodeVerified = false;
       studentDailyCodeInput.value = "";
       studentList.innerHTML = "";
+      studentDoneDismissed = false;
+      document.getElementById("student-done-panel").classList.add("hidden");
       setTeacherModeActive(false);
       attendanceFromDashboard = false;
       applyAttendanceModeUI();
@@ -2035,6 +2071,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function codeDefinedAtMillis(turma) {
       const ts = turma && turma.codigoDefinidoEm;
       return ts && typeof ts.toMillis === "function" ? ts.toMillis() : null;
+    }
+
+    // "expira em 12 min" / "expira em 1h 05min"
+    function formatRemaining(ms) {
+      if (ms <= 0) return "expirado";
+      const totalMin = Math.ceil(ms / 60000);
+      if (totalMin < 60) return `${totalMin} min`;
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      return m ? `${h}h ${String(m).padStart(2, "0")}min` : `${h}h`;
+    }
+
+    function codeExpiresAtMillis(turma) {
+      return codeDefinedAtMillis(turma) + codeValidityMs(turma);
     }
 
     function codeDurationMin(turma) {
@@ -2086,6 +2136,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const unlocked = isTeacherModeActive || isDailyCodeVerified;
       attendanceListPanel.classList.toggle("hidden", !unlocked);
       attendanceListLocked.classList.toggle("hidden", unlocked);
+      renderStudentDone();
 
       if (isTeacherModeActive) {
         dailyCodeStatusBadge.className = "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 bg-[#EEF6EC] text-[#235f32] border-[#CFE6C8]";
@@ -2238,6 +2289,29 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       row.querySelector(".undo-button").disabled = Boolean(busyName);
     }
 
+    // Aluno que já marcou hoje NESTE aparelho: confirmação grande no lugar
+    // da lista (evita tocar em outros nomes e serve para o professor conferir)
+    let studentDoneDismissed = false;
+    function renderStudentDone() {
+      const panel = document.getElementById("student-done-panel");
+      const today = getLocalParts().isoDate;
+      const record = !isTeacherModeActive && isDailyCodeVerified && !studentDoneDismissed
+        ? presencas.find((r) => r.data === today && r.maquina === deviceId)
+        : null;
+      panel.classList.toggle("hidden", !record);
+      if (!record) return;
+      attendanceListPanel.classList.add("hidden");
+      document.getElementById("student-done-name").textContent = record.nome;
+      document.getElementById("student-done-when").textContent = `às ${record.horario} · ${getLocalParts().displayDate}`;
+      document.getElementById("student-done-turma").textContent = (selectedTurmaData && selectedTurmaData.nome) || "";
+    }
+
+    document.getElementById("btn-student-done-list").addEventListener("click", () => {
+      studentDoneDismissed = true;
+      document.getElementById("student-done-panel").classList.add("hidden");
+      updateDailyCodeStatusUI();
+    });
+
     function renderAttendance() {
       const rows = getRows();
       let totalPresent = 0;
@@ -2270,6 +2344,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       presentCount.textContent = String(totalPresent);
       studentCount.textContent = String(rows.length);
       renderTeacherCodeBar();
+      renderStudentDone();
       progressFill.style.width = `${rows.length ? (totalPresent / rows.length) * 100 : 0}%`;
       progressTrack.setAttribute("aria-valuemax", String(rows.length));
       progressTrack.setAttribute("aria-valuenow", String(totalPresent));
@@ -2442,7 +2517,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     function bindStudentEvents() {
       getRows().forEach((row) => {
-        row.querySelector(".mark-button").addEventListener("click", () => openIdentityConfirmation(row));
+        // Aluno confirma "Sim, sou eu"; o professor (modo professor) marca com 1 toque
+        row.querySelector(".mark-button").addEventListener("click", () => (isTeacherModeActive ? markAttendance(row) : openIdentityConfirmation(row)));
         row.querySelector(".cancel-attendance").addEventListener("click", () => closeIdentityConfirmation(row));
         row.querySelector(".confirm-attendance").addEventListener("click", () => markAttendance(row));
         row.querySelector(".undo-button").addEventListener("click", () => {
@@ -2916,8 +2992,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const teacherTurmasSearch = document.getElementById("teacher-turmas-search");
     const teacherTurmasSearchEmpty = document.getElementById("teacher-turmas-search-empty");
 
+    function activeTeacherTurmas() {
+      return allTeacherTurmas.filter((t) => !t.arquivada);
+    }
+
     function hasManyTurmas() {
-      return allTeacherTurmas.length > 6;
+      return activeTeacherTurmas().length > 6;
     }
 
     function pinnedTurmasKey() {
@@ -2940,9 +3020,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherTurmasSearchWrap.classList.toggle("hidden", !many);
       if (!many) teacherTurmasSearch.value = "";
 
-      let filtered = teacherTurmasFilterUid
+      const doProfessor = teacherTurmasFilterUid
         ? allTeacherTurmas.filter((t) => t.professorUid === teacherTurmasFilterUid)
         : allTeacherTurmas;
+      let filtered = doProfessor.filter((t) => !t.arquivada);
+      renderArchivedTurmas(doProfessor.filter((t) => t.arquivada));
       const term = normalize(teacherTurmasSearch.value);
       if (term) filtered = filtered.filter((t) => normalize(t.nome).includes(term));
       if (many) {
@@ -2958,6 +3040,51 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     teacherTurmasSearch.addEventListener("input", renderFilteredTeacherTurmasRows);
+
+    // Turmas arquivadas: fora da lista principal (e da tela dos alunos), com
+    // "Reativar" e "Gerenciar" — nada é apagado ao arquivar
+    function renderArchivedTurmas(arquivadas) {
+      const box = document.getElementById("archived-turmas");
+      const list = document.getElementById("archived-turmas-list");
+      box.classList.toggle("hidden", arquivadas.length === 0);
+      document.getElementById("archived-count").textContent = String(arquivadas.length);
+      list.innerHTML = "";
+      arquivadas.forEach((turma) => {
+        const row = document.createElement("div");
+        row.className = "flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/80 px-3 py-2";
+        const name = document.createElement("span");
+        name.className = "min-w-0 truncate text-sm font-semibold text-slate-600";
+        name.textContent = turma.nome || "Turma sem nome";
+        const actions = document.createElement("div");
+        actions.className = "flex gap-2";
+        const reativar = document.createElement("button");
+        reativar.type = "button";
+        reativar.className = "action-button focus-ring rounded-lg px-3 py-1.5 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32]";
+        reativar.textContent = "Reativar";
+        reativar.addEventListener("click", () => setTurmaArchived(turma, false));
+        const gerenciar = document.createElement("button");
+        gerenciar.type = "button";
+        gerenciar.className = "action-button focus-ring rounded-lg px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+        gerenciar.textContent = "Gerenciar";
+        gerenciar.addEventListener("click", () => manageTurma(turma.id));
+        actions.append(reativar, gerenciar);
+        row.append(name, actions);
+        list.appendChild(row);
+      });
+    }
+
+    async function setTurmaArchived(turma, arquivar) {
+      try {
+        await updateDoc(doc(db, "turmas", turma.id), arquivar ? { arquivada: true, codigoDoDia: "" } : { arquivada: false });
+        showToast("success", arquivar
+          ? `"${turma.nome}" arquivada. Ela fica em "Turmas arquivadas", no fim da lista.`
+          : `"${turma.nome}" reativada.`);
+        return true;
+      } catch (error) {
+        showToast("error", "Não foi possível alterar a turma. Tente novamente.");
+        return false;
+      }
+    }
 
     function createTeacherTurmaRow(turma) {
       const row = document.createElement("div");
@@ -2995,9 +3122,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (turma.codigoDoDia) {
         const active = isCodeActive(turma);
         codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-500";
-        codeLine.textContent = active
-          ? `Código: ${turma.codigoDoDia} (expira em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`
-          : `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`;
+        if (active) {
+          const expira = codeExpiresAtMillis(turma);
+          const texto = document.createElement("span");
+          texto.dataset.expira = String(expira); // atualizado a cada 30s
+          texto.dataset.codigo = turma.codigoDoDia;
+          texto.textContent = `Código ${turma.codigoDoDia} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
+          codeLine.appendChild(texto);
+        } else {
+          codeLine.textContent = `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeExpiresAtMillis(turma))})`;
+        }
         if (active) {
           // Encerrar antes do prazo (ex.: a aula já começou)
           codeLine.className += " flex flex-wrap items-center gap-x-2 gap-y-1";
@@ -3181,6 +3315,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (!snap.exists()) return;
         teacherManagingTurmaData = { id: snap.id, ...snap.data() };
         document.getElementById("manage-turma-link").textContent = turmaLink(snap.id);
+        document.getElementById("btn-archive-turma").textContent = teacherManagingTurmaData.arquivada ? "Reativar turma" : "Arquivar turma";
         renderManageTransfer();
         manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
         manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
@@ -3269,7 +3404,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       URL.revokeObjectURL(url);
     }
 
-    async function loadHistory() {
+    async function loadHistory(keepDate) {
       if (!teacherManagingTurmaId) return;
       btnLoadHistory.disabled = true;
       btnLoadHistory.textContent = "Carregando…";
@@ -3307,7 +3442,44 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         historyDatesList.appendChild(chip);
       });
 
-      showHistoryDay(dates[0]);
+      showHistoryDay(typeof keepDate === "string" && dates.includes(keepDate) ? keepDate : dates[0]);
+    }
+
+    // Presença lançada pelo professor num dia anterior (fica como "manual")
+    async function markHistoryPresence(nome, isoDate, button) {
+      if (!teacherManagingTurmaId) return;
+      button.disabled = true;
+      try {
+        const meioDia = Date.parse(`${isoDate}T12:00:00-03:00`);
+        await addDoc(collection(db, "turmas", teacherManagingTurmaId, "presencas"), {
+          nome,
+          data: isoDate,
+          horario: "manual",
+          maquina: "professor",
+          expiraEm: Timestamp.fromMillis(meioDia + PRESENCA_RETENTION_MS)
+        });
+        showToast("success", `${nome} marcado(a) como presente em ${formatDisplayDate(isoDate)}.`);
+        await loadHistory(isoDate);
+      } catch (error) {
+        showToast("error", "Não foi possível marcar a presença. Tente novamente.");
+        button.disabled = false;
+      }
+    }
+
+    async function undoHistoryPresence(nome, isoDate, record) {
+      const ok = await askPasswordConfirmation({
+        title: "Desfazer presença",
+        message: `Desfazer a presença de ${nome} em ${formatDisplayDate(isoDate)}?`,
+        confirmLabel: "Desfazer"
+      });
+      if (!ok) return;
+      try {
+        await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "presencas", record.id));
+        showToast("success", `Presença de ${nome} em ${formatDisplayDate(isoDate)} desfeita.`);
+        await loadHistory(isoDate);
+      } catch (error) {
+        showToast("error", "Não foi possível desfazer. Tente novamente.");
+      }
     }
 
     function showHistoryDay(isoDate) {
@@ -3339,14 +3511,27 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const status = document.createElement("span");
         status.className = `shrink-0 font-semibold ${record ? "text-slate-500" : "text-red-600"}`;
         status.textContent = record ? record.horario || "" : "Ausente";
+        const right = document.createElement("div");
+        right.className = "flex shrink-0 items-center gap-2";
+        right.appendChild(status);
+        // Corrigir: marcar presente (aluno esqueceu / estava sem celular) ou desfazer
+        const fix = document.createElement("button");
+        fix.type = "button";
+        fix.className = record
+          ? "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600"
+          : "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32]";
+        fix.textContent = record ? "Desfazer" : "Marcar presente";
+        fix.setAttribute("aria-label", record ? `Desfazer a presença de ${aluno.nome} em ${formatDisplayDate(isoDate)}` : `Marcar ${aluno.nome} como presente em ${formatDisplayDate(isoDate)}`);
+        fix.addEventListener("click", () => (record ? undoHistoryPresence(aluno.nome, isoDate, record) : markHistoryPresence(aluno.nome, isoDate, fix)));
+        right.appendChild(fix);
         row.appendChild(name);
-        row.appendChild(status);
+        row.appendChild(right);
         historyDayList.appendChild(row);
       });
       historyDayPanel.classList.remove("hidden");
     }
 
-    btnLoadHistory.addEventListener("click", loadHistory);
+    btnLoadHistory.addEventListener("click", () => loadHistory(historySelectedDate));
 
     btnExportHistoryCsv.addEventListener("click", async () => {
       if (!historySelectedDate || !teacherManagingTurmaData) return;
@@ -3373,6 +3558,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     btnManageBack.addEventListener("click", goBackTeacher);
+
+    document.getElementById("btn-archive-turma").addEventListener("click", async () => {
+      if (!teacherManagingTurmaData) return;
+      const arquivar = !teacherManagingTurmaData.arquivada;
+      const ok = await setTurmaArchived(teacherManagingTurmaData, arquivar);
+      if (ok && arquivar) goBackTeacher();
+    });
 
     async function deleteAllDocsIn(collectionRef) {
       const snap = await getDocs(collectionRef);
@@ -4170,8 +4362,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherCodeBar.classList.toggle("hidden", !show);
       if (!show) return;
       const active = isCodeActive(selectedTurmaData);
+      const expira = codeExpiresAtMillis(selectedTurmaData);
       teacherCodeBarText.textContent = active
-        ? `Código ${selectedTurmaData.codigoDoDia} · válido até ${formatTimeOfDay(codeDefinedAtMillis(selectedTurmaData) + codeValidityMs(selectedTurmaData))}`
+        ? `Código ${selectedTurmaData.codigoDoDia} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
         : "Nenhum código ativo: os alunos não conseguem marcar presença.";
       btnBarEndCode.classList.toggle("hidden", !active);
       btnBarNewCode.classList.toggle("hidden", active);
@@ -4353,10 +4546,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!turmaId || turmaId === selectedTurmaId) return;
       try {
         const snap = await getDoc(doc(db, "turmas", turmaId));
-        if (!snap.exists()) {
+        if (!snap.exists() || snap.data().arquivada) {
           setTurmaHash(null);
           showView("turma-select");
-          showToast("error", "Essa turma não existe mais. Escolha sua turma na lista.");
+          showToast("error", snap.exists() ? "Essa turma foi arquivada pelo professor. Escolha sua turma na lista." : "Essa turma não existe mais. Escolha sua turma na lista.");
           return;
         }
         enterTurma(turmaId);
@@ -4511,11 +4704,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Depois de gerar/salvar um código: mostra o código bem grande, para
     // mostrar a tela aos alunos ou projetar.
     let codeDisplayTurmaId = null;
+    let codeDisplayExpiresAt = 0;
+
+    function updateCodeDisplayValidity() {
+      codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(codeDisplayExpiresAt)} · expira em ${formatRemaining(codeDisplayExpiresAt - Date.now())}`;
+    }
+
     function showCodeDisplay(turma, code, minutes) {
       codeDisplayTurmaId = turma ? turma.id : null;
       codeDisplayTurma.textContent = (turma && turma.nome) || "";
       codeDisplayValue.textContent = code;
-      codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(Date.now() + minutes * 60 * 1000)} (${formatDurationLabel(minutes)})`;
+      codeDisplayExpiresAt = Date.now() + minutes * 60 * 1000;
+      updateCodeDisplayValidity();
       codeDisplayBackdrop.classList.remove("hidden");
       codeDisplayBackdrop.setAttribute("aria-hidden", "false");
       if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLink(codeDisplayTurmaId), 3);
@@ -4530,6 +4730,17 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     document.getElementById("btn-close-code-display").addEventListener("click", closeCodeDisplay);
+    // Tempo restante sempre atualizado (janela do código e cartões das turmas)
+    setInterval(() => {
+      if (!codeDisplayBackdrop.classList.contains("hidden")) updateCodeDisplayValidity();
+      let algumExpirou = false;
+      document.querySelectorAll("#teacher-turmas-list [data-expira]").forEach((el) => {
+        const restante = Number(el.dataset.expira) - Date.now();
+        if (restante <= 0) algumExpirou = true;
+        el.textContent = `Código ${el.dataset.codigo} · expira em ${formatRemaining(restante)} (${formatTimeOfDay(Number(el.dataset.expira))})`;
+      });
+      if (algumExpirou) renderFilteredTeacherTurmasRows();
+    }, 30000);
     document.getElementById("code-display-qr").addEventListener("click", () => {
       const turma = codeDisplayTurmaId && allTeacherTurmas.find((t) => t.id === codeDisplayTurmaId);
       if (turma) showTurmaQr(turma);
