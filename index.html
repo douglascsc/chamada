@@ -521,20 +521,23 @@
       <button id="btn-teacher-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar
       </button>
-      <button id="btn-sign-out" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
-       <i data-lucide="log-out" class="h-3.5 w-3.5" aria-hidden="true"></i> Sair
-      </button>
+      <div class="flex items-center gap-2">
+       <button id="btn-open-more-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" aria-label="Mais opções">
+        <i data-lucide="settings" class="h-3.5 w-3.5" aria-hidden="true"></i> Opções
+       </button>
+       <button id="btn-sign-out" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
+        <i data-lucide="log-out" class="h-3.5 w-3.5" aria-hidden="true"></i> Sair
+       </button>
+      </div>
      </div>
      <h2 class="mt-4 text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Área do professor</h2>
      <p class="mt-1 text-sm text-slate-500">Conectado como <strong id="teacher-account-email">—</strong></p>
 
-     <div class="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#D7E9D3] bg-[#F7FBF6] px-4 py-3 text-xs text-slate-600">
-      <div class="flex items-start gap-2">
-       <i data-lucide="info" aria-hidden="true" class="mt-0.5 h-4 w-4 shrink-0 text-[#2B7A40]"></i>
-       <span>Este sistema foi criado para <strong>facilitar</strong> o professor e não substitui os sistemas institucionais. A chamada deve ser registrada normalmente no SUAP — use os dados daqui como apoio, sempre validando antes de lançar no SUAP.</span>
-      </div>
-      <button id="btn-open-terms" type="button" class="action-button focus-ring shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]">📖 Avisos importantes — leia antes de usar</button>
-     </div>
+     <p class="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+      <i data-lucide="info" aria-hidden="true" class="h-3.5 w-3.5 shrink-0 text-[#2B7A40]"></i>
+      <span>Apoio ao professor — não substitui o SUAP.</span>
+      <button id="btn-open-terms" type="button" class="focus-ring rounded font-semibold text-[#2B7A40] underline hover:text-[#235f32]">📖 Avisos importantes</button>
+     </p>
 
      <div id="teacher-dashboard-message" class="notice mt-4 hidden" role="status" aria-live="polite">
       <i id="teacher-dashboard-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="teacher-dashboard-message-text"></span>
@@ -551,150 +554,6 @@
      </section>
 
      <div id="teacher-dashboard-content" class="hidden">
-     <details class="group glass-surface reveal rounded-2xl mt-5">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
-      </summary>
-      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <div class="border-t border-slate-200 pt-5">
-        <h4 class="font-bold text-[var(--ink)]">Meu nome</h4>
-        <p class="mt-1 text-sm text-slate-500">É esse nome que aparece para os alunos nas turmas que você criar (em vez do seu e-mail).</p>
-        <div class="mt-3 flex flex-wrap gap-2">
-         <input id="teacher-display-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Ex: Douglas Camargo">
-         <button id="btn-save-display-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nome</button>
-        </div>
-        <p id="display-name-status" class="mt-1 text-xs"></p>
-       </div>
-
-       <div class="mt-6 border-t border-slate-200 pt-5">
-        <h4 class="font-bold text-[var(--ink)]">Trocar senha</h4>
-        <div class="mt-3 grid max-w-sm gap-3">
-         <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-password-input">Nova senha</label>
-          <input id="new-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
-         </div>
-         <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700" for="confirm-password-input">Confirmar nova senha</label>
-          <input id="confirm-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
-         </div>
-         <div>
-          <button id="btn-change-password" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nova senha</button>
-         </div>
-         <p id="change-password-status" class="text-xs"></p>
-        </div>
-       </div>
-      </div>
-     </details>
-
-     <details id="admin-panel-section" class="hidden group glass-surface reveal rounded-2xl mt-5 border-2 border-[#CFE6C8]">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — criar professor</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
-      </summary>
-      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <p class="text-sm text-slate-500">Cria uma conta de professor direto por aqui, sem precisar abrir o Firebase Console. A pessoa recebe um e-mail para definir a própria senha — nunca digite uma senha por ela.</p>
-       <div class="mt-3 grid max-w-sm gap-3">
-        <div>
-         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
-         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Juliane Moura">
-        </div>
-        <div>
-         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
-         <input id="admin-new-professor-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
-        </div>
-        <div>
-         <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
-        </div>
-        <p id="create-professor-status" class="text-xs"></p>
-       </div>
-      </div>
-     </details>
-
-     <details class="group glass-surface reveal rounded-2xl mt-5">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Nova turma</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
-      </summary>
-      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <div class="grid gap-3">
-        <div>
-         <label class="mb-1 block text-sm font-semibold text-slate-700">Nome da turma</label>
-         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_0.8fr_1.5fr]">
-          <div>
-           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-turma">Turma</label>
-           <input id="new-turma-turma" class="text-field" type="text" placeholder="Ex: INF2M">
-          </div>
-          <div>
-           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-ano">Ano</label>
-           <input id="new-turma-ano" class="text-field" type="text" inputmode="numeric" maxlength="9" placeholder="Ex: 2026">
-          </div>
-          <div>
-           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-disciplina">Disciplina</label>
-           <input id="new-turma-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
-          </div>
-         </div>
-         <p id="new-turma-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
-        </div>
-        <div>
-         <div class="flex flex-wrap items-center justify-between gap-2">
-          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-turma-alunos">Alunos (opcional)</label>
-          <button id="btn-suap-tip" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]" aria-expanded="false" aria-controls="suap-tip-box">💡 Como obter a lista de alunos</button>
-         </div>
-
-         <div id="suap-tip-box" class="hidden mt-1 mb-3 rounded-xl border border-[#D7E9D3] bg-[#F7FBF6] p-4 text-sm text-slate-700">
-          <h5 class="font-bold text-[var(--ink)]">Como obter a lista de alunos pelo SUAP</h5>
-          <ol class="mt-2 list-decimal list-inside space-y-1.5">
-           <li>Acesse o SUAP.</li>
-           <li>No menu, acesse <strong>Ensino → Turmas e Diários → Meus Diários</strong>.</li>
-           <li>Localize e acesse a turma desejada.</li>
-           <li>Selecione a opção <strong>Imprimir Relação de Alunos</strong>.</li>
-           <li>Salve o arquivo gerado em PDF.</li>
-          </ol>
-          <div id="suap-tip-ai-section">
-           <ol class="mt-2 list-decimal list-inside space-y-1.5" start="6">
-            <li>Envie o PDF para um assistente de IA (ex: ChatGPT).</li>
-            <li>Use o seguinte prompt:</li>
-           </ol>
-           <div class="mt-2 flex items-center justify-between gap-2">
-            <span class="text-xs font-semibold text-slate-500">Prompt para colar na IA</span>
-            <button id="btn-copy-suap-prompt" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]">📋 Copiar prompt</button>
-           </div>
-           <pre id="suap-prompt-text" class="mt-1 whitespace-pre-wrap rounded-lg border border-[#D7E9D3] bg-white px-3 py-2 text-xs text-slate-600 font-mono">Liste exclusivamente os alunos da turma.
-Retorne somente os nomes completos, com um aluno por linha.
-
-Regras obrigatórias:
-- Não use numeração.
-- Não use marcadores (-, •, etc.).
-- Não use aspas.
-- Não use vírgulas ou ponto e vírgula para separar os nomes.
-- Não inclua matrícula, e-mail, curso, turma ou qualquer outra informação.
-- Não escreva títulos, introduções ou explicações.
-- Não coloque texto antes ou depois da lista.
-- Preserve exatamente a grafia dos nomes, incluindo acentos, cedilha e sobrenomes.
-- Não altere, abrevie, corrija ou reordene os nomes.
-- Cada linha deve conter um único nome de aluno.
-
-Formato esperado:
-Aluno 1
-Aluno 2
-Aluno 3
-
-A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicional.</pre>
-           <p class="mt-3 text-xs text-slate-500">Copie a lista gerada pela IA e cole no campo "Alunos" abaixo.</p>
-          </div>
-         </div>
-
-         <textarea id="new-turma-alunos" class="text-field" rows="4" placeholder="Cole os nomes, um por linha (opcional — dá para adicionar depois)"></textarea>
-         <button id="btn-fill-example" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Preencher com lista de exemplo (30 alunos)</button>
-        </div>
-        <div>
-         <button id="btn-create-turma" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Criar turma</button>
-        </div>
-       </div>
-      </div>
-     </details>
-
      <section class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <div class="flex flex-wrap items-center justify-between gap-2">
        <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
@@ -705,7 +564,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
        <div id="teacher-turmas-professor-chips" class="flex flex-wrap gap-2"></div>
       </div>
       <div id="teacher-turmas-list" class="mt-3 flex flex-col gap-2"></div>
-      <p id="teacher-turmas-empty" class="hidden mt-2 text-sm text-slate-500">Nenhuma turma cadastrada ainda.</p>
+      <div id="teacher-turmas-empty" class="hidden mt-2">
+       <p class="text-sm text-slate-500">Nenhuma turma cadastrada ainda.</p>
+       <button id="btn-empty-new-turma" class="action-button focus-ring mt-3 rounded-xl px-4 py-3 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">+ Criar primeira turma</button>
+      </div>
      </section>
 
      <section id="teacher-manage-panel" class="hidden glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
@@ -797,6 +659,184 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
        </div>
       </div>
      </section>
+
+     <details id="more-options" class="group/more mt-5">
+      <summary class="glass-surface flex cursor-pointer list-none items-center justify-between gap-2 rounded-2xl p-5 sm:p-6 focus-ring">
+       <span class="min-w-0">
+        <span class="block text-lg font-bold text-[var(--ink)]">⚙️ Mais opções</span>
+        <span class="block text-xs text-slate-500">Nova turma, minha conta, atalho no celular<span id="more-options-admin-hint" class="hidden">, painel admin</span></span>
+       </span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open/more:rotate-180"></i>
+      </summary>
+      <div class="pl-3 sm:pl-5">
+     <details class="group glass-surface rounded-2xl mt-5">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <div class="border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Meu nome</h4>
+        <p class="mt-1 text-sm text-slate-500">É esse nome que aparece para os alunos nas turmas que você criar (em vez do seu e-mail).</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+         <input id="teacher-display-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Ex: Douglas Camargo">
+         <button id="btn-save-display-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nome</button>
+        </div>
+        <p id="display-name-status" class="mt-1 text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Trocar senha</h4>
+        <div class="mt-3 grid max-w-sm gap-3">
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-password-input">Nova senha</label>
+          <input id="new-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+         </div>
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="confirm-password-input">Confirmar nova senha</label>
+          <input id="confirm-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+         </div>
+         <div>
+          <button id="btn-change-password" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nova senha</button>
+         </div>
+         <p id="change-password-status" class="text-xs"></p>
+        </div>
+       </div>
+      </div>
+     </details>
+
+     <details id="admin-panel-section" class="hidden group glass-surface rounded-2xl mt-5 border-2 border-[#CFE6C8]">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — criar professor</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <p class="text-sm text-slate-500">Cria uma conta de professor direto por aqui, sem precisar abrir o Firebase Console. A pessoa recebe um e-mail para definir a própria senha — nunca digite uma senha por ela.</p>
+       <div class="mt-3 grid max-w-sm gap-3">
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
+         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Juliane Moura">
+        </div>
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
+         <input id="admin-new-professor-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
+        </div>
+        <div>
+         <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
+        </div>
+        <p id="create-professor-status" class="text-xs"></p>
+       </div>
+      </div>
+     </details>
+
+     <details id="new-turma-details" class="group glass-surface rounded-2xl mt-5">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Nova turma</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <div class="grid gap-3">
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700">Nome da turma</label>
+         <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_0.8fr_1.5fr]">
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-turma">Turma</label>
+           <input id="new-turma-turma" class="text-field" type="text" placeholder="Ex: INF2M">
+          </div>
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-ano">Ano</label>
+           <input id="new-turma-ano" class="text-field" type="text" inputmode="numeric" maxlength="9" placeholder="Ex: 2026">
+          </div>
+          <div>
+           <label class="mb-1 block text-xs font-semibold text-slate-500" for="new-turma-disciplina">Disciplina</label>
+           <input id="new-turma-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
+          </div>
+         </div>
+         <p id="new-turma-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
+        </div>
+        <div>
+         <div class="flex flex-wrap items-center justify-between gap-2">
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-turma-alunos">Alunos (opcional)</label>
+          <button id="btn-suap-tip" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]" aria-expanded="false" aria-controls="suap-tip-box">💡 Como obter a lista de alunos</button>
+         </div>
+
+         <div id="suap-tip-box" class="hidden mt-1 mb-3 rounded-xl border border-[#D7E9D3] bg-[#F7FBF6] p-4 text-sm text-slate-700">
+          <h5 class="font-bold text-[var(--ink)]">Como obter a lista de alunos pelo SUAP</h5>
+          <ol class="mt-2 list-decimal list-inside space-y-1.5">
+           <li>Acesse o SUAP.</li>
+           <li>No menu, acesse <strong>Ensino → Turmas e Diários → Meus Diários</strong>.</li>
+           <li>Localize e acesse a turma desejada.</li>
+           <li>Selecione a opção <strong>Imprimir Relação de Alunos</strong>.</li>
+           <li>Salve o arquivo gerado em PDF.</li>
+          </ol>
+          <div id="suap-tip-ai-section">
+           <ol class="mt-2 list-decimal list-inside space-y-1.5" start="6">
+            <li>Envie o PDF para um assistente de IA (ex: ChatGPT).</li>
+            <li>Use o seguinte prompt:</li>
+           </ol>
+           <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-slate-500">Prompt para colar na IA</span>
+            <button id="btn-copy-suap-prompt" type="button" class="action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]">📋 Copiar prompt</button>
+           </div>
+           <pre id="suap-prompt-text" class="mt-1 whitespace-pre-wrap rounded-lg border border-[#D7E9D3] bg-white px-3 py-2 text-xs text-slate-600 font-mono">Liste exclusivamente os alunos da turma.
+Retorne somente os nomes completos, com um aluno por linha.
+
+Regras obrigatórias:
+- Não use numeração.
+- Não use marcadores (-, •, etc.).
+- Não use aspas.
+- Não use vírgulas ou ponto e vírgula para separar os nomes.
+- Não inclua matrícula, e-mail, curso, turma ou qualquer outra informação.
+- Não escreva títulos, introduções ou explicações.
+- Não coloque texto antes ou depois da lista.
+- Preserve exatamente a grafia dos nomes, incluindo acentos, cedilha e sobrenomes.
+- Não altere, abrevie, corrija ou reordene os nomes.
+- Cada linha deve conter um único nome de aluno.
+
+Formato esperado:
+Aluno 1
+Aluno 2
+Aluno 3
+
+A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicional.</pre>
+           <p class="mt-3 text-xs text-slate-500">Copie a lista gerada pela IA e cole no campo "Alunos" abaixo.</p>
+          </div>
+         </div>
+
+         <textarea id="new-turma-alunos" class="text-field" rows="4" placeholder="Cole os nomes, um por linha (opcional — dá para adicionar depois)"></textarea>
+         <button id="btn-fill-example" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Preencher com lista de exemplo (30 alunos)</button>
+        </div>
+        <div>
+         <button id="btn-create-turma" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Criar turma</button>
+        </div>
+       </div>
+      </div>
+     </details>
+
+     <details id="shortcut-details" class="group glass-surface rounded-2xl mt-5">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">📱 Atalho no celular</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <div class="border-t border-slate-200 pt-5 text-sm text-slate-700 leading-relaxed">
+        <p>Crie um ícone na tela inicial do celular que abre <strong>direto na Área do professor</strong>, sem passar pela tela dos alunos.</p>
+        <ol class="mt-3 list-decimal list-inside space-y-1.5">
+         <li>Com esta página aberta (Área do professor), abra o menu do navegador.</li>
+         <li><strong>Android (Chrome):</strong> toque em <strong>⋮</strong> → <strong>Adicionar à tela inicial</strong>.</li>
+         <li><strong>iPhone (Safari):</strong> toque em <strong>Compartilhar</strong> (quadrado com seta) → <strong>Adicionar à Tela de Início</strong>.</li>
+        </ol>
+        <p class="mt-3">Ou use este endereço como favorito:</p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+         <code id="teacher-shortcut-url" class="min-w-0 break-all rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700"></code>
+         <button id="btn-copy-teacher-shortcut" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar endereço</button>
+        </div>
+        <p class="mt-3 text-xs text-slate-500">Dica: no login, marque <strong>“Manter conectado neste aparelho”</strong> (só no seu celular pessoal) para o atalho já abrir nas suas turmas, sem pedir senha.</p>
+       </div>
+      </div>
+     </details>
+      </div>
+     </details>
      </div>
     </section>
 
@@ -846,6 +886,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      <input id="teacher-gate-email" class="text-field" type="email" placeholder="seu-email@ifsul.edu.br" autocomplete="username">
      <label class="mb-2 mt-3 block text-sm font-semibold text-slate-700" for="teacher-gate-password">Senha</label>
      <input id="teacher-gate-password" class="text-field" type="password" placeholder="Sua senha" autocomplete="current-password">
+     <label id="teacher-gate-remember-wrap" class="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+      <input id="teacher-gate-remember" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-[#2B7A40]">
+      <span><span class="font-semibold">Manter conectado neste aparelho</span>
+       <span class="block text-xs text-slate-500">Só no seu celular pessoal. Em computador compartilhado, deixe desmarcado — aí o login termina ao fechar a aba.</span></span>
+     </label>
      <div id="teacher-gate-error" class="notice notice-error mt-3 hidden" role="alert">
       <i data-lucide="circle-alert" aria-hidden="true" class="h-5 w-5 shrink-0"></i> <span id="teacher-gate-error-text">Senha incorreta. Tente novamente.</span>
      </div>
@@ -917,6 +962,17 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <div class="mt-5 flex justify-end">
      <button id="btn-close-terms" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Entendi</button>
     </div>
+   </section>
+  </div>
+
+  <!-- Modal: código do dia em tamanho grande, para mostrar aos alunos -->
+  <div id="code-display-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="code-display-label">
+    <p id="code-display-turma" class="text-sm font-semibold text-slate-500"></p>
+    <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">Código do dia</p>
+    <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(4rem, 24vw, 7.5rem); line-height: 1; letter-spacing: .12em;">—</p>
+    <p id="code-display-validity" class="mt-4 text-base font-semibold text-emerald-700"></p>
+    <button id="btn-close-code-display" class="action-button focus-ring mt-6 w-full rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
    </section>
   </div>
 
@@ -994,7 +1050,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       onSnapshot, query, where, orderBy, getDocs, getDoc, writeBatch, serverTimestamp, Timestamp, Bytes
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import {
-      getAuth, setPersistence, browserSessionPersistence, onAuthStateChanged,
+      getAuth, setPersistence, browserSessionPersistence, browserLocalPersistence, onAuthStateChanged,
       signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updatePassword,
       reauthenticateWithCredential, EmailAuthProvider, updateProfile,
       createUserWithEmailAndPassword
@@ -1051,7 +1107,33 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     // Encerra a sessão do professor ao fechar a aba (mais seguro em
     // computador compartilhado da sala de aula).
-    setPersistence(auth, browserSessionPersistence).catch(() => {});
+    // Exceção opcional: "Manter conectado neste aparelho" no login grava a
+    // sessão no aparelho (só até o professor tocar em "Sair"). Sem essa marca,
+    // continua como sempre foi: a sessão termina ao fechar a aba.
+    const KEEP_SIGNED_IN_KEY = "chamada:manterConectado";
+    function readKeepSignedIn() {
+      try { return localStorage.getItem(KEEP_SIGNED_IN_KEY) === "1"; } catch (error) { return false; }
+    }
+    function writeKeepSignedIn(value) {
+      try {
+        if (value) localStorage.setItem(KEEP_SIGNED_IN_KEY, "1");
+        else localStorage.removeItem(KEEP_SIGNED_IN_KEY);
+      } catch (error) {
+        // sem localStorage (ex.: aba anônima restrita): fica só na sessão
+      }
+    }
+    if (!readKeepSignedIn()) {
+      setPersistence(auth, browserSessionPersistence).catch(() => {});
+    }
+
+    // Atalho: <endereço do site>#professor abre direto na Área do professor
+    // (ou no login, se ninguém estiver conectado).
+    const TEACHER_AREA_HASH = "#professor";
+    let openTeacherAreaOnLoad = location.hash === TEACHER_AREA_HASH;
+    function setTeacherAreaHash(active) {
+      const url = location.pathname + location.search + (active ? TEACHER_AREA_HASH : "");
+      if (location.pathname + location.search + location.hash !== url) history.replaceState(null, "", url);
+    }
 
     const TIME_ZONE = "America/Sao_Paulo";
     const DEFAULT_CODE_DURATION_MIN = 180; // turmas antigas, sem codigoDuracaoMin salvo, continuam valendo 3h
@@ -2147,6 +2229,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (event.key === "Escape" && !studentInfoModalBackdrop.classList.contains("hidden")) {
         closeStudentInfoModal();
       }
+      if (event.key === "Escape" && !codeDisplayBackdrop.classList.contains("hidden")) {
+        closeCodeDisplay();
+      }
       if (event.key === "Escape" && !atrasoViewerBackdrop.classList.contains("hidden")) {
         closeAtrasoViewer();
       } else if (event.key === "Escape" && !atrasosModalBackdrop.classList.contains("hidden")) {
@@ -2174,8 +2259,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
+    const teacherGateRememberWrap = document.getElementById("teacher-gate-remember-wrap");
+    const teacherGateRemember = document.getElementById("teacher-gate-remember");
+
     function openTeacherGateModal() {
       if (!teacherGateEmail.value) teacherGateEmail.value = TEACHER_EMAIL;
+      // Confirmar senha para desfazer presença não muda como a sessão é guardada
+      teacherGateRememberWrap.classList.toggle("hidden", teacherGateIntent === "undo");
+      teacherGateRemember.checked = readKeepSignedIn();
       teacherGatePassword.value = "";
       teacherGateError.classList.add("hidden");
       teacherGateInfo.classList.add("hidden");
@@ -2215,7 +2306,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         ? "Todas as turmas (todos os professores)"
         : "Turmas cadastradas";
       adminPanelSection.classList.toggle("hidden", !isMasterAccount);
+      moreOptionsAdminHint.classList.toggle("hidden", !isMasterAccount);
       updateSuapTipVisibility();
+      setTeacherAreaHash(true);
+      teacherShortcutUrl.textContent = location.origin + location.pathname + TEACHER_AREA_HASH;
 
       const hasName = Boolean(auth.currentUser && auth.currentUser.displayName);
       teacherDisplayNameInput.value = auth.currentUser ? (auth.currentUser.displayName || "") : "";
@@ -2242,7 +2336,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherGateIntent = "dashboard";
       openTeacherGateModal();
     });
-    cancelTeacherGate.addEventListener("click", closeTeacherGateModal);
+    cancelTeacherGate.addEventListener("click", () => {
+      closeTeacherGateModal();
+      if (viewTeacherDashboard.classList.contains("hidden")) setTeacherAreaHash(false);
+    });
     teacherGateModalBackdrop.addEventListener("click", (event) => {
       if (event.target === teacherGateModalBackdrop) closeTeacherGateModal();
     });
@@ -2278,8 +2375,19 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherGateError.classList.add("hidden");
       teacherGateSubmit.disabled = true;
 
+      const rememberOffered = teacherGateIntent !== "undo";
+      const keepSignedIn = rememberOffered && teacherGateRemember.checked;
+      if (rememberOffered) {
+        try {
+          await setPersistence(auth, keepSignedIn ? browserLocalPersistence : browserSessionPersistence);
+        } catch (error) {
+          // se não der para trocar, segue com a persistência atual
+        }
+      }
+
       try {
         await signInWithEmailAndPassword(auth, teacherGateEmail.value.trim(), teacherGatePassword.value);
+        if (rememberOffered) writeKeepSignedIn(keepSignedIn);
       } catch (error) {
         teacherGateErrorText.textContent = authErrorMessage(error);
         teacherGateError.classList.remove("hidden");
@@ -2319,16 +2427,31 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         unsubscribeMyTurmasList();
         closeAtrasoViewer();
         closeAtrasosModal();
+        closeCodeDisplay();
         if (!viewTeacherDashboard.classList.contains("hidden")) {
           stopManagingTurma();
           showView("turma-select");
+          setTeacherAreaHash(false);
         }
       } else {
         startAttendanceSubscriptionsIfNeeded();
       }
+
+      // Aberto pelo atalho (#professor): vai direto para as turmas, ou pede login
+      if (openTeacherAreaOnLoad) {
+        openTeacherAreaOnLoad = false;
+        if (isTeacherAuthenticated) {
+          enterTeacherDashboard();
+        } else {
+          teacherGateIntent = "dashboard";
+          openTeacherGateModal();
+        }
+      }
     });
 
     btnSignOut.addEventListener("click", async () => {
+      writeKeepSignedIn(false); // "Sair" também encerra o "manter conectado"
+      setTeacherAreaHash(false);
       try {
         await signOut(auth);
       } catch (error) {
@@ -2465,6 +2588,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       stopManagingTurma();
       unsubscribeMyTurmasList();
       showView("turma-select");
+      setTeacherAreaHash(false);
     });
 
     // ---------------------------------------------------------------------
@@ -2580,6 +2704,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
               codigoDuracaoMin: minutes
             });
             showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
+            showCodeDisplay(turma.nome, code, minutes);
           } catch (error) {
             showTeacherMessage("error", "Não foi possível gerar o código. Tente novamente.");
           } finally {
@@ -3083,6 +3208,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         });
         manageCodeStatus.textContent = `Código salvo! A turma já pode usá-lo pelas próximas ${formatDurationLabel(minutes)}.`;
         manageCodeStatus.className = "mt-1 text-xs text-emerald-600 font-semibold";
+        showCodeDisplay(teacherManagingTurmaData && teacherManagingTurmaData.nome, code, minutes);
       } catch (error) {
         manageCodeStatus.textContent = "Não foi possível salvar o código. Tente novamente.";
         manageCodeStatus.className = "mt-1 text-xs text-red-600 font-semibold";
@@ -3179,6 +3305,62 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     btnExportCsv.addEventListener("click", exportAttendanceCsv);
+
+    // ---------------------------------------------------------------------
+    // Mais opções (⚙️), atalho no celular e código grande
+    // ---------------------------------------------------------------------
+    const moreOptions = document.getElementById("more-options");
+    const moreOptionsAdminHint = document.getElementById("more-options-admin-hint");
+    const newTurmaDetails = document.getElementById("new-turma-details");
+    const teacherShortcutUrl = document.getElementById("teacher-shortcut-url");
+    const btnCopyTeacherShortcut = document.getElementById("btn-copy-teacher-shortcut");
+    const codeDisplayBackdrop = document.getElementById("code-display-backdrop");
+    const codeDisplayTurma = document.getElementById("code-display-turma");
+    const codeDisplayValue = document.getElementById("code-display-value");
+    const codeDisplayValidity = document.getElementById("code-display-validity");
+
+    function openMoreOptions(section) {
+      moreOptions.open = true;
+      if (section) section.open = true;
+      (section || moreOptions).scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    document.getElementById("btn-open-more-options").addEventListener("click", () => openMoreOptions(null));
+    document.getElementById("btn-empty-new-turma").addEventListener("click", () => openMoreOptions(newTurmaDetails));
+
+    btnCopyTeacherShortcut.addEventListener("click", async () => {
+      const original = btnCopyTeacherShortcut.textContent;
+      try {
+        await navigator.clipboard.writeText(teacherShortcutUrl.textContent);
+        btnCopyTeacherShortcut.textContent = "✅ Copiado!";
+      } catch (error) {
+        btnCopyTeacherShortcut.textContent = "Não foi possível copiar";
+      }
+      setTimeout(() => { btnCopyTeacherShortcut.textContent = original; }, 1800);
+    });
+
+    // Depois de gerar/salvar um código: mostra o código bem grande, para
+    // mostrar a tela aos alunos ou projetar.
+    function showCodeDisplay(turmaNome, code, minutes) {
+      codeDisplayTurma.textContent = turmaNome || "";
+      codeDisplayValue.textContent = code;
+      codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(Date.now() + minutes * 60 * 1000)} (${formatDurationLabel(minutes)})`;
+      codeDisplayBackdrop.classList.remove("hidden");
+      codeDisplayBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeCodeDisplay() {
+      if (codeDisplayBackdrop.classList.contains("hidden")) return;
+      codeDisplayBackdrop.classList.add("hidden");
+      codeDisplayBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+    }
+
+    document.getElementById("btn-close-code-display").addEventListener("click", closeCodeDisplay);
+    codeDisplayBackdrop.addEventListener("click", (event) => {
+      if (event.target === codeDisplayBackdrop) closeCodeDisplay();
+    });
 
     // ---------------------------------------------------------------------
     // Atrasos: fotos de comprovantes/autorizações de atraso
