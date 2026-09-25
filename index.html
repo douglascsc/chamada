@@ -43,6 +43,9 @@
       height: auto;
       min-height: auto;
       overflow: visible;
+      /* o círculo decorativo do canto (accent-disc) passa da borda direita;
+         sem isso, no celular a página fica mais larga que a tela */
+      overflow-x: clip;
     }
 
     main {
