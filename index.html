@@ -321,6 +321,25 @@
       animation: modal-in .24s ease both;
     }
 
+    .teacher-modal.atrasos-modal { width: min(100%, 760px); }
+
+    .atraso-thumb {
+      aspect-ratio: 3 / 4;
+      width: 100%;
+      object-fit: cover;
+      background: #f1f5f9;
+    }
+
+    .atraso-viewer-img {
+      display: block;
+      max-width: 100%;
+      max-height: calc(65 * min(var(--vh, 1vh), 1vh));
+      margin: 0 auto;
+      object-fit: contain;
+      border-radius: 14px;
+      background: #f1f5f9;
+    }
+
     .reveal {
       opacity: 0;
       transform: translateY(16px);
@@ -674,7 +693,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      </details>
 
      <section class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
-      <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+       <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
+       <button id="btn-open-all-atrasos" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">📷 Ver todos os atrasos</button>
+      </div>
       <div id="teacher-turmas-professor-filter" class="hidden mt-3 flex flex-wrap items-center gap-2">
        <span class="text-xs font-semibold text-slate-500">Filtrar por professor:</span>
        <div id="teacher-turmas-professor-chips" class="flex flex-wrap gap-2"></div>
@@ -767,7 +789,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
        <div class="mt-6 rounded-2xl border border-red-200 bg-red-50/60 p-4">
         <h4 class="text-sm font-bold uppercase tracking-wider text-red-700">Zona de perigo</h4>
-        <p class="mt-1 text-sm text-red-800">Excluir a turma apaga também todos os alunos e todo o histórico de presenças dela. Essa ação não pode ser desfeita.</p>
+        <p class="mt-1 text-sm text-red-800">Excluir a turma apaga também todos os alunos, todo o histórico de presenças e todas as fotos de atrasos dela. Essa ação não pode ser desfeita.</p>
         <button id="btn-delete-turma" class="action-button focus-ring mt-3 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700" type="button">Excluir turma</button>
        </div>
       </div>
@@ -871,7 +893,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
      <div>
       <h3 class="font-bold text-[var(--ink)]">2. Dados pessoais tratados (LGPD)</h3>
-      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
+      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. As fotos de comprovantes de atraso que você guardar (botão "📷 Atrasos") também ficam lá, visíveis só para você (e para a conta master do sistema), e são apagadas automaticamente após 180 dias. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
      </div>
 
      <div>
@@ -895,11 +917,62 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    </section>
   </div>
 
+  <!-- Modal: fotos de comprovantes de atraso (de uma turma, ou de todas) -->
+  <div id="atrasos-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal atrasos-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="atrasos-modal-title">
+    <div class="flex items-start justify-between gap-3">
+     <div class="min-w-0">
+      <h2 id="atrasos-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Atrasos</h2>
+      <p class="mt-1 text-xs text-slate-500">Cada foto é apagada automaticamente 180 dias depois de enviada.</p>
+     </div>
+     <button id="btn-close-atrasos" class="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
+      <i data-lucide="x" class="h-5 w-5"></i>
+     </button>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+     <button id="btn-add-atraso" class="action-button focus-ring flex items-center gap-2 rounded-xl px-4 py-3 bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold" type="button">
+      <i data-lucide="camera" aria-hidden="true" class="h-4 w-4"></i> <span>Adicionar foto</span>
+     </button>
+     <select id="atrasos-turma-filter" class="text-field hidden" aria-label="Filtrar por turma"></select>
+     <input id="atraso-file-input" class="hidden" type="file" accept="image/*" multiple>
+    </div>
+
+    <p id="atrasos-status" class="mt-3 text-sm" role="status" aria-live="polite"></p>
+    <p id="atrasos-empty" class="hidden mt-3 text-sm text-slate-500">Nenhuma foto guardada.</p>
+    <div id="atrasos-list" class="mt-3 flex flex-col gap-5"></div>
+   </section>
+  </div>
+
+  <!-- Modal: visualizar uma foto de atraso em tamanho maior -->
+  <div id="atraso-viewer-backdrop" class="modal-backdrop hidden" aria-hidden="true" style="z-index: 60;">
+   <section class="teacher-modal atrasos-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="atraso-viewer-title">
+    <div class="flex items-start justify-between gap-3">
+     <div class="min-w-0">
+      <h2 id="atraso-viewer-title" class="text-lg font-extrabold text-[var(--ink)]">—</h2>
+      <p id="atraso-viewer-subtitle" class="mt-0.5 text-xs text-slate-500"></p>
+     </div>
+     <button id="btn-close-atraso-viewer" class="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
+      <i data-lucide="x" class="h-5 w-5"></i>
+     </button>
+    </div>
+    <div class="mt-4">
+     <p id="atraso-viewer-status" class="py-10 text-center text-sm text-slate-500">Carregando…</p>
+     <img id="atraso-viewer-img" class="atraso-viewer-img hidden" alt="Foto do comprovante de atraso">
+    </div>
+    <div class="mt-4 flex flex-wrap justify-end gap-2">
+     <button id="btn-delete-atraso" class="action-button focus-ring rounded-xl px-4 py-3 bg-red-50 hover:bg-red-100 text-red-700 font-semibold" type="button">Excluir</button>
+     <button id="btn-download-atraso" class="action-button focus-ring rounded-xl px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold" type="button" disabled>Baixar</button>
+     <button id="btn-close-atraso-viewer-footer" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
+    </div>
+   </section>
+  </div>
+
   <script type="module">
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import {
       getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
-      onSnapshot, query, where, orderBy, getDocs, getDoc, writeBatch, serverTimestamp, Timestamp
+      onSnapshot, query, where, orderBy, getDocs, getDoc, writeBatch, serverTimestamp, Timestamp, Bytes
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import {
       getAuth, setPersistence, browserSessionPersistence, onAuthStateChanged,
@@ -964,6 +1037,17 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const TIME_ZONE = "America/Sao_Paulo";
     const DEFAULT_CODE_DURATION_MIN = 180; // turmas antigas, sem codigoDuracaoMin salvo, continuam valendo 3h
     const PRESENCA_RETENTION_MS = 72 * 60 * 60 * 1000; // presenças são apagadas automaticamente após 72h (TTL do Firestore)
+    const ATRASO_RETENTION_MS = 180 * 24 * 60 * 60 * 1000; // fotos de atraso são apagadas automaticamente após 180 dias
+
+    // Compressão das fotos de atraso (feita no navegador, antes do envio — a
+    // foto original nunca sai do aparelho). Priorizam ocupar pouco espaço no
+    // Firestore mantendo o comprovante legível.
+    const ATRASO_MAX_SIDE_PX = 1200;      // lado maior da foto guardada
+    const ATRASO_QUALITY = 0.6;           // qualidade WebP (ou JPEG, se o navegador não gerar WebP)
+    const ATRASO_TARGET_BYTES = 350 * 1024; // acima disso, reduz qualidade/tamanho automaticamente
+    const ATRASO_HARD_LIMIT_BYTES = 850 * 1024; // limite das regras do Firestore é 900 KB
+    const ATRASO_THUMB_SIDE_PX = 200;     // miniatura usada nas listas
+    const ATRASO_THUMB_QUALITY = 0.5;
 
     // Lista genérica usada apenas como atalho para testar rapidamente a
     // criação de uma turma (nenhum nome real de aluno fica no código-fonte).
@@ -1395,6 +1479,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const turmasSnap = await getDocs(myTurmasQuery());
         const now = Timestamp.now();
         for (const turmaDoc of turmasSnap.docs) {
+          await cleanupExpiredAtrasos(turmaDoc.id);
           const expiredQuery = query(
             collection(db, "turmas", turmaDoc.id, "presencas"),
             where("expiraEm", "<=", now)
@@ -1409,6 +1494,30 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         // limpeza é só uma conveniência de retenção; se falhar (ex: sem
         // permissão numa turma, ou instabilidade de rede), não deve travar
         // o uso normal do professor.
+      }
+    }
+
+    // Mesma ideia para as fotos de atraso: apaga (foto + miniatura) as que
+    // foram enviadas há mais de 180 dias. Roda junto com a limpeza das
+    // presenças, ao entrar na Área do professor.
+    async function cleanupExpiredAtrasos(turmaId) {
+      try {
+        const cutoff = Timestamp.fromMillis(Date.now() - ATRASO_RETENTION_MS);
+        const expiredSnap = await getDocs(query(
+          collection(db, "turmas", turmaId, "atrasos"),
+          where("criadoEm", "<=", cutoff)
+        ));
+        const docs = expiredSnap.docs;
+        for (let i = 0; i < docs.length; i += 200) {
+          const batch = writeBatch(db);
+          docs.slice(i, i + 200).forEach((d) => {
+            batch.delete(d.ref);
+            batch.delete(doc(db, "turmas", turmaId, "atrasosImg", d.id));
+          });
+          await batch.commit();
+        }
+      } catch (error) {
+        // conveniência de retenção: uma falha aqui não deve travar o professor
       }
     }
 
@@ -2019,6 +2128,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (event.key === "Escape" && !studentInfoModalBackdrop.classList.contains("hidden")) {
         closeStudentInfoModal();
       }
+      if (event.key === "Escape" && !atrasoViewerBackdrop.classList.contains("hidden")) {
+        closeAtrasoViewer();
+      } else if (event.key === "Escape" && !atrasosModalBackdrop.classList.contains("hidden")) {
+        closeAtrasosModal();
+      }
     });
 
     // ---------------------------------------------------------------------
@@ -2184,6 +2298,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!isTeacherAuthenticated) {
         setTeacherModeActive(false);
         unsubscribeMyTurmasList();
+        closeAtrasoViewer();
+        closeAtrasosModal();
         if (!viewTeacherDashboard.classList.contains("hidden")) {
           stopManagingTurma();
           showView("turma-select");
@@ -2462,8 +2578,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btn.textContent = "Gerenciar";
       btn.addEventListener("click", () => manageTurma(turma.id));
 
+      const btnAtrasos = document.createElement("button");
+      btnAtrasos.type = "button";
+      btnAtrasos.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+      btnAtrasos.textContent = "📷 Atrasos";
+      btnAtrasos.addEventListener("click", () => openAtrasosModal(turma));
+
       actions.appendChild(btnCode1h);
       actions.appendChild(btnCode3h);
+      actions.appendChild(btnAtrasos);
       actions.appendChild(btn);
       row.appendChild(info);
       row.appendChild(actions);
@@ -2769,7 +2892,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const nomeTurma = teacherManagingTurmaData.nome || "esta turma";
 
       const confirmado = confirm(
-        `Tem certeza que deseja excluir "${nomeTurma}"?\n\nIsso apaga TODOS os alunos e TODO o histórico de presenças dessa turma, para sempre. Essa ação não pode ser desfeita.`
+        `Tem certeza que deseja excluir "${nomeTurma}"?\n\nIsso apaga TODOS os alunos, TODO o histórico de presenças e TODAS as fotos de atrasos dessa turma, para sempre. Essa ação não pode ser desfeita.`
       );
       if (!confirmado) return;
 
@@ -2793,6 +2916,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
 
       try {
+        await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasosImg"));
+        await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasos"));
         await deleteAllDocsIn(collection(db, "turmas", turmaId, "presencas"));
         await deleteAllDocsIn(collection(db, "turmas", turmaId, "alunos"));
         await deleteDoc(doc(db, "turmas", turmaId));
@@ -3033,6 +3158,433 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     btnExportCsv.addEventListener("click", exportAttendanceCsv);
+
+    // ---------------------------------------------------------------------
+    // Atrasos: fotos de comprovantes/autorizações de atraso
+    // ---------------------------------------------------------------------
+    // Sem formulário: o professor só escolhe/tira a foto. Ela é comprimida no
+    // navegador e guardada no próprio Firestore (sem Firebase Storage, que
+    // exigiria o plano pago Blaze), em dois documentos com o mesmo ID:
+    //   turmas/{turmaId}/atrasos/{id}    → { criadoEm, thumb } (lista)
+    //   turmas/{turmaId}/atrasosImg/{id} → { img }             (foto inteira)
+    // Assim as listas baixam só miniaturas; a foto inteira só ao abrir.
+    const btnOpenAllAtrasos = document.getElementById("btn-open-all-atrasos");
+    const atrasosModalBackdrop = document.getElementById("atrasos-modal-backdrop");
+    const atrasosModalTitle = document.getElementById("atrasos-modal-title");
+    const btnCloseAtrasos = document.getElementById("btn-close-atrasos");
+    const btnAddAtraso = document.getElementById("btn-add-atraso");
+    const atrasoFileInput = document.getElementById("atraso-file-input");
+    const atrasosTurmaFilter = document.getElementById("atrasos-turma-filter");
+    const atrasosStatus = document.getElementById("atrasos-status");
+    const atrasosEmpty = document.getElementById("atrasos-empty");
+    const atrasosList = document.getElementById("atrasos-list");
+    const atrasoViewerBackdrop = document.getElementById("atraso-viewer-backdrop");
+    const atrasoViewerTitle = document.getElementById("atraso-viewer-title");
+    const atrasoViewerSubtitle = document.getElementById("atraso-viewer-subtitle");
+    const atrasoViewerStatus = document.getElementById("atraso-viewer-status");
+    const atrasoViewerImg = document.getElementById("atraso-viewer-img");
+    const btnDownloadAtraso = document.getElementById("btn-download-atraso");
+    const btnDeleteAtraso = document.getElementById("btn-delete-atraso");
+
+    let atrasosTurma = null; // turma aberta pelo botão "Atrasos"; null = "Ver todos os atrasos"
+    let atrasosItems = [];   // { id, turmaId, turmaNome, criadoEmMillis, thumb }
+    let atrasosThumbUrls = [];
+    let atrasosLoadToken = 0;
+    let atrasosUploading = false;
+    let atrasoViewerItem = null;
+    let atrasoViewerUrl = null;
+    let atrasoViewerBlob = null;
+    let atrasoViewerToken = 0;
+
+    function atrasoTurmaLabel(turma) {
+      const nome = turma.nome || "Turma sem nome";
+      if (isMasterAccount && auth.currentUser && turma.professorUid && turma.professorUid !== auth.currentUser.uid) {
+        return `${nome} (${professorLabel(turma)})`;
+      }
+      return nome;
+    }
+
+    function setAtrasosStatus(type, text) {
+      atrasosStatus.className = `mt-3 text-sm ${type === "error" ? "text-red-700 font-semibold" : type === "success" ? "text-emerald-700 font-semibold" : "text-slate-500"}`;
+      atrasosStatus.textContent = text || "";
+    }
+
+    // --- Compressão -------------------------------------------------------
+    async function loadAtrasoImageSource(file) {
+      if (typeof createImageBitmap === "function") {
+        try {
+          return await createImageBitmap(file, { imageOrientation: "from-image" });
+        } catch (error) {
+          // navegador sem suporte à opção (ou ao formato): tenta via <img>
+        }
+      }
+      const url = URL.createObjectURL(file);
+      try {
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+        return img;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+      return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+    }
+
+    // Redesenha a foto num canvas (isso descarta todos os metadados EXIF,
+    // inclusive localização GPS) e codifica em WebP; se o navegador não
+    // souber gerar WebP (alguns Safari), usa JPEG.
+    async function encodeAtrasoImage(source, maxSide, quality) {
+      const width = source.naturalWidth || source.width;
+      const height = source.naturalHeight || source.height;
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff"; // PNG com transparência vira fundo branco
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+      let blob = await canvasToBlob(canvas, "image/webp", quality);
+      if (!blob || blob.type !== "image/webp") {
+        blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      }
+      if (!blob) throw new Error("encode-failed");
+      return blob;
+    }
+
+    async function compressAtrasoImage(file) {
+      const source = await loadAtrasoImageSource(file);
+      try {
+        let maxSide = ATRASO_MAX_SIDE_PX;
+        let quality = ATRASO_QUALITY;
+        let img = await encodeAtrasoImage(source, maxSide, quality);
+        // Foto com muito detalhe: baixa um pouco a qualidade e, se ainda
+        // precisar, o tamanho — até ficar abaixo do alvo.
+        for (let attempt = 0; img.size > ATRASO_TARGET_BYTES && attempt < 6; attempt++) {
+          if (quality > 0.45) quality = Math.round((quality - 0.1) * 100) / 100;
+          else maxSide = Math.round(maxSide * 0.85);
+          img = await encodeAtrasoImage(source, maxSide, quality);
+        }
+        if (img.size > ATRASO_HARD_LIMIT_BYTES) throw new Error("too-large");
+        const thumb = await encodeAtrasoImage(source, ATRASO_THUMB_SIDE_PX, ATRASO_THUMB_QUALITY);
+        return { img, thumb };
+      } finally {
+        if (typeof source.close === "function") source.close();
+      }
+    }
+
+    function atrasoBytesToBlob(bytes) {
+      const data = bytes.toUint8Array();
+      const isWebp = data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46; // "RIFF"
+      return new Blob([data], { type: isWebp ? "image/webp" : "image/jpeg" });
+    }
+
+    // --- Lista ------------------------------------------------------------
+    async function fetchAtrasosDaTurma(turma) {
+      const cutoff = Timestamp.fromMillis(Date.now() - ATRASO_RETENTION_MS);
+      const snap = await getDocs(query(
+        collection(db, "turmas", turma.id, "atrasos"),
+        where("criadoEm", ">", cutoff),
+        orderBy("criadoEm", "desc")
+      ));
+      return snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          turmaId: turma.id,
+          turmaNome: atrasoTurmaLabel(turma),
+          criadoEmMillis: data.criadoEm ? data.criadoEm.toMillis() : Date.now(),
+          thumb: data.thumb
+        };
+      });
+    }
+
+    function revokeAtrasosThumbUrls() {
+      atrasosThumbUrls.forEach((url) => URL.revokeObjectURL(url));
+      atrasosThumbUrls = [];
+    }
+
+    function renderAtrasosTurmaFilter() {
+      const selected = atrasosTurmaFilter.value;
+      atrasosTurmaFilter.innerHTML = "";
+      const all = document.createElement("option");
+      all.value = "";
+      all.textContent = "Todas as turmas";
+      atrasosTurmaFilter.appendChild(all);
+      allTeacherTurmas.forEach((turma) => {
+        const option = document.createElement("option");
+        option.value = turma.id;
+        option.textContent = atrasoTurmaLabel(turma);
+        atrasosTurmaFilter.appendChild(option);
+      });
+      atrasosTurmaFilter.value = allTeacherTurmas.some((t) => t.id === selected) ? selected : "";
+    }
+
+    function renderAtrasosList() {
+      revokeAtrasosThumbUrls();
+      atrasosList.innerHTML = "";
+      const filterId = atrasosTurma ? null : atrasosTurmaFilter.value;
+      const items = atrasosItems
+        .filter((item) => !filterId || item.turmaId === filterId)
+        .sort((a, b) => b.criadoEmMillis - a.criadoEmMillis);
+      atrasosEmpty.classList.toggle("hidden", items.length > 0);
+
+      let currentDate = null;
+      let grid = null;
+      items.forEach((item) => {
+        const displayDate = getLocalParts(new Date(item.criadoEmMillis)).displayDate;
+        if (displayDate !== currentDate) {
+          currentDate = displayDate;
+          const group = document.createElement("div");
+          const heading = document.createElement("h3");
+          heading.className = "text-sm font-bold text-slate-600";
+          heading.textContent = displayDate;
+          grid = document.createElement("div");
+          grid.className = "mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5";
+          group.appendChild(heading);
+          group.appendChild(grid);
+          atrasosList.appendChild(group);
+        }
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "focus-ring flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left hover:border-[#2B7A40]";
+        card.setAttribute("aria-label", `Abrir foto de ${displayDate}${atrasosTurma ? "" : ` — ${item.turmaNome}`}`);
+        const img = document.createElement("img");
+        img.className = "atraso-thumb";
+        img.alt = "";
+        if (item.thumb) {
+          const url = URL.createObjectURL(atrasoBytesToBlob(item.thumb));
+          atrasosThumbUrls.push(url);
+          img.src = url;
+        }
+        card.appendChild(img);
+        if (!atrasosTurma) {
+          const caption = document.createElement("span");
+          caption.className = "truncate px-2 py-1 text-[11px] font-semibold text-slate-600";
+          caption.textContent = item.turmaNome;
+          card.appendChild(caption);
+        }
+        card.addEventListener("click", () => openAtrasoViewer(item));
+        grid.appendChild(card);
+      });
+    }
+
+    function showAtrasosModal() {
+      atrasosModalBackdrop.classList.remove("hidden");
+      atrasosModalBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function openAtrasosModal(turma) {
+      if (!auth.currentUser) return;
+      const token = ++atrasosLoadToken;
+      atrasosTurma = turma || null;
+      atrasosItems = [];
+      renderAtrasosList();
+      atrasosEmpty.classList.add("hidden");
+      atrasosModalTitle.textContent = atrasosTurma ? `Atrasos — ${atrasosTurma.nome || "Turma"}` : "Todos os atrasos";
+      btnAddAtraso.classList.toggle("hidden", !atrasosTurma);
+      atrasosTurmaFilter.classList.toggle("hidden", Boolean(atrasosTurma));
+      if (!atrasosTurma) renderAtrasosTurmaFilter();
+      setAtrasosStatus("info", "Carregando fotos…");
+      showAtrasosModal();
+
+      const turmas = atrasosTurma ? [atrasosTurma] : [...allTeacherTurmas];
+      const results = await Promise.allSettled(turmas.map((t) => fetchAtrasosDaTurma(t)));
+      if (token !== atrasosLoadToken) return; // o modal foi fechado/reaberto nesse meio-tempo
+      atrasosItems = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+      const failures = results.filter((r) => r.status === "rejected").length;
+      if (failures) {
+        setAtrasosStatus("error", failures === turmas.length
+          ? "Não foi possível carregar as fotos. Verifique a conexão e tente novamente."
+          : `Não foi possível carregar as fotos de ${failures} turma(s).`);
+      } else {
+        setAtrasosStatus("info", "");
+      }
+      renderAtrasosList();
+    }
+
+    function closeAtrasosModal() {
+      if (atrasosUploading) return;
+      atrasosLoadToken++;
+      atrasosModalBackdrop.classList.add("hidden");
+      atrasosModalBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+      revokeAtrasosThumbUrls();
+      atrasosList.innerHTML = "";
+      atrasosItems = [];
+      atrasosTurma = null;
+    }
+
+    // --- Envio ------------------------------------------------------------
+    async function uploadAtrasoFile(turma, file) {
+      const { img, thumb } = await compressAtrasoImage(file);
+      const atrasoRef = doc(collection(db, "turmas", turma.id, "atrasos"));
+      const thumbBytes = Bytes.fromUint8Array(new Uint8Array(await thumb.arrayBuffer()));
+      const imgBytes = Bytes.fromUint8Array(new Uint8Array(await img.arrayBuffer()));
+      const batch = writeBatch(db);
+      batch.set(atrasoRef, { criadoEm: serverTimestamp(), thumb: thumbBytes });
+      batch.set(doc(db, "turmas", turma.id, "atrasosImg", atrasoRef.id), { img: imgBytes });
+      await batch.commit();
+      return {
+        id: atrasoRef.id,
+        turmaId: turma.id,
+        turmaNome: atrasoTurmaLabel(turma),
+        criadoEmMillis: Date.now(),
+        thumb: thumbBytes
+      };
+    }
+
+    btnAddAtraso.addEventListener("click", () => {
+      if (!atrasosTurma || atrasosUploading) return;
+      atrasoFileInput.click();
+    });
+
+    atrasoFileInput.addEventListener("change", async () => {
+      const files = [...atrasoFileInput.files];
+      atrasoFileInput.value = "";
+      const turma = atrasosTurma;
+      if (!turma || !files.length) return;
+
+      atrasosUploading = true;
+      btnAddAtraso.disabled = true;
+      let sent = 0;
+      const errors = [];
+      for (let i = 0; i < files.length; i++) {
+        const prefix = files.length > 1 ? `Foto ${i + 1} de ${files.length}: ` : "";
+        if (files[i].type && !files[i].type.startsWith("image/")) {
+          errors.push(`${prefix}o arquivo não é uma imagem.`);
+          continue;
+        }
+        try {
+          setAtrasosStatus("info", `${prefix}comprimindo e enviando…`);
+          const item = await uploadAtrasoFile(turma, files[i]);
+          if (atrasosTurma && atrasosTurma.id === turma.id) {
+            atrasosItems.push(item);
+            renderAtrasosList();
+          }
+          sent++;
+        } catch (error) {
+          const code = error && (error.code || error.message);
+          errors.push(code === "too-large"
+            ? `${prefix}a foto ficou grande demais mesmo depois de comprimida.`
+            : code === "permission-denied"
+              ? `${prefix}sem permissão para guardar fotos nesta turma.`
+              : `${prefix}não foi possível ler ou enviar esta imagem (formato não suportado ou falha de conexão).`);
+        }
+      }
+      atrasosUploading = false;
+      btnAddAtraso.disabled = false;
+      if (errors.length) {
+        setAtrasosStatus("error", `${sent ? `${sent} foto(s) guardada(s). ` : ""}${errors.join(" ")}`);
+      } else {
+        setAtrasosStatus("success", sent > 1 ? `${sent} fotos guardadas.` : "Foto guardada.");
+      }
+    });
+
+    // --- Visualização, download e exclusão --------------------------------
+    async function openAtrasoViewer(item) {
+      const token = ++atrasoViewerToken;
+      atrasoViewerItem = item;
+      const criadoEm = new Date(item.criadoEmMillis);
+      const parts = getLocalParts(criadoEm);
+      const expiraEm = getLocalParts(new Date(item.criadoEmMillis + ATRASO_RETENTION_MS)).displayDate;
+      atrasoViewerTitle.textContent = `${parts.displayDate} — ${item.turmaNome}`;
+      atrasoViewerSubtitle.textContent = `Enviada às ${parts.time}. Será apagada automaticamente em ${expiraEm}.`;
+      atrasoViewerStatus.textContent = "Carregando…";
+      atrasoViewerStatus.classList.remove("hidden");
+      atrasoViewerImg.classList.add("hidden");
+      atrasoViewerImg.removeAttribute("src");
+      btnDownloadAtraso.disabled = true;
+      btnDeleteAtraso.disabled = false;
+      atrasoViewerBackdrop.classList.remove("hidden");
+      atrasoViewerBackdrop.setAttribute("aria-hidden", "false");
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        const snap = await getDoc(doc(db, "turmas", item.turmaId, "atrasosImg", item.id));
+        if (token !== atrasoViewerToken) return;
+        if (!snap.exists() || !snap.data().img) {
+          atrasoViewerStatus.textContent = "Foto não encontrada (pode já ter sido excluída).";
+          return;
+        }
+        atrasoViewerBlob = atrasoBytesToBlob(snap.data().img);
+        atrasoViewerUrl = URL.createObjectURL(atrasoViewerBlob);
+        atrasoViewerImg.src = atrasoViewerUrl;
+        atrasoViewerImg.classList.remove("hidden");
+        atrasoViewerStatus.classList.add("hidden");
+        btnDownloadAtraso.disabled = false;
+      } catch (error) {
+        if (token !== atrasoViewerToken) return;
+        atrasoViewerStatus.textContent = "Não foi possível carregar a foto. Verifique a conexão e tente novamente.";
+      }
+    }
+
+    function closeAtrasoViewer() {
+      atrasoViewerToken++;
+      atrasoViewerBackdrop.classList.add("hidden");
+      atrasoViewerBackdrop.setAttribute("aria-hidden", "true");
+      atrasoViewerImg.removeAttribute("src");
+      if (atrasoViewerUrl) URL.revokeObjectURL(atrasoViewerUrl);
+      atrasoViewerUrl = null;
+      atrasoViewerBlob = null;
+      atrasoViewerItem = null;
+    }
+
+    function atrasoFileSlug(text) {
+      return normalize(text).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "turma";
+    }
+
+    btnDownloadAtraso.addEventListener("click", () => {
+      if (!atrasoViewerUrl || !atrasoViewerItem) return;
+      const parts = getLocalParts(new Date(atrasoViewerItem.criadoEmMillis));
+      const ext = atrasoViewerBlob && atrasoViewerBlob.type === "image/webp" ? "webp" : "jpg";
+      const link = document.createElement("a");
+      link.href = atrasoViewerUrl;
+      link.download = `atraso_${atrasoFileSlug(atrasoViewerItem.turmaNome)}_${parts.isoDate}_${parts.time.replace(":", "h")}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
+
+    btnDeleteAtraso.addEventListener("click", async () => {
+      const item = atrasoViewerItem;
+      if (!item) return;
+      if (!confirm("Excluir esta foto? Essa ação não pode ser desfeita.")) return;
+      btnDeleteAtraso.disabled = true;
+      try {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, "turmas", item.turmaId, "atrasos", item.id));
+        batch.delete(doc(db, "turmas", item.turmaId, "atrasosImg", item.id));
+        await batch.commit();
+        atrasosItems = atrasosItems.filter((i) => !(i.id === item.id && i.turmaId === item.turmaId));
+        closeAtrasoViewer();
+        renderAtrasosList();
+        setAtrasosStatus("success", "Foto excluída.");
+      } catch (error) {
+        btnDeleteAtraso.disabled = false;
+        alert("Não foi possível excluir a foto. Tente novamente.");
+      }
+    });
+
+    btnOpenAllAtrasos.addEventListener("click", () => openAtrasosModal(null));
+    btnCloseAtrasos.addEventListener("click", closeAtrasosModal);
+    atrasosModalBackdrop.addEventListener("click", (event) => {
+      if (event.target === atrasosModalBackdrop) closeAtrasosModal();
+    });
+    atrasosTurmaFilter.addEventListener("change", renderAtrasosList);
+    document.getElementById("btn-close-atraso-viewer").addEventListener("click", closeAtrasoViewer);
+    document.getElementById("btn-close-atraso-viewer-footer").addEventListener("click", closeAtrasoViewer);
+    atrasoViewerBackdrop.addEventListener("click", (event) => {
+      if (event.target === atrasoViewerBackdrop) closeAtrasoViewer();
+    });
 
     // ---------------------------------------------------------------------
     // Inicialização

@@ -27,6 +27,7 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - criar turmas (campos **Turma / Ano / Disciplina**, combinados automaticamente no nome, ex.: "INF2M 2026 - Banco de Dados") com lista opcional de alunos colada de uma vez, e um botão de dica explicando como exportar a relação de alunos pelo SUAP (o passo de usar uma IA externa para formatar essa lista só é exibido para a conta master, por cautela quanto a enviar dados de alunos a serviços de terceiros);
   - gerenciar uma turma: editar o nome, gerar e salvar o código do dia com uma duração escolhida no momento (15 min, 1h, 2h ou 3h), adicionar/editar/remover alunos, e excluir a turma inteira (com confirmação e senha do professor, apagando alunos e histórico de presenças junto);
   - trocar a própria senha a qualquer momento;
+  - **📷 Atrasos**: guardar fotos de comprovantes/autorizações de atraso de cada turma — sem formulário, só a foto — e consultá-las depois, por turma ou todas juntas ("Ver todos os atrasos", com filtro por turma). Cada foto é apagada automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**;
   - consultar o **histórico de chamadas** da turma — presentes e ausentes por dia, com exportação em `.xlsx`. Essa tela só é exibida, na interface, ao professor dono da turma ou à conta master; o que as regras do Firestore efetivamente permitem ler sobre esses mesmos dados está descrito em **[Isolamento entre professores](#isolamento-entre-professores)**;
   - **(só a conta master)** criar login de outros professores direto pelo site, sem precisar do Firebase Console — ver **[Adicionar mais professores](#adicionar-mais-professores-no-mesmo-sitebanco-de-dados)**.
 - **Modo professor**: com login do dono da turma (ou da conta master) ativo, permite marcar a presença de qualquer aluno diretamente, sem o código do dia — útil para chamada oral ou aluno sem celular. Nesse modo também não vale a trava de "um aparelho por aluno". Desfazer uma presença sempre exige a senha do professor de novo, mesmo com o Modo professor ativo, para que outra pessoa no mesmo computador não consiga desfazer sem a senha.
@@ -134,10 +135,11 @@ Remover a conta de um professor, hoje, só é possível pelo Firebase Console (A
 
 Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteção de Dados) trata nome e frequência escolar como dados pessoais. Pontos relevantes para quem for usar ou avaliar este projeto:
 
-- **Dados tratados**: nome do aluno, nome da turma, e registros de presença (nome, data, horário e um identificador de dispositivo). Não são coletados e-mail, matrícula, CPF ou qualquer outro dado do aluno.
+- **Dados tratados**: nome do aluno, nome da turma, e registros de presença (nome, data, horário e um identificador de dispositivo). Não são coletados e-mail, matrícula, CPF ou qualquer outro dado do aluno pelo sistema em si. As **fotos de comprovantes de atraso** guardadas pelo professor podem conter dados do aluno que estejam no próprio papel fotografado (nome, assinatura etc.) — o sistema não lê nem extrai nada delas.
 - **Onde ficam armazenados**: no Cloud Firestore, dentro do projeto Firebase de quem publicou aquela cópia do sistema — ver **[Modelo de dados](#modelo-de-dados)**.
 - **Finalidade**: apoio operacional ao controle de chamada do professor. Este sistema não substitui os sistemas institucionais de controle acadêmico — a chamada oficial continua sendo registrada no SUAP (ou equivalente), sempre após validação do professor. A marcação depende do próprio aluno, sem verificação de identidade (ver **[Identificador do aparelho](#identificador-do-aparelho)** e **[Código do dia](#código-do-dia)**) — por isso o professor não deve tratar os registros deste sistema, isoladamente, como prova definitiva de frequência.
 - **Quem tem acesso**: na interface, o professor dono da turma e a conta master. Pelas regras do Firestore, a leitura de alunos/presenças de uma turma também é liberada a qualquer pessoa que apresente o código do dia dentro do prazo de validade — ver **[Código do dia](#código-do-dia)** para o detalhamento técnico completo; isso é mais amplo do que "só o professor e os alunos daquela turma".
+- **Fotos de atrasos**: guardadas sem acesso público (sem URL pública, sem Firebase Storage), acessíveis só ao professor dono da turma e à conta master, sem metadados EXIF (a foto é redesenhada no navegador, o que descarta inclusive a localização GPS) e apagadas automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - **Retenção**: presenças marcadas a partir desta versão são apagadas automaticamente cerca de 72h após serem criadas, na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
 - **Transparência com o professor**: no primeiro acesso à Área do professor, o sistema exibe um aviso obrigatório resumindo esses pontos, que só é dispensado depois de o professor clicar em "Concordo"; essa confirmação é registrada em `acordosProfessor/{uid}` (ver **[Modelo de dados](#modelo-de-dados)**).
 - **Transparência com o aluno**: na tela de chamada, o link "ℹ️ Sobre seus dados" abre um aviso curto explicando o que é salvo e que o sistema não substitui o SUAP, com um canal para pedir acesso, correção ou exclusão dos próprios dados — um link de e-mail pré-preenchido para o professor daquela turma (`professorEmail`). Diferente do aviso do professor, este não é obrigatório: o aluno precisa clicar para ver.
@@ -152,7 +154,8 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 - O identificador de dispositivo é forjável (limpar `localStorage`, aba anônima, outro navegador) — ver **[Identificador do aparelho](#identificador-do-aparelho)**.
 - O código do dia é uma credencial compartilhada da turma, não uma autenticação individual nem prova de presença física — ver **[Código do dia](#código-do-dia)**.
 - Os campos `nome`, `data` e `horario` de uma presença não são verificados contra o cadastro real de alunos nem contra o relógio do servidor — ver **[Criação de presença sem estar autenticado](#criação-de-presença-sem-estar-autenticado)**.
-- A retenção de 72h das presenças depende de algum professor acessar a Área do professor — não é um processo contínuo em segundo plano — ver **[Retenção de dados](#retenção-de-dados)**.
+- A retenção de 72h das presenças e a de 180 dias das fotos de atrasos dependem de algum professor acessar a Área do professor — não é um processo contínuo em segundo plano — ver **[Retenção de dados](#retenção-de-dados)**.
+- As fotos de atrasos ocupam a mesma cota de armazenamento gratuita do Firestore usada pelo restante do sistema — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - Não há backend próprio: a criação de contas de professor é feita direto do navegador, e a remoção de contas ainda depende do Firebase Console — ver **[Criação de novos professores](#criação-de-novos-professores)**.
 - A conta master é identificada por e-mail, não por UID ou Custom Claims — ver **[Conta master](#conta-master)**.
 - O `firebaseConfig` é público por design do Firebase, mas isso não implica que o projeto esteja automaticamente seguro — a segurança depende das regras do Firestore e da Authentication.
@@ -247,6 +250,28 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
            allow update: if false;
            allow delete: if ehProfessorDaTurma(turmaId);
          }
+
+         // Fotos de comprovantes de atraso: só o dono da turma (ou a conta
+         // master). O código do dia NÃO libera leitura aqui.
+         match /atrasos/{atrasoId} {
+           allow read, delete: if ehProfessorDaTurma(turmaId);
+           allow create: if ehProfessorDaTurma(turmaId)
+                         && request.resource.data.keys().hasOnly(['criadoEm', 'thumb'])
+                         && request.resource.data.criadoEm == request.time
+                         && request.resource.data.thumb is bytes
+                         && request.resource.data.thumb.size() <= 64 * 1024;
+           allow update: if false;
+         }
+
+         match /atrasosImg/{atrasoId} {
+           allow read, delete: if ehProfessorDaTurma(turmaId);
+           allow create: if ehProfessorDaTurma(turmaId)
+                         && request.resource.data.keys().hasOnly(['img'])
+                         && request.resource.data.img is bytes
+                         && request.resource.data.img.size() <= 900 * 1024
+                         && existsAfter(/databases/$(database)/documents/turmas/$(turmaId)/atrasos/$(atrasoId));
+           allow update: if false;
+         }
        }
 
        match /acordosProfessor/{uid} {
@@ -262,7 +287,8 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
    Clique em **"Publicar"**. Com essas regras:
    - criar turma, gerenciar alunos, mudar o código do dia ou apagar uma presença exige estar logado como o professor dono da turma (ou a conta master);
    - a leitura de alunos e presenças de uma turma é liberada para o professor dono/master, ou para quem informar o código do dia dentro do prazo de validade escolhido — ver **[Código do dia](#código-do-dia)** para o que isso garante de fato;
-   - `acordosProfessor/{uid}` guarda o registro de que aquele professor confirmou os "Avisos importantes" — cada um só lê/escreve o próprio registro; a conta master também pode ler todos.
+   - `acordosProfessor/{uid}` guarda o registro de que aquele professor confirmou os "Avisos importantes" — cada um só lê/escreve o próprio registro; a conta master também pode ler todos;
+   - `atrasos`/`atrasosImg` (fotos de comprovantes de atraso) só podem ser lidos, criados e apagados pelo professor dono da turma (ou pela conta master) — o código do dia não dá acesso a elas; ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 
    > Sempre que o formato dos dados mudar, as regras precisam ser atualizadas — este README sempre tem o bloco completo mais recente para copiar e colar.
 
@@ -364,6 +390,10 @@ turmas/{turmaId}
     nome
   presencas/{presencaId}
     nome, data, horario, maquina, codigoUsado, expiraEm
+  atrasos/{atrasoId}
+    criadoEm, thumb
+  atrasosImg/{atrasoId}
+    img
 acordosProfessor/{uid}
   avisosAceitosEm, email
 ```
@@ -372,6 +402,7 @@ acordosProfessor/{uid}
 - `maquina` guarda o identificador do aparelho salvo no `localStorage` de quem marcou — ver **[Identificador do aparelho](#identificador-do-aparelho)**.
 - `codigoDuracaoMin` guarda por quantos minutos aquele código vale (15, 60, 120 ou 180), escolhido no botão usado para gerá-lo.
 - `expiraEm` guarda até quando aquela presença deve existir (72h depois de criada) — usado pela limpeza automática, ver **[Retenção de dados](#retenção-de-dados)**.
+- `atrasos/{atrasoId}` guarda a data de envio (`criadoEm`, hora do servidor) e uma miniatura (`thumb`) de cada foto de atraso; `atrasosImg/{atrasoId}` (mesmo ID) guarda a foto comprimida (`img`). Ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - `acordosProfessor/{uid}` guarda quando aquele professor confirmou os "Avisos importantes" — um documento por professor; só ele (e a conta master) consegue ler o próprio.
 
 Visível em console.firebase.google.com → projeto → Firestore Database → aba "Dados". Nada disso fica salvo no GitHub — o GitHub só guarda o código do site, nunca os dados de alunos ou presenças.
@@ -393,6 +424,22 @@ O mecanismo "nativo" para apagar isso automaticamente em segundo plano seria uma
 
 Para reter por mais ou menos tempo, a constante `PRESENCA_RETENTION_MS` no `index.html` controla o valor gravado em `expiraEm`. Se o projeto migrar para o plano Blaze por outro motivo no futuro, a política de TTL nativa do Firestore (grupo de coleções `presencas`, campo `expiraEm`) passa a ser uma alternativa mais robusta a essa limpeza dependente de login.
 
+As fotos de atrasos usam o mesmo mecanismo, com 180 dias (constante `ATRASO_RETENTION_MS`): ao entrar na Área do professor, `cleanupExpiredAtrasos()` apaga as fotos (e miniaturas) com `criadoEm` de mais de 180 dias atrás. Independentemente disso, as telas de atrasos nunca mostram fotos com mais de 180 dias, mesmo que a limpeza ainda não tenha rodado.
+
+### Fotos de atrasos
+
+Funcionalidade para guardar fotos de comprovantes/autorizações de atraso — **não** é um cadastro de atrasos: o professor não informa aluno, horário, motivo nem nada além da própria foto.
+
+- **Onde**: na Área do professor, botão **📷 Atrasos** em cada turma (ver e adicionar fotos daquela turma) e **📷 Ver todos os atrasos**, no cabeçalho de "Turmas cadastradas" (fotos de todas as turmas do professor, com filtro por turma). Ordem: mais recente primeiro, agrupadas por data.
+- **Adicionar foto**: abre o seletor nativo do aparelho — no celular, o próprio navegador oferece câmera ou galeria. Dá para escolher várias fotos de uma vez.
+- **Compressão (no navegador, antes do envio)**: a foto é redesenhada com no máximo 1200 px no lado maior (fotos menores não são ampliadas), em WebP com qualidade 0,6 — ou JPEG, em navegadores que não geram WebP (alguns Safari/iPhone). Se ainda passar de ~350 KB, a qualidade e depois o tamanho são reduzidos automaticamente. Também é gerada uma miniatura de 200 px para as listas. A foto original nunca sai do aparelho, e metadados EXIF (inclusive localização GPS) são descartados. As constantes `ATRASO_*` no `index.html` controlam esses valores.
+- **Armazenamento**: no próprio Cloud Firestore, como bytes — não usa Firebase Storage, que desde 2026 exige o plano pago Blaze. Cada foto são dois documentos com o mesmo ID: `atrasos/{id}` (data + miniatura, lido nas listas) e `atrasosImg/{id}` (foto inteira, lida só ao abrir). Não há URL pública: a imagem só é baixada pelo SDK do Firebase, depois de as regras confirmarem que quem pede é o dono da turma ou a conta master.
+- **Visualizar, baixar e excluir**: ao clicar na miniatura. Não há edição. Excluir apaga a foto e a miniatura juntas.
+- **Data**: registrada automaticamente com a hora do **servidor** (as regras recusam qualquer outra data), então não dá para antedatar uma foto.
+- **Retenção**: 180 dias — ver **[Retenção de dados](#retenção-de-dados)**. Excluir a turma também apaga todas as fotos dela.
+- **Segurança**: garantida pelas regras do Firestore (`match /atrasos` e `match /atrasosImg`), não pela interface: exige estar logado como professor dono da turma (ou conta master) para ler, criar ou apagar; trocar o ID da turma ou chamar a API direto não dá acesso às fotos de outro professor. Diferente de `alunos`/`presencas`, o código do dia **não** libera a leitura das fotos. As regras também limitam o tamanho (miniatura ≤ 64 KB, foto ≤ 900 KB), proíbem campos extras e proíbem editar uma foto já enviada.
+- **Custo**: nenhum serviço novo — continua no plano gratuito Spark. Cada foto ocupa tipicamente ~80–250 KB. As fotos contam na mesma cota de armazenamento gratuita do Firestore usada pelas turmas e presenças (os limites exatos são definidos pelo Google — consulte a [página de preços](https://firebase.google.com/pricing)); se essa cota fosse atingida, novas gravações do sistema todo (inclusive chamadas) seriam recusadas até o dia seguinte ou até liberar espaço. Com a retenção de 180 dias o volume se estabiliza, mas vale acompanhar o uso em Firestore → Uso no Console se muitos professores usarem intensamente.
+
 ## Testes recomendados
 
 Depois de publicar as regras, vale confirmar manualmente (idealmente com duas contas de professor diferentes):
@@ -410,7 +457,8 @@ Depois de publicar as regras, vale confirmar manualmente (idealmente com duas co
 11. Excluir uma turma → confirmar no Firestore Console que `alunos` e `presencas` dela desapareceram, não só o documento da turma.
 12. Testar em mais de um dispositivo/rede antes de confiar que uma alteração nas regras está funcionando — problemas de leitura/permissão às vezes só aparecem para quem não está autenticado como professor.
 13. Gerar um código de 15 min e esperar passar o prazo → a leitura de alunos/presenças da turma volta a ser negada para quem só tem o código, mesmo digitando o código certo (porque `codigoAtivo()` deixou de ser verdadeiro).
-14. Primeiro login de um professor novo → o modal "Avisos importantes" abre sozinho e não fecha clicando fora nem com Esc, só pelo botão "Concordo"; um novo login depois disso não deve mais mostrar o modal forçado.
+14. **Atrasos**: Professor A adiciona uma foto na turma A → ela aparece em "📷 Atrasos" da turma A e em "Ver todos os atrasos"; Professor B não vê a turma A nem as fotos dela (e, pelas regras, uma leitura direta de `turmas/{turmaA}/atrasos` feita pelo B é negada); um aluno com o código do dia da turma A também não consegue ler as fotos.
+15. Primeiro login de um professor novo → o modal "Avisos importantes" abre sozinho e não fecha clicando fora nem com Esc, só pelo botão "Concordo"; um novo login depois disso não deve mais mostrar o modal forçado.
 
 Nem tudo nesta lista tem garantia absoluta — onde a limitação é conhecida (ex.: identificador de aparelho forjável, `data` não verificada), isso está descrito em **[Limitações conhecidas](#limitações-conhecidas)**, para não prometer uma proteção que a implementação atual não entrega.
 
