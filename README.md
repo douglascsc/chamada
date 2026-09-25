@@ -144,7 +144,7 @@ Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteç
 - **Finalidade**: apoio operacional ao controle de chamada do professor. Este sistema não substitui os sistemas institucionais de controle acadêmico — a chamada oficial continua sendo registrada no SUAP (ou equivalente), sempre após validação do professor. A marcação depende do próprio aluno, sem verificação de identidade (ver **[Identificador do aparelho](#identificador-do-aparelho)** e **[Código do dia](#código-do-dia)**) — por isso o professor não deve tratar os registros deste sistema, isoladamente, como prova definitiva de frequência.
 - **Quem tem acesso**: na interface, o professor dono da turma e a conta master. Pelas regras do Firestore, a leitura de alunos/presenças de uma turma também é liberada a qualquer pessoa que apresente o código do dia dentro do prazo de validade — ver **[Código do dia](#código-do-dia)** para o detalhamento técnico completo; isso é mais amplo do que "só o professor e os alunos daquela turma".
 - **Fotos de atrasos**: guardadas sem acesso público (sem URL pública, sem Firebase Storage), acessíveis só ao professor dono da turma e à conta master, sem metadados EXIF (a foto é redesenhada no navegador, o que descarta inclusive a localização GPS) e apagadas automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
-- **Retenção**: presenças marcadas a partir desta versão são apagadas automaticamente cerca de 72h após serem criadas, na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
+- **Retenção**: presenças são apagadas automaticamente cerca de 7 dias após serem criadas (as marcadas antes dessa mudança, com 72h), na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
 - **Transparência com o professor**: no primeiro acesso à Área do professor, o sistema exibe um aviso obrigatório resumindo esses pontos, que só é dispensado depois de o professor clicar em "Concordo"; essa confirmação é registrada em `acordosProfessor/{uid}` (ver **[Modelo de dados](#modelo-de-dados)**).
 - **Transparência com o aluno**: na tela de chamada, o link "ℹ️ Sobre seus dados" abre um aviso curto explicando o que é salvo e que o sistema não substitui o SUAP, com um canal para pedir acesso, correção ou exclusão dos próprios dados — um link de e-mail pré-preenchido para o professor daquela turma (`professorEmail`). Diferente do aviso do professor, este não é obrigatório: o aluno precisa clicar para ver.
 - **Responsabilidade institucional**: cabe ao professor e/ou à instituição que utiliza este sistema observar as próprias políticas de proteção de dados e a legislação aplicável, incluindo, quando pertinente, informar os alunos sobre esse tratamento complementar de dados.
@@ -158,7 +158,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 - O identificador de dispositivo é forjável (limpar `localStorage`, aba anônima, outro navegador) — ver **[Identificador do aparelho](#identificador-do-aparelho)**.
 - O código do dia é uma credencial compartilhada da turma, não uma autenticação individual nem prova de presença física — ver **[Código do dia](#código-do-dia)**.
 - Os campos `nome`, `data` e `horario` de uma presença não são verificados contra o cadastro real de alunos nem contra o relógio do servidor — ver **[Criação de presença sem estar autenticado](#criação-de-presença-sem-estar-autenticado)**.
-- A retenção de 72h das presenças e a de 180 dias das fotos de atrasos dependem de algum professor acessar a Área do professor — não é um processo contínuo em segundo plano — ver **[Retenção de dados](#retenção-de-dados)**.
+- A retenção de 7 dias das presenças e a de 180 dias das fotos de atrasos dependem de algum professor acessar a Área do professor — não é um processo contínuo em segundo plano — ver **[Retenção de dados](#retenção-de-dados)**.
 - As fotos de atrasos ocupam a mesma cota de armazenamento gratuita do Firestore usada pelo restante do sistema — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - Não há backend próprio: a criação de contas de professor é feita direto do navegador, e a remoção de contas ainda depende do Firebase Console — ver **[Criação de novos professores](#criação-de-novos-professores)**.
 - A conta master é identificada por e-mail, não por UID ou Custom Claims — ver **[Conta master](#conta-master)**.
@@ -298,7 +298,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 
    > Sempre que o formato dos dados mudar, as regras precisam ser atualizadas — este README sempre tem o bloco completo mais recente para copiar e colar.
 
-   > **Retenção de 72h nas presenças** já é feita pelo próprio `index.html`, sem precisar configurar nada extra no Console — ver **[Retenção de dados](#retenção-de-dados)**.
+   > **Retenção de 7 dias nas presenças** já é feita pelo próprio `index.html`, sem precisar configurar nada extra no Console — ver **[Retenção de dados](#retenção-de-dados)**.
 
 6. Ative o login: no menu lateral, procure **"Authentication"** (se aparecer um botão "Vamos começar", clique nele). Na aba **"Sign-in method"**, clique em **"Adicionar novo provedor"**, escolha **"E-mail/senha"** e ative a primeira opção (deixe "Link de e-mail" desligada). Salve.
 7. Ainda em Authentication, vá na aba **"Users"** → **"Add user"** → digite o e-mail e a senha do professor → **Add user**.
@@ -417,7 +417,7 @@ acordosProfessor/{uid}
 - `nome` (em `alunos`) e `nome` (em `presencas`) são independentes por decisão de modelagem: a presença guarda uma **cópia** do nome no momento em que foi marcada, não uma referência ao documento do aluno. Isso preserva o registro histórico como estava no momento da chamada — renomear um aluno depois não altera presenças já registradas, só as futuras. Ver **[Renomear aluno](#renomear-aluno)**.
 - `maquina` guarda o identificador do aparelho salvo no `localStorage` de quem marcou — ver **[Identificador do aparelho](#identificador-do-aparelho)**.
 - `codigoDuracaoMin` guarda por quantos minutos aquele código vale (15, 60, 120 ou 180), escolhido no botão usado para gerá-lo.
-- `expiraEm` guarda até quando aquela presença deve existir (72h depois de criada) — usado pela limpeza automática, ver **[Retenção de dados](#retenção-de-dados)**.
+- `expiraEm` guarda até quando aquela presença deve existir (7 dias depois de criada) — usado pela limpeza automática, ver **[Retenção de dados](#retenção-de-dados)**.
 - `atrasos/{atrasoId}` guarda a data de envio (`criadoEm`, hora do servidor) e uma miniatura (`thumb`) de cada foto de atraso; `atrasosImg/{atrasoId}` (mesmo ID) guarda a foto comprimida (`img`). Ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - `acordosProfessor/{uid}` guarda quando aquele professor confirmou os "Avisos importantes" — um documento por professor; só ele (e a conta master) consegue ler o próprio.
 
@@ -427,13 +427,13 @@ Visível em console.firebase.google.com → projeto → Firestore Database → a
 
 ### Retenção de dados
 
-Cada presença criada a partir desta versão guarda um campo `expiraEm` com a data/hora 72 horas depois de ter sido marcada.
+Cada presença criada a partir desta versão guarda um campo `expiraEm` com a data/hora 7 dias depois de ter sido marcada (presenças marcadas antes dessa mudança guardam 72 horas). O histórico na tela mostra, para cada dia, quando ele será apagado, e avisa para exportar em Excel antes.
 
 O mecanismo "nativo" para apagar isso automaticamente em segundo plano seria uma **política de TTL** do Firestore — mas essa funcionalidade exige que o projeto esteja no plano Blaze (pago por uso, com uma conta de faturamento vinculada); no plano Spark, o Google recusa a criação da política (`403: ... has billing disabled`). Para manter o projeto sem depender de faturamento, a retenção foi implementada de outra forma, direto no `index.html`:
 
 - toda vez que um professor entra na Área do professor, o app executa `cleanupExpiredPresencas()`: para cada turma dele (ou de todas, se for a conta master), busca as presenças com `expiraEm` já vencido e apaga em lote;
 - **isso não é um processo automático rodando 24 horas por dia** — só é executado nos momentos em que algum professor efetivamente abre a Área do professor. Numa turma cujo professor não acessa o sistema por um período longo, presenças vencidas continuam existindo até o próximo acesso dele (ou da conta master, que limpa as turmas de todos ao entrar);
-- consequentemente, a exclusão **não ocorre necessariamente exatamente 72 horas** depois da criação — pode levar mais tempo, dependendo de quando alguém acessa a Área do professor;
+- consequentemente, a exclusão **não ocorre necessariamente exatamente 7 dias** depois da criação — pode levar mais tempo, dependendo de quando alguém acessa a Área do professor;
 - não exige Cloud Functions nem faturamento, e usa apenas operações normais de leitura/escrita do Firestore, dentro da mesma regra `allow delete: if ehProfessorDaTurma(turmaId)` já publicada;
 - não apaga `alunos` nem `turmas` — só o histórico de presença;
 - presenças marcadas **antes** desta atualização não têm o campo `expiraEm` e por isso não são apagadas por essa limpeza.

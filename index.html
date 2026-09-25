@@ -248,6 +248,11 @@
       transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
     }
 
+    /* Celular: todo botão com pelo menos 44px de altura (alvo de toque) */
+    @media (max-width: 639px) {
+      .action-button { min-height: 44px; }
+    }
+
     .action-button:hover:not(:disabled) {
       transform: translateY(-2px);
       filter: brightness(1.06);
@@ -453,7 +458,7 @@
          <i data-lucide="x" aria-hidden="true" class="h-4 w-4"></i>
         </button>
        </div>
-       <button id="btn-open-student-info" type="button" class="focus-ring mt-2 rounded px-0.5 text-xs font-semibold text-slate-400 hover:text-[#2B7A40] hover:underline">ℹ️ Sobre seus dados</button>
+       <button id="btn-open-student-info" type="button" class="focus-ring mt-2 rounded px-0.5 text-xs font-semibold text-slate-500 hover:text-[#2B7A40] hover:underline">ℹ️ Sobre seus dados</button>
       </div>
      </section>
 
@@ -559,11 +564,17 @@
        <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
        <button id="btn-open-all-atrasos" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">📷 Ver todos os atrasos</button>
       </div>
+      <div id="teacher-turmas-search-wrap" class="hidden mt-3">
+       <label class="sr-only" for="teacher-turmas-search">Buscar turma</label>
+       <input id="teacher-turmas-search" class="text-field" type="search" autocomplete="off" placeholder="Buscar turma (ex.: INF2M)">
+       <p class="mt-1 text-xs text-slate-500">Toque na ☆ de uma turma para fixá-la no topo.</p>
+      </div>
       <div id="teacher-turmas-professor-filter" class="hidden mt-3 flex flex-wrap items-center gap-2">
        <span class="text-xs font-semibold text-slate-500">Filtrar por professor:</span>
        <div id="teacher-turmas-professor-chips" class="flex flex-wrap gap-2"></div>
       </div>
       <div id="teacher-turmas-list" class="mt-3 flex flex-col gap-2"></div>
+      <p id="teacher-turmas-search-empty" class="hidden mt-2 text-sm text-slate-500">Nenhuma turma encontrada com esse nome.</p>
       <div id="teacher-turmas-empty" class="hidden mt-2">
        <p class="text-sm text-slate-500">Nenhuma turma cadastrada ainda.</p>
        <button id="btn-empty-new-turma" class="action-button focus-ring mt-3 rounded-xl px-4 py-3 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">+ Criar primeira turma</button>
@@ -572,7 +583,7 @@
 
      <section id="teacher-manage-panel" class="hidden glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <button id="btn-manage-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
-       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para a lista
+       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para as turmas
       </button>
       <div id="manage-turma-title-row" class="mt-3 flex flex-wrap items-center gap-2">
        <h3 id="manage-turma-title" class="text-xl font-extrabold text-[var(--ink)]">Turma</h3>
@@ -596,7 +607,7 @@
          <input id="manage-edit-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
         </div>
        </div>
-       <p id="manage-edit-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
+       <p id="manage-edit-nome-preview" class="mt-1.5 text-xs text-slate-500">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
        <div class="mt-3 flex gap-2">
         <button id="btn-save-turma-nome" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Salvar</button>
         <button id="btn-cancel-turma-nome" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Cancelar</button>
@@ -639,8 +650,12 @@
        <div class="mt-6 border-t border-slate-200 pt-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
          <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Histórico de chamadas</h4>
-         <button id="btn-load-history" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Carregar histórico</button>
+         <button id="btn-load-history" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar</button>
         </div>
+        <p class="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+         <i data-lucide="clock" aria-hidden="true" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+         <span>As presenças ficam disponíveis por <strong>7 dias</strong> e depois são apagadas automaticamente. Para guardar, use <strong>Exportar Excel</strong> antes de lançar no SUAP.</span>
+        </p>
         <p id="history-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum registro de presença encontrado para esta turma ainda.</p>
         <div id="history-dates-list" class="mt-3 flex flex-wrap gap-2"></div>
         <div id="history-day-panel" class="hidden mt-4 rounded-xl border border-slate-200 bg-white/70 p-4">
@@ -682,80 +697,32 @@
       </div>
       <h3 class="mt-4 flex items-center gap-2 text-xl font-extrabold text-[var(--ink)]"><i data-lucide="settings" class="h-5 w-5" aria-hidden="true"></i> Opções</h3>
       <div>
-     <details class="group glass-surface rounded-2xl mt-5">
+     <details id="shortcut-details" class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+       <span class="text-lg font-bold text-[var(--ink)]">📱 Atalho no celular</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
       </summary>
       <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <div class="border-t border-slate-200 pt-5">
-        <h4 class="font-bold text-[var(--ink)]">Meu nome</h4>
-        <p class="mt-1 text-sm text-slate-500">É esse nome que aparece para os alunos nas turmas que você criar (em vez do seu e-mail).</p>
-        <div class="mt-3 flex flex-wrap gap-2">
-         <input id="teacher-display-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Ex: Douglas Camargo">
-         <button id="btn-save-display-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nome</button>
+       <div class="border-t border-slate-200 pt-5 text-sm text-slate-700 leading-relaxed">
+        <p>Crie um ícone na tela inicial do celular que abre <strong>direto na Área do professor</strong>, sem passar pela tela dos alunos.</p>
+        <ol class="mt-3 list-decimal list-inside space-y-1.5">
+         <li>Com esta página aberta (Área do professor), abra o menu do navegador.</li>
+         <li><strong>Android (Chrome):</strong> toque em <strong>⋮</strong> → <strong>Adicionar à tela inicial</strong>.</li>
+         <li><strong>iPhone (Safari):</strong> toque em <strong>Compartilhar</strong> (quadrado com seta) → <strong>Adicionar à Tela de Início</strong>.</li>
+        </ol>
+        <p class="mt-3">Ou use este endereço como favorito:</p>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+         <code id="teacher-shortcut-url" class="min-w-0 break-all rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700"></code>
+         <button id="btn-copy-teacher-shortcut" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar endereço</button>
         </div>
-        <p id="display-name-status" class="mt-1 text-xs"></p>
-       </div>
-
-       <div class="mt-6 border-t border-slate-200 pt-5">
-        <h4 class="font-bold text-[var(--ink)]">Trocar senha</h4>
-        <div class="mt-3 grid max-w-sm gap-3">
-         <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-password-input">Nova senha</label>
-          <input id="new-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
-         </div>
-         <div>
-          <label class="mb-1 block text-sm font-semibold text-slate-700" for="confirm-password-input">Confirmar nova senha</label>
-          <input id="confirm-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
-         </div>
-         <div>
-          <button id="btn-change-password" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nova senha</button>
-         </div>
-         <p id="change-password-status" class="text-xs"></p>
-        </div>
+        <p class="mt-3 text-xs text-slate-500">Dica: no login, marque <strong>“Manter conectado neste aparelho”</strong> (só no seu celular pessoal) para o atalho já abrir nas suas turmas, sem pedir senha.</p>
        </div>
       </div>
      </details>
-
-     <details id="admin-panel-section" class="hidden group glass-surface rounded-2xl mt-5 border-2 border-[#CFE6C8]">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — professores</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
-      </summary>
-      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <p class="text-sm text-slate-500">Cria uma conta de professor direto por aqui, sem precisar abrir o Firebase Console. A pessoa recebe um e-mail para definir a própria senha — nunca digite uma senha por ela.</p>
-       <div class="mt-3 grid max-w-sm gap-3">
-        <div>
-         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
-         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Douglas Carvalho">
-        </div>
-        <div>
-         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
-         <input id="admin-new-professor-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
-        </div>
-        <div>
-         <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
-        </div>
-        <p id="create-professor-status" class="text-xs"></p>
-       </div>
-
-       <div class="mt-6 border-t border-slate-200 pt-5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-         <h4 class="font-bold text-[var(--ink)]">Professores</h4>
-         <button id="btn-refresh-professores" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar lista</button>
-        </div>
-        <p class="mt-1 text-xs text-slate-500">Um professor aparece aqui depois do primeiro acesso ao sistema (ou se já tiver alguma turma).</p>
-        <div id="admin-professores-list" class="mt-3 flex flex-col gap-2"></div>
-        <p id="admin-professores-status" class="mt-2 text-xs"></p>
-       </div>
-      </div>
-     </details>
-
      <details id="new-turma-details" class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
        <span class="text-lg font-bold text-[var(--ink)]">Nova turma</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
       </summary>
       <div class="px-5 pb-5 sm:px-6 sm:pb-6">
        <div class="grid gap-3">
@@ -775,7 +742,7 @@
            <input id="new-turma-disciplina" class="text-field" type="text" placeholder="Ex: Banco de Dados">
           </div>
          </div>
-         <p id="new-turma-nome-preview" class="mt-1.5 text-xs text-slate-400">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
+         <p id="new-turma-nome-preview" class="mt-1.5 text-xs text-slate-500">Vai ficar: <span class="font-semibold text-slate-500">—</span></p>
         </div>
         <div>
          <div class="flex flex-wrap items-center justify-between gap-2">
@@ -836,28 +803,76 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       </div>
      </details>
 
-     <details id="shortcut-details" class="group glass-surface rounded-2xl mt-5">
+     <details class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">📱 Atalho no celular</span>
-       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
+       <span class="text-lg font-bold text-[var(--ink)]">Minha conta</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
       </summary>
       <div class="px-5 pb-5 sm:px-6 sm:pb-6">
-       <div class="border-t border-slate-200 pt-5 text-sm text-slate-700 leading-relaxed">
-        <p>Crie um ícone na tela inicial do celular que abre <strong>direto na Área do professor</strong>, sem passar pela tela dos alunos.</p>
-        <ol class="mt-3 list-decimal list-inside space-y-1.5">
-         <li>Com esta página aberta (Área do professor), abra o menu do navegador.</li>
-         <li><strong>Android (Chrome):</strong> toque em <strong>⋮</strong> → <strong>Adicionar à tela inicial</strong>.</li>
-         <li><strong>iPhone (Safari):</strong> toque em <strong>Compartilhar</strong> (quadrado com seta) → <strong>Adicionar à Tela de Início</strong>.</li>
-        </ol>
-        <p class="mt-3">Ou use este endereço como favorito:</p>
-        <div class="mt-1 flex flex-wrap items-center gap-2">
-         <code id="teacher-shortcut-url" class="min-w-0 break-all rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-700"></code>
-         <button id="btn-copy-teacher-shortcut" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar endereço</button>
+       <div class="border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Meu nome</h4>
+        <p class="mt-1 text-sm text-slate-500">É esse nome que aparece para os alunos nas turmas que você criar (em vez do seu e-mail).</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+         <input id="teacher-display-name-input" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Ex: Douglas Camargo">
+         <button id="btn-save-display-name" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nome</button>
         </div>
-        <p class="mt-3 text-xs text-slate-500">Dica: no login, marque <strong>“Manter conectado neste aparelho”</strong> (só no seu celular pessoal) para o atalho já abrir nas suas turmas, sem pedir senha.</p>
+        <p id="display-name-status" class="mt-1 text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Trocar senha</h4>
+        <div class="mt-3 grid max-w-sm gap-3">
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="new-password-input">Nova senha</label>
+          <input id="new-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+         </div>
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="confirm-password-input">Confirmar nova senha</label>
+          <input id="confirm-password-input" class="text-field" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+         </div>
+         <div>
+          <button id="btn-change-password" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Salvar nova senha</button>
+         </div>
+         <p id="change-password-status" class="text-xs"></p>
+        </div>
        </div>
       </div>
      </details>
+
+     <details id="admin-panel-section" class="hidden group glass-surface rounded-2xl mt-5 border-2 border-[#CFE6C8]">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
+       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — professores</span>
+       <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
+      </summary>
+      <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+       <p class="text-sm text-slate-500">Cria uma conta de professor direto por aqui, sem precisar abrir o Firebase Console. A pessoa recebe um e-mail para definir a própria senha — nunca digite uma senha por ela.</p>
+       <div class="mt-3 grid max-w-sm gap-3">
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
+         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Douglas Carvalho">
+        </div>
+        <div>
+         <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
+         <input id="admin-new-professor-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
+        </div>
+        <div>
+         <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
+        </div>
+        <p id="create-professor-status" class="text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+         <h4 class="font-bold text-[var(--ink)]">Professores</h4>
+         <button id="btn-refresh-professores" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar lista</button>
+        </div>
+        <p class="mt-1 text-xs text-slate-500">Um professor aparece aqui depois do primeiro acesso ao sistema (ou se já tiver alguma turma).</p>
+        <div id="admin-professores-list" class="mt-3 flex flex-col gap-2"></div>
+        <p id="admin-professores-status" class="mt-2 text-xs"></p>
+       </div>
+      </div>
+     </details>
+
       </div>
      </section>
      </div>
@@ -867,9 +882,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
    <footer class="relative z-10 w-full px-5 pb-8 sm:px-8">
     <div class="mx-auto flex max-w-6xl flex-col items-center gap-1 text-center text-slate-500 text-sm">
-     <span class="text-xs text-slate-400">Este projeto é de iniciativa docente. Não substitui os sistemas institucionais do IFSul — a chamada oficial é registrada no SUAP, após validação do professor.</span>
-     <span class="text-xs text-slate-400">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a></span>
-     <span id="footer-credit" class="text-xs text-slate-400"><span id="footer-year"></span> - Desenvolvido por <a href="https://douglasc.top/sobre/" target="_blank" rel="noopener" class="underline hover:text-slate-600">Prof. Douglas Camargo Carvalho</a>, docente do IFSul — Campus Sapiranga.</span>
+     <span class="text-xs text-slate-500">Este projeto é de iniciativa docente. Não substitui os sistemas institucionais do IFSul — a chamada oficial é registrada no SUAP, após validação do professor.</span>
+     <span class="text-xs text-slate-500">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a></span>
+     <span id="footer-credit" class="text-xs text-slate-500"><span id="footer-year"></span> - Desenvolvido por <a href="https://douglasc.top/sobre/" target="_blank" rel="noopener" class="underline hover:text-slate-600">Prof. Douglas Camargo Carvalho</a>, docente do IFSul — Campus Sapiranga.</span>
     </div>
    </footer>
   </div>
@@ -880,7 +895,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      <div class="student-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-extrabold" aria-hidden="true"></div>
      <div class="min-w-0">
       <h3 class="student-name truncate font-bold"></h3>
-      <span class="waiting-status text-xs text-slate-400">Aguardando registro</span> <span class="present-status hidden items-center gap-1.5 text-xs font-semibold text-emerald-700"> <i data-lucide="circle-check" aria-hidden="true" class="h-4 w-4"></i> <span class="present-status-label">Presente</span> </span>
+      <span class="waiting-status text-xs text-slate-500">Aguardando registro</span> <span class="present-status hidden items-center gap-1.5 text-xs font-semibold text-emerald-700"> <i data-lucide="circle-check" aria-hidden="true" class="h-4 w-4"></i> <span class="present-status-label">Presente</span> </span>
      </div>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
@@ -988,14 +1003,48 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    </section>
   </div>
 
+  <!-- Modal: confirmar ação importante com a senha (campo oculto) -->
+  <div id="reauth-backdrop" class="modal-backdrop hidden" aria-hidden="true" style="z-index: 70;">
+   <section class="teacher-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="reauth-title">
+    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+     <i data-lucide="shield-alert" aria-hidden="true" class="h-6 w-6"></i>
+    </div>
+    <h2 id="reauth-title" class="text-xl font-extrabold text-[var(--ink)]">Confirmar</h2>
+    <p id="reauth-message" class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600"></p>
+    <form id="reauth-form" class="mt-4" novalidate>
+     <label class="mb-2 block text-sm font-semibold text-slate-700" for="reauth-input">Sua senha <span id="reauth-email" class="font-normal text-slate-500"></span></label>
+     <input id="reauth-input" class="text-field" type="password" autocomplete="current-password" placeholder="Digite sua senha">
+     <div id="reauth-error" class="notice notice-error mt-3 hidden" role="alert">
+      <i data-lucide="circle-alert" aria-hidden="true" class="h-5 w-5 shrink-0"></i> <span>Senha incorreta. Tente novamente.</span>
+     </div>
+     <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <button id="btn-cancel-reauth" class="action-button focus-ring rounded-xl px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold" type="button">Cancelar</button>
+      <button id="btn-submit-reauth" class="action-button focus-ring rounded-xl px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold" type="submit">Confirmar</button>
+     </div>
+    </form>
+   </section>
+  </div>
+
+  <!-- Aviso flutuante (sucesso/erro), sempre visível na parte de baixo da tela -->
+  <div id="toast" class="hidden" role="status" aria-live="polite" style="position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; width: min(calc(100% - 32px), 520px);">
+   <div id="toast-box" class="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl">
+    <span id="toast-icon" aria-hidden="true"></span>
+    <span id="toast-text" class="min-w-0 flex-1"></span>
+    <button id="btn-close-toast" class="shrink-0 rounded-lg px-1 text-lg leading-none opacity-70 hover:opacity-100 focus-ring" type="button" aria-label="Fechar aviso">×</button>
+   </div>
+  </div>
+
   <!-- Modal: código do dia em tamanho grande, para mostrar aos alunos -->
   <div id="code-display-backdrop" class="modal-backdrop hidden" aria-hidden="true">
    <section class="teacher-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="code-display-label">
     <p id="code-display-turma" class="text-sm font-semibold text-slate-500"></p>
-    <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-400">Código do dia</p>
+    <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Código do dia</p>
     <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(4rem, 24vw, 7.5rem); line-height: 1; letter-spacing: .12em;">—</p>
     <p id="code-display-validity" class="mt-4 text-base font-semibold text-emerald-700"></p>
-    <button id="btn-close-code-display" class="action-button focus-ring mt-6 w-full rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
+    <div class="mt-6 grid gap-2 sm:grid-cols-2">
+     <button id="btn-code-display-chamada" class="action-button focus-ring rounded-xl px-4 py-3 bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold" type="button">Ver chamada</button>
+     <button id="btn-close-code-display" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
+    </div>
    </section>
   </div>
 
@@ -1160,7 +1209,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     const TIME_ZONE = "America/Sao_Paulo";
     const DEFAULT_CODE_DURATION_MIN = 180; // turmas antigas, sem codigoDuracaoMin salvo, continuam valendo 3h
-    const PRESENCA_RETENTION_MS = 72 * 60 * 60 * 1000; // presenças são apagadas automaticamente após 72h (TTL do Firestore)
+    const PRESENCA_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // presenças são apagadas automaticamente após 7 dias
     const ATRASO_RETENTION_MS = 180 * 24 * 60 * 60 * 1000; // fotos de atraso são apagadas automaticamente após 180 dias
 
     // Compressão das fotos de atraso (feita no navegador, antes do envio — a
@@ -1501,11 +1550,30 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       globalMessage.classList.add("hidden");
     }
 
+    // Aviso flutuante na parte de baixo da tela: aparece por cima de tudo,
+    // mesmo se o professor estiver rolado lá embaixo na lista de turmas.
+    let toastTimer = null;
+    function showToast(type, text) {
+      const toast = document.getElementById("toast");
+      const box = document.getElementById("toast-box");
+      box.className = `flex items-start gap-3 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl ${type === "error" ? "bg-red-600 text-white" : type === "success" ? "bg-[#1f5f30] text-white" : "bg-slate-800 text-white"}`;
+      document.getElementById("toast-icon").textContent = type === "error" ? "✕" : type === "success" ? "✓" : "ℹ";
+      document.getElementById("toast-text").textContent = text;
+      toast.setAttribute("role", type === "error" ? "alert" : "status");
+      toast.classList.remove("hidden");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, type === "error" ? 8000 : 4500);
+    }
+
+    function hideToast() {
+      clearTimeout(toastTimer);
+      document.getElementById("toast").classList.add("hidden");
+    }
+
+    document.getElementById("btn-close-toast").addEventListener("click", hideToast);
+
     function showTeacherMessage(type, text) {
-      teacherDashboardMessage.className = `notice mt-4 ${type === "success" ? "notice-success" : type === "error" ? "notice-error" : "notice-info"}`;
-      teacherDashboardMessageText.textContent = text;
-      teacherDashboardMessageIcon.setAttribute("data-lucide", type === "success" ? "circle-check" : type === "error" ? "circle-alert" : "info");
-      if (window.lucide) lucide.createIcons();
+      showToast(type, text);
     }
 
     function hideTeacherMessage() {
@@ -1773,13 +1841,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       info.appendChild(title);
       if (turma.professorNome || turma.professorEmail) {
         const subtitle = document.createElement("div");
-        subtitle.className = "text-xs text-slate-400 truncate";
+        subtitle.className = "text-xs text-slate-500 truncate";
         subtitle.textContent = professorLabel(turma);
         info.appendChild(subtitle);
       }
       const icon = document.createElement("i");
       icon.setAttribute("data-lucide", "chevron-right");
-      icon.className = "h-5 w-5 text-slate-400 shrink-0";
+      icon.className = "h-5 w-5 text-slate-500 shrink-0";
       card.appendChild(info);
       card.appendChild(icon);
       card.addEventListener("click", () => enterTurma(turma.id));
@@ -1856,12 +1924,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       studentDailyCodeInput.value = "";
       studentList.innerHTML = "";
       setTeacherModeActive(false);
+      attendanceFromDashboard = false;
+      applyAttendanceModeUI();
     }
 
     btnTrocarTurma.addEventListener("click", () => {
+      if (attendanceFromDashboard) {
+        goBackTeacher();
+        return;
+      }
       exitAttendanceIfAny();
       showView("turma-select");
     });
+
+    // Aberta pelo botão "Chamada" do painel: o botão de voltar leva às turmas
+    // do professor, e o "Modo professor" fica sempre ligado (não aparece).
+    function applyAttendanceModeUI() {
+      btnTrocarTurma.lastChild.textContent = attendanceFromDashboard ? " Voltar às turmas" : " Trocar turma";
+      btnTeacherMode.classList.toggle("hidden", attendanceFromDashboard);
+    }
 
     // ---------------------------------------------------------------------
     // Código do dia (por turma)
@@ -1885,7 +1966,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     // Cada presença guarda até quando ela deve existir; uma política de TTL
     // configurada no Firestore Console apaga automaticamente o documento
-    // depois desse horário (retenção de 72h, ver README).
+    // depois desse horário (retenção de 7 dias, ver README).
     function presencaExpiraEm() {
       return Timestamp.fromMillis(Date.now() + PRESENCA_RETENTION_MS);
     }
@@ -2051,10 +2132,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const waitingStatus = row.querySelector(".waiting-status");
       const presentStatus = row.querySelector(".present-status");
 
+      // Aluno: depois de marcar, só a confirmação ("Presente · 08:05"). O
+      // "Desfazer" (que pede a senha do professor) só aparece para professor.
+      const record = getTodayRecord(name);
+      const canUndo = isTeacherModeActive || isTeacherAuthenticated;
+      row.querySelector(".present-status-label").textContent = record && record.horario ? `Presente · ${record.horario}` : "Presente";
       row.classList.toggle("is-present", isPresent);
       markButton.classList.toggle("hidden", isPresent);
-      presentActions.classList.toggle("hidden", !isPresent);
-      presentActions.classList.toggle("flex", isPresent);
+      presentActions.classList.toggle("hidden", !isPresent || !canUndo);
+      presentActions.classList.toggle("flex", isPresent && canUndo);
       identityActions.classList.add("hidden");
       identityActions.classList.remove("flex");
       waitingStatus.classList.toggle("hidden", isPresent);
@@ -2075,12 +2161,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         renderRow(row);
       });
 
+      // Professor: quem ainda NÃO marcou fica no topo. Aluno: presentes no topo.
+      const absentFirst = isTeacherModeActive;
       rows.sort((a, b) => {
         const recordA = getTodayRecord(a.dataset.studentName);
         const recordB = getTodayRecord(b.dataset.studentName);
 
-        if (recordA && !recordB) return -1;
-        if (!recordA && recordB) return 1;
+        if (recordA && !recordB) return absentFirst ? 1 : -1;
+        if (!recordA && recordB) return absentFirst ? -1 : 1;
 
         if (recordA && recordB) {
           const dateTimeA = `${recordA.data}T${recordA.horario}`;
@@ -2209,7 +2297,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           codigoUsado: selectedTurmaData.codigoDoDia,
           expiraEm: presencaExpiraEm()
         });
-        showMessage("success", `Presença de ${name} registrada com sucesso.`);
+        showMessage("success", isTeacherModeActive
+          ? `Presença de ${name} registrada.`
+          : `Presença de ${name} registrada às ${current.time}. Pode fechar esta página.`);
       } catch (error) {
         showMessage("error", "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
       } finally {
@@ -2272,6 +2362,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (event.key === "Escape" && !studentInfoModalBackdrop.classList.contains("hidden")) {
         closeStudentInfoModal();
       }
+      if (event.key === "Escape" && !reauthBackdrop.classList.contains("hidden")) {
+        closePasswordConfirmation(false);
+        return;
+      }
       if (event.key === "Escape" && !codeDisplayBackdrop.classList.contains("hidden")) {
         closeCodeDisplay();
       }
@@ -2302,11 +2396,22 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
+    // O login vem preenchido com o último e-mail usado NESTE aparelho (no
+    // primeiro acesso, vazio) — nunca com o e-mail da conta master, para
+    // ninguém tentar a própria senha no e-mail do administrador.
+    const LAST_LOGIN_EMAIL_KEY = "chamada:ultimoEmail";
+    function readLastLoginEmail() {
+      try { return localStorage.getItem(LAST_LOGIN_EMAIL_KEY) || ""; } catch (error) { return ""; }
+    }
+    function writeLastLoginEmail(email) {
+      try { localStorage.setItem(LAST_LOGIN_EMAIL_KEY, email); } catch (error) { /* só conveniência */ }
+    }
+
     const teacherGateRememberWrap = document.getElementById("teacher-gate-remember-wrap");
     const teacherGateRemember = document.getElementById("teacher-gate-remember");
 
     function openTeacherGateModal() {
-      if (!teacherGateEmail.value) teacherGateEmail.value = TEACHER_EMAIL;
+      if (!teacherGateEmail.value) teacherGateEmail.value = readLastLoginEmail();
       // Confirmar senha para desfazer presença não muda como a sessão é guardada
       teacherGateRememberWrap.classList.toggle("hidden", teacherGateIntent === "undo");
       teacherGateRemember.checked = readKeepSignedIn();
@@ -2322,7 +2427,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherGateModalBackdrop.classList.remove("hidden");
       teacherGateModalBackdrop.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
-      setTimeout(() => teacherGateEmail.focus(), 0);
+      setTimeout(() => (teacherGateEmail.value ? teacherGatePassword : teacherGateEmail).focus(), 0);
     }
 
     function closeTeacherGateModal() {
@@ -2349,8 +2454,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         ? "Todas as turmas (todos os professores)"
         : "Turmas cadastradas";
       adminPanelSection.classList.toggle("hidden", !isMasterAccount);
-      teacherOptionsHistoryPushed = false;
-      showTeacherTurmasView();
+      resetTeacherScreens();
       updateSuapTipVisibility();
       setTeacherAreaHash(true);
       teacherShortcutUrl.textContent = location.origin + location.pathname + TEACHER_AREA_HASH;
@@ -2433,6 +2537,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       try {
         await signInWithEmailAndPassword(auth, teacherGateEmail.value.trim(), teacherGatePassword.value);
         if (rememberOffered) writeKeepSignedIn(keepSignedIn);
+        writeLastLoginEmail(teacherGateEmail.value.trim());
       } catch (error) {
         teacherGateErrorText.textContent = authErrorMessage(error);
         teacherGateError.classList.remove("hidden");
@@ -2689,15 +2794,53 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       return chip;
     }
 
+    // Com mais de 6 turmas: busca por nome e ⭐ para fixar turmas no topo
+    // (as fixadas ficam guardadas neste aparelho, por professor).
+    const teacherTurmasSearchWrap = document.getElementById("teacher-turmas-search-wrap");
+    const teacherTurmasSearch = document.getElementById("teacher-turmas-search");
+    const teacherTurmasSearchEmpty = document.getElementById("teacher-turmas-search-empty");
+
+    function hasManyTurmas() {
+      return allTeacherTurmas.length > 6;
+    }
+
+    function pinnedTurmasKey() {
+      return `chamada:turmasFixadas:${auth.currentUser ? auth.currentUser.uid : ""}`;
+    }
+
+    function readPinnedTurmas() {
+      try { return new Set(JSON.parse(localStorage.getItem(pinnedTurmasKey()) || "[]")); } catch (error) { return new Set(); }
+    }
+
+    function togglePinnedTurma(turmaId) {
+      const pinned = readPinnedTurmas();
+      if (pinned.has(turmaId)) pinned.delete(turmaId); else pinned.add(turmaId);
+      try { localStorage.setItem(pinnedTurmasKey(), JSON.stringify([...pinned])); } catch (error) { /* só conveniência */ }
+      renderFilteredTeacherTurmasRows();
+    }
+
     function renderFilteredTeacherTurmasRows() {
-      const filtered = teacherTurmasFilterUid
+      const many = hasManyTurmas();
+      teacherTurmasSearchWrap.classList.toggle("hidden", !many);
+      if (!many) teacherTurmasSearch.value = "";
+
+      let filtered = teacherTurmasFilterUid
         ? allTeacherTurmas.filter((t) => t.professorUid === teacherTurmasFilterUid)
         : allTeacherTurmas;
+      const term = normalize(teacherTurmasSearch.value);
+      if (term) filtered = filtered.filter((t) => normalize(t.nome).includes(term));
+      if (many) {
+        const pinned = readPinnedTurmas();
+        filtered = [...filtered].sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id)));
+      }
 
       teacherTurmasList.innerHTML = "";
-      teacherTurmasEmpty.classList.toggle("hidden", filtered.length > 0);
+      teacherTurmasEmpty.classList.toggle("hidden", Boolean(term) || filtered.length > 0);
+      teacherTurmasSearchEmpty.classList.toggle("hidden", !term || filtered.length > 0);
       filtered.forEach((turma) => teacherTurmasList.appendChild(createTeacherTurmaRow(turma)));
     }
+
+    teacherTurmasSearch.addEventListener("input", renderFilteredTeacherTurmasRows);
 
     function createTeacherTurmaRow(turma) {
       const row = document.createElement("div");
@@ -2707,10 +2850,26 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const name = document.createElement("div");
       name.className = "font-semibold text-[var(--ink)] truncate";
       name.textContent = turma.nome || "Turma sem nome";
-      info.appendChild(name);
+      if (hasManyTurmas()) {
+        const pinned = readPinnedTurmas().has(turma.id);
+        const titleRow = document.createElement("div");
+        titleRow.className = "flex min-w-0 items-center gap-1";
+        const star = document.createElement("button");
+        star.type = "button";
+        star.className = `focus-ring -my-2 -ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-2xl leading-none hover:bg-slate-100 ${pinned ? "text-amber-500" : "text-slate-500"}`;
+        star.textContent = pinned ? "★" : "☆";
+        star.setAttribute("aria-pressed", String(pinned));
+        star.setAttribute("aria-label", pinned ? `Desafixar ${turma.nome}` : `Fixar ${turma.nome} no topo`);
+        star.title = pinned ? "Fixada no topo (toque para desafixar)" : "Fixar no topo";
+        star.addEventListener("click", () => togglePinnedTurma(turma.id));
+        titleRow.append(star, name);
+        info.appendChild(titleRow);
+      } else {
+        info.appendChild(name);
+      }
       if (isMasterAccount && turma.professorUid !== auth.currentUser.uid) {
         const owner = document.createElement("div");
-        owner.className = "text-xs text-slate-400 truncate";
+        owner.className = "text-xs text-slate-500 truncate";
         owner.textContent = professorLabel(turma);
         info.appendChild(owner);
       }
@@ -2718,20 +2877,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codeLine.className = "text-xs mt-0.5";
       if (turma.codigoDoDia) {
         const active = isCodeActive(turma);
-        codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-400";
+        codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-500";
         codeLine.textContent = active
           ? `Código: ${turma.codigoDoDia} (expira em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`
           : `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeDefinedAtMillis(turma) + codeValidityMs(turma))})`;
       } else {
-        codeLine.className += " text-slate-400";
+        codeLine.className += " text-slate-500";
         codeLine.textContent = "Nenhum código definido";
       }
       info.appendChild(codeLine);
 
       const actions = document.createElement("div");
-      // Celular: grade 2×2 ocupando a largura toda (nomes completos, botões
+      // Celular: grade ocupando a largura toda (nomes completos, botões
       // largos para o dedo). A partir de 640px: uma linha, como antes.
-      actions.className = "grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center";
+      actions.className = "grid w-full grid-cols-6 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center";
 
       function makeQuickCodeButton(minutes, label) {
         const quickBtn = document.createElement("button");
@@ -2750,7 +2909,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
               codigoDuracaoMin: minutes
             });
             showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
-            showCodeDisplay(turma.nome, code, minutes);
+            showCodeDisplay(turma, code, minutes);
           } catch (error) {
             showTeacherMessage("error", "Não foi possível gerar o código. Tente novamente.");
           } finally {
@@ -2770,14 +2929,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btn.textContent = "Gerenciar";
       btn.addEventListener("click", () => manageTurma(turma.id));
 
+      const btnChamada = document.createElement("button");
+      btnChamada.type = "button";
+      btnChamada.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32]";
+      btnChamada.textContent = "Chamada";
+      btnChamada.addEventListener("click", () => openTeacherChamada(turma.id));
+
       const btnAtrasos = document.createElement("button");
       btnAtrasos.type = "button";
       btnAtrasos.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
       btnAtrasos.textContent = "📷 Atrasos";
       btnAtrasos.addEventListener("click", () => openAtrasosModal(turma));
 
+      // Celular: "Gerar código" 1h e 3h em cima; Chamada, Atrasos e Gerenciar embaixo
+      btnCode1h.classList.add("col-span-3");
+      btnCode3h.classList.add("col-span-3");
+      [btnChamada, btnAtrasos, btn].forEach((b) => b.classList.add("col-span-2"));
       actions.appendChild(btnCode1h);
       actions.appendChild(btnCode3h);
+      actions.appendChild(btnChamada);
       actions.appendChild(btnAtrasos);
       actions.appendChild(btn);
       row.appendChild(info);
@@ -2869,11 +3039,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         newTurmaAlunos.value = "";
         showTeacherMessage("success", `Turma "${nome}" criada com sucesso.`);
         await refreshMyTurmasList();
-        if (!teacherOptionsView.classList.contains("hidden")) {
-          teacherOptionsHistoryPushed = false; // a entrada extra do histórico fica inofensiva
-          showTeacherTurmasView();
-        }
-        manageTurma(turmaRef.id);
+        manageTurma(turmaRef.id); // troca direto da tela de Opções para o Gerenciar da nova turma
       } catch (error) {
         showTeacherMessage("error", "Não foi possível criar a turma. Verifique a conexão com o Firebase.");
       } finally {
@@ -2887,7 +3053,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function manageTurma(turmaId) {
       stopManagingTurma();
       teacherManagingTurmaId = turmaId;
-      teacherManagePanel.classList.remove("hidden");
+      setTeacherScreen("manage");
+      pushTeacherHistory();
       manageCodeStatus.textContent = "";
 
       unsubManageTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
@@ -2914,7 +3081,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         renderManageAlunosList();
       });
 
-      teacherManagePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      loadHistory(); // histórico já aberto no dia mais recente
     }
 
     function stopManagingTurma() {
@@ -2941,7 +3108,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       historyDayPanel.classList.add("hidden");
       btnLoadHistory.classList.remove("hidden");
       btnLoadHistory.disabled = false;
-      btnLoadHistory.textContent = "Carregar histórico";
+      btnLoadHistory.textContent = "Atualizar";
     }
 
     function formatDisplayDate(isoDate) {
@@ -2991,17 +3158,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const snap = await getDocs(collection(db, "turmas", teacherManagingTurmaId, "presencas"));
         historyPresencas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       } catch (error) {
-        alert("Não foi possível carregar o histórico. Tente novamente.");
+        showToast("error", "Não foi possível carregar o histórico. Tente novamente.");
         btnLoadHistory.disabled = false;
-        btnLoadHistory.textContent = "Carregar histórico";
+        btnLoadHistory.textContent = "Atualizar";
         return;
       }
+      btnLoadHistory.disabled = false;
+      btnLoadHistory.textContent = "Atualizar";
 
       const dates = [...new Set(historyPresencas.map((r) => r.data))].sort((a, b) => b.localeCompare(a));
 
       historyDatesList.innerHTML = "";
       historyDayPanel.classList.add("hidden");
-      btnLoadHistory.classList.add("hidden");
 
       if (!dates.length) {
         historyEmpty.classList.remove("hidden");
@@ -3030,6 +3198,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         .sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
 
       historyDayTitle.textContent = `${formatDisplayDate(isoDate)} — ${dayRecords.length} presente(s) de ${roster.length}`;
+      // Quando esse dia será apagado (retenção de 7 dias das presenças)
+      const expiraMillis = Math.max(0, ...dayRecords.map((r) => (r.expiraEm && r.expiraEm.toMillis ? r.expiraEm.toMillis() : 0)));
+      if (expiraMillis) {
+        const aviso = document.createElement("span");
+        aviso.className = "block text-xs font-semibold text-amber-700";
+        aviso.textContent = `Será apagado automaticamente em ${formatDateTimeOfDay(expiraMillis)}`;
+        historyDayTitle.appendChild(aviso);
+      }
       historyDayList.innerHTML = "";
       roster.forEach((aluno) => {
         const record = recordByAluno.get(normalize(aluno.nome));
@@ -3074,7 +3250,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 14], `chamada-${safeName}-${historySelectedDate}.xlsx`);
     });
 
-    btnManageBack.addEventListener("click", stopManagingTurma);
+    btnManageBack.addEventListener("click", goBackTeacher);
 
     async function deleteAllDocsIn(collectionRef) {
       const snap = await getDocs(collectionRef);
@@ -3085,6 +3261,57 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await batch.commit();
       }
     }
+
+    // Confirmação com senha numa janela própria (campo oculto: a senha nunca
+    // aparece na tela, nem se o computador estiver no projetor). Só fecha
+    // com a senha certa ou em "Cancelar".
+    const reauthBackdrop = document.getElementById("reauth-backdrop");
+    const reauthInput = document.getElementById("reauth-input");
+    const reauthError = document.getElementById("reauth-error");
+    const btnSubmitReauth = document.getElementById("btn-submit-reauth");
+    let reauthResolve = null;
+
+    function askPasswordConfirmation({ title, message, confirmLabel }) {
+      if (!auth.currentUser) return Promise.resolve(false);
+      document.getElementById("reauth-title").textContent = title;
+      document.getElementById("reauth-message").textContent = message || "";
+      document.getElementById("reauth-email").textContent = `(${auth.currentUser.email})`;
+      btnSubmitReauth.textContent = confirmLabel || "Confirmar";
+      btnSubmitReauth.disabled = false;
+      reauthInput.value = "";
+      reauthError.classList.add("hidden");
+      reauthBackdrop.classList.remove("hidden");
+      reauthBackdrop.setAttribute("aria-hidden", "false");
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => reauthInput.focus(), 0);
+      return new Promise((resolve) => { reauthResolve = resolve; });
+    }
+
+    function closePasswordConfirmation(result) {
+      reauthBackdrop.classList.add("hidden");
+      reauthBackdrop.setAttribute("aria-hidden", "true");
+      reauthInput.value = "";
+      const resolve = reauthResolve;
+      reauthResolve = null;
+      if (resolve) resolve(result);
+    }
+
+    document.getElementById("reauth-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const senha = reauthInput.value;
+      if (!senha || !auth.currentUser) return;
+      btnSubmitReauth.disabled = true;
+      try {
+        await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, senha));
+        closePasswordConfirmation(true);
+      } catch (error) {
+        reauthError.classList.remove("hidden");
+        reauthInput.select();
+        btnSubmitReauth.disabled = false;
+      }
+    });
+    document.getElementById("btn-cancel-reauth").addEventListener("click", () => closePasswordConfirmation(false));
+    reauthInput.addEventListener("input", () => reauthError.classList.add("hidden"));
 
     // Apaga a turma e tudo dentro dela (fotos de atrasos, presenças, alunos)
     async function deleteTurmaCompletely(turmaId) {
@@ -3099,37 +3326,24 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!teacherManagingTurmaId || !teacherManagingTurmaData || !auth.currentUser) return;
       const nomeTurma = teacherManagingTurmaData.nome || "esta turma";
 
-      const confirmado = confirm(
-        `Tem certeza que deseja excluir "${nomeTurma}"?\n\nIsso apaga TODOS os alunos, TODO o histórico de presenças e TODAS as fotos de atrasos dessa turma, para sempre. Essa ação não pode ser desfeita.`
-      );
-      if (!confirmado) return;
-
-      const senha = prompt(`Para confirmar, digite sua senha de professor (${auth.currentUser.email}):`);
-      if (!senha) return;
-
       const turmaId = teacherManagingTurmaId;
+      const confirmado = await askPasswordConfirmation({
+        title: `Excluir "${nomeTurma}"?`,
+        message: "Isso apaga TODOS os alunos, TODO o histórico de presenças e TODAS as fotos de atrasos dessa turma, para sempre. Essa ação não pode ser desfeita.",
+        confirmLabel: "Excluir turma"
+      });
+      if (!confirmado || teacherManagingTurmaId !== turmaId) return;
+
       btnDeleteTurma.disabled = true;
       btnDeleteTurma.textContent = "Excluindo…";
 
       try {
-        await reauthenticateWithCredential(
-          auth.currentUser,
-          EmailAuthProvider.credential(auth.currentUser.email, senha)
-        );
-      } catch (error) {
-        alert("Senha incorreta. A turma não foi excluída.");
-        btnDeleteTurma.disabled = false;
-        btnDeleteTurma.textContent = "Excluir turma";
-        return;
-      }
-
-      try {
         await deleteTurmaCompletely(turmaId);
-        stopManagingTurma();
+        goBackTeacher();
         showTeacherMessage("success", `Turma "${nomeTurma}" excluída com sucesso.`);
         await refreshMyTurmasList();
       } catch (error) {
-        alert("Não foi possível excluir a turma completamente. Tente novamente.");
+        showToast("error", "Não foi possível excluir a turma completamente. Tente novamente.");
       } finally {
         btnDeleteTurma.disabled = false;
         btnDeleteTurma.textContent = "Excluir turma";
@@ -3161,7 +3375,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           try {
             await updateDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id), { nome: nomeLimpo });
           } catch (error) {
-            alert("Não foi possível renomear o aluno. Tente novamente.");
+            showToast("error", "Não foi possível renomear o aluno. Tente novamente.");
           }
         });
         const del = document.createElement("button");
@@ -3174,7 +3388,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           try {
             await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "alunos", aluno.id));
           } catch (error) {
-            alert("Não foi possível remover o aluno. Tente novamente.");
+            showToast("error", "Não foi possível remover o aluno. Tente novamente.");
           }
         });
         actions.appendChild(edit);
@@ -3250,7 +3464,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await updateDoc(doc(db, "turmas", teacherManagingTurmaId), { nome: nomeLimpo });
         closeEditTurmaNomeForm();
       } catch (error) {
-        alert("Não foi possível renomear a turma. Tente novamente.");
+        showToast("error", "Não foi possível renomear a turma. Tente novamente.");
       } finally {
         btnSaveTurmaNome.disabled = false;
       }
@@ -3266,7 +3480,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         });
         manageCodeStatus.textContent = `Código salvo! A turma já pode usá-lo pelas próximas ${formatDurationLabel(minutes)}.`;
         manageCodeStatus.className = "mt-1 text-xs text-emerald-600 font-semibold";
-        showCodeDisplay(teacherManagingTurmaData && teacherManagingTurmaData.nome, code, minutes);
+        showCodeDisplay(teacherManagingTurmaData, code, minutes);
       } catch (error) {
         manageCodeStatus.textContent = "Não foi possível salvar o código. Tente novamente.";
         manageCodeStatus.className = "mt-1 text-xs text-red-600 font-semibold";
@@ -3305,7 +3519,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         manageAddAlunoNome.value = "";
         manageAddAlunoNome.focus();
       } catch (error) {
-        alert("Não foi possível adicionar o aluno. Tente novamente.");
+        showToast("error", "Não foi possível adicionar o aluno. Tente novamente.");
       }
     });
 
@@ -3328,7 +3542,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await batch.commit();
         manageImportAlunos.value = "";
       } catch (error) {
-        alert("Não foi possível importar a lista. Tente novamente.");
+        showToast("error", "Não foi possível importar a lista. Tente novamente.");
       } finally {
         btnImportAlunos.disabled = false;
       }
@@ -3437,16 +3651,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       });
     }
 
-    async function confirmWithMasterPassword(message) {
-      const senha = prompt(`${message}\n\nPara confirmar, digite sua senha (${auth.currentUser.email}):`);
-      if (!senha) return false;
-      try {
-        await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, senha));
-        return true;
-      } catch (error) {
-        alert("Senha incorreta. Nada foi alterado.");
-        return false;
-      }
+    function confirmWithMasterPassword(message) {
+      return askPasswordConfirmation({ title: "Remover professor", message, confirmLabel: "Remover" });
     }
 
     // --- Lista de professores (Painel admin) ------------------------------
@@ -3710,50 +3916,114 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const teacherOptionsView = document.getElementById("teacher-options-view");
     const teacherTurmasSection = document.getElementById("teacher-turmas-section");
     const btnOpenTeacherOptions = document.getElementById("btn-open-more-options");
-    let teacherOptionsHistoryPushed = false;
+    // Telas dentro da Área do professor: "turmas" (padrão), "options" (⚙️
+    // Opções) e "manage" (Gerenciar). A tela "Chamada" (aberta pelo botão
+    // da turma) usa a tela de chamada normal, em modo professor. Em todas,
+    // o "Voltar" do celular volta para as turmas, na mesma posição de
+    // rolagem em que o professor estava.
+    let teacherHistoryPushed = false;
+    let currentTeacherScreen = "turmas";
+    let turmasScrollY = 0;
+    let attendanceFromDashboard = false;
 
-    // "⚙️ Opções" troca a lista de turmas pela tela de opções (Minha conta,
-    // Nova turma, Painel admin, Atalho). O "Voltar" do celular volta para as
-    // turmas, em vez de sair do site.
-    function showTeacherOptionsView(section) {
-      stopManagingTurma();
-      teacherTurmasSection.classList.add("hidden");
-      teacherOptionsView.classList.remove("hidden");
-      btnOpenTeacherOptions.classList.add("hidden");
-      btnTeacherBack.classList.add("invisible"); // só "Voltar para as turmas" nesta tela
-      if (!teacherOptionsHistoryPushed) {
-        history.pushState({ teacherOptions: true }, "", location.href);
-        teacherOptionsHistoryPushed = true;
-      }
-      if (section) {
-        section.open = true;
-        section.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-      if (window.lucide) lucide.createIcons();
+    function pushTeacherHistory() {
+      if (teacherHistoryPushed) return;
+      history.pushState({ teacherScreen: true }, "", location.href);
+      teacherHistoryPushed = true;
     }
 
-    function showTeacherTurmasView() {
-      teacherOptionsView.classList.add("hidden");
-      teacherTurmasSection.classList.remove("hidden");
-      btnOpenTeacherOptions.classList.remove("hidden");
-      btnTeacherBack.classList.remove("invisible");
-    }
-
-    function closeTeacherOptionsView() {
-      if (teacherOptionsHistoryPushed) {
+    function goBackTeacher() {
+      if (teacherHistoryPushed) {
         history.back(); // o popstate abaixo troca a tela
+      } else if (attendanceFromDashboard) {
+        returnFromTeacherChamada();
       } else {
         showTeacherTurmasView();
       }
     }
 
-    window.addEventListener("popstate", () => {
-      if (!teacherOptionsHistoryPushed) return;
-      teacherOptionsHistoryPushed = false;
-      showTeacherTurmasView();
+    function setTeacherScreen(name) {
+      const previous = currentTeacherScreen;
+      if (previous === "turmas" && name !== "turmas") turmasScrollY = window.scrollY;
+      currentTeacherScreen = name;
+      teacherTurmasSection.classList.toggle("hidden", name !== "turmas");
+      teacherOptionsView.classList.toggle("hidden", name !== "options");
+      if (name !== "manage") teacherManagePanel.classList.add("hidden");
+      else teacherManagePanel.classList.remove("hidden");
+      btnOpenTeacherOptions.classList.toggle("hidden", name !== "turmas");
+      btnTeacherBack.classList.toggle("invisible", name !== "turmas"); // nas outras telas, só "Voltar para as turmas"
+      if (name === "turmas" && previous !== "turmas") {
+        requestAnimationFrame(() => window.scrollTo({ top: turmasScrollY }));
+      } else if (name !== "turmas") {
+        window.scrollTo({ top: 0 });
+      }
+    }
+
+    function showTeacherTurmasView() {
+      stopManagingTurma();
+      setTeacherScreen("turmas");
+    }
+
+    function resetTeacherScreens() {
+      teacherHistoryPushed = false;
+      turmasScrollY = 0;
+      stopManagingTurma();
+      currentTeacherScreen = "turmas";
+      setTeacherScreen("turmas");
+    }
+
+    function showTeacherOptionsView(section) {
+      stopManagingTurma();
+      setTeacherScreen("options");
+      pushTeacherHistory();
+      if (section) {
+        section.open = true;
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeTeacherOptionsView() {
+      goBackTeacher();
+    }
+
+    // --- Chamada da turma aberta pelo painel -------------------------------
+    // Abre a lista da turma já liberada (dono logado ou conta master, as
+    // regras do Firestore permitem), com quem ainda não marcou no topo.
+    function openTeacherChamada(turmaId) {
+      if (!auth.currentUser) return;
+      if (currentTeacherScreen === "turmas" && !viewTeacherDashboard.classList.contains("hidden")) turmasScrollY = window.scrollY;
+      closeCodeDisplay();
+      stopManagingTurma();
+      currentTeacherScreen = "turmas";
+      teacherTurmasSection.classList.remove("hidden");
+      teacherOptionsView.classList.add("hidden");
+      btnOpenTeacherOptions.classList.remove("hidden");
+      btnTeacherBack.classList.remove("invisible");
+      enterTurma(turmaId);
+      // mostra o nome na hora (a leitura da turma no banco chega logo depois)
+      const turmaConhecida = allTeacherTurmas.find((t) => t.id === turmaId);
+      if (turmaConhecida) attendanceTurmaName.textContent = turmaConhecida.nome || "Turma";
+      attendanceFromDashboard = true;
+      setTeacherModeActive(true);
+      applyAttendanceModeUI();
+      pushTeacherHistory();
       window.scrollTo({ top: 0 });
+    }
+
+    function returnFromTeacherChamada() {
+      attendanceFromDashboard = false;
+      exitAttendanceIfAny();
+      showView("teacher-dashboard");
+      setTeacherAreaHash(true);
+      requestAnimationFrame(() => window.scrollTo({ top: turmasScrollY }));
+    }
+
+    window.addEventListener("popstate", () => {
+      if (!teacherHistoryPushed) return;
+      teacherHistoryPushed = false;
+      if (attendanceFromDashboard) returnFromTeacherChamada();
+      else showTeacherTurmasView();
     });
 
     btnOpenTeacherOptions.addEventListener("click", () => showTeacherOptionsView(null));
@@ -3773,8 +4043,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     // Depois de gerar/salvar um código: mostra o código bem grande, para
     // mostrar a tela aos alunos ou projetar.
-    function showCodeDisplay(turmaNome, code, minutes) {
-      codeDisplayTurma.textContent = turmaNome || "";
+    let codeDisplayTurmaId = null;
+    function showCodeDisplay(turma, code, minutes) {
+      codeDisplayTurmaId = turma ? turma.id : null;
+      codeDisplayTurma.textContent = (turma && turma.nome) || "";
       codeDisplayValue.textContent = code;
       codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(Date.now() + minutes * 60 * 1000)} (${formatDurationLabel(minutes)})`;
       codeDisplayBackdrop.classList.remove("hidden");
@@ -3790,6 +4062,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     document.getElementById("btn-close-code-display").addEventListener("click", closeCodeDisplay);
+    document.getElementById("btn-code-display-chamada").addEventListener("click", () => {
+      if (codeDisplayTurmaId) openTeacherChamada(codeDisplayTurmaId);
+    });
     codeDisplayBackdrop.addEventListener("click", (event) => {
       if (event.target === codeDisplayBackdrop) closeCodeDisplay();
     });
@@ -4365,7 +4640,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         setAtrasosStatus("success", "Foto excluída.");
       } catch (error) {
         btnDeleteAtraso.disabled = false;
-        alert("Não foi possível excluir a foto. Tente novamente.");
+        showToast("error", "Não foi possível excluir a foto. Tente novamente.");
       }
     });
 
