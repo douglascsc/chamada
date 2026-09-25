@@ -40,12 +40,19 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **ausentes primeiro** na tela Chamada / Modo professor: quem ainda não marcou fica no topo da lista;
   - **cartaz com o QR da turma** (no Gerenciar, "Imprimir cartaz"): folha A4 com o nome da turma, o QR grande, as instruções para o aluno e o link — para colar na sala ou no mural;
   - **atrasos no histórico**: ao escolher um dia do histórico, aparece "N fotos de atraso neste dia" com "Ver fotos", que abre os atrasos da turma já filtrados naquele dia;
+  - **Chamada enxuta no celular** (só para o professor): sem o título grande, com a barra do código no topo e "Encerrar código" / "Copiar ausentes" lado a lado — no computador, nada muda;
+  - **encerrar o código sozinho quando todos marcarem** (opção na tela Chamada e na janela do código, lembrada no aparelho): funciona enquanto a Chamada ou a janela do código estiver aberta;
+  - **Modo professor sem internet**: a presença aparece na hora, marcada "aguardando internet", e é enviada quando a conexão voltar. Com "Manter conectado" (celular pessoal), o banco guarda uma cópia no aparelho, então as marcações sobrevivem mesmo se o navegador fechar; "Sair" apaga essa cópia. Sem "Manter conectado" (aparelho compartilhado), nada fica gravado no aparelho e a página precisa ficar aberta até a internet voltar;
+  - **compartilhar o link da turma** (Gerenciar e janela do código): abre o menu de compartilhar do celular (WhatsApp, e-mail…), onde o navegador oferece;
+  - **cor da turma** (no Gerenciar): faixa colorida no cartão da turma, para o professor e para os alunos (campo `cor`, validado pelas regras);
   - **arquivar turma** (no Gerenciar): esconde a turma da lista do professor e da tela dos alunos **sem apagar nada**; fica em "Turmas arquivadas", no fim da lista, com "Reativar";
   - **encerrar o código antes do prazo** (botão "Encerrar" no cartão da turma e na tela Chamada): ninguém mais consegue marcar presença com ele;
   - **copiar ausentes** (na tela Chamada e no histórico) para colar no SUAP, e **exportar os 7 dias** do histórico num único Excel (uma coluna por dia, com total de presenças e faltas);
   - **(só a conta master)** administrar professores em ⚙️ Opções → **Painel admin — professores**: ver a lista, **enviar e-mail de redefinição de senha**, **remover** um professor (transferindo as turmas dele para outro professor ou excluindo-as) e, no **Gerenciar** de qualquer turma, **transferir a turma** para outro professor — ver **[Administrar professores](#administrar-professores-conta-master)**.
 - **Painel do professor pensado para o celular**: as turmas aparecem logo no topo; as opções usadas raramente (Minha conta, Nova turma, Painel admin, Atalho no celular) ficam numa tela à parte, **⚙️ Opções** (botão ao lado de "Sair"), com "Voltar para as turmas" — o botão Voltar do celular também volta para as turmas. Ao gerar ou salvar um código do dia, ele aparece **em tamanho grande** com a validade, para mostrar aos alunos ou projetar.
 - **Atalho direto para a Área do professor**: o endereço do site com `#professor` no fim (ex.: `https://<usuário>.github.io/chamada/#professor`) abre direto nas turmas (ou no login, se ninguém estiver conectado). Dá para salvar como ícone na tela inicial do celular — o passo a passo está em ⚙️ Opções → 📱 Atalho no celular. Com "Manter conectado neste aparelho", o atalho abre direto nas turmas, sem senha.
+- **Relatar problema** (rodapé): abre um e-mail para o suporte já com versão, tela/turma, internet, tamanho da tela e navegador.
+- **Vibração**: o celular do aluno vibra ao confirmar a presença (onde o navegador permite; o iPhone não vibra).
 - **Tela "Pronto ✓" para o aluno**: depois de marcar, uma confirmação grande (nome, horário, turma) substitui a lista — serve também para o professor conferir. Voltando no mesmo aparelho no mesmo dia, ela aparece de novo.
 - **Ícone de aplicativo**: `manifest.webmanifest` e a pasta `icons/` fazem o "Adicionar à tela inicial" usar o símbolo do IFSul, o nome "Chamada" e abrir em tela cheia. O manifesto não define `start_url`, então o ícone abre a página em que foi criado (ex.: `#professor`).
 - **Modo professor**: com login do dono da turma (ou da conta master) ativo, permite marcar a presença de qualquer aluno diretamente, sem o código do dia — útil para chamada oral ou aluno sem celular. Nesse modo também não vale a trava de "um aparelho por aluno". Desfazer uma presença exige a senha do professor de novo (só a senha, numa janela pequena), mesmo com o Modo professor ativo, para que outra pessoa no mesmo computador não consiga desfazer sem a senha. A exceção é o **"Desfazer" do aviso** que aparece logo depois de marcar: por 8 segundos, e só na tela da chamada, ele apaga aquela marcação sem pedir senha (é para corrigir um toque errado do próprio professor).
@@ -233,13 +240,15 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                             || (!('professorUid' in resource.data) && request.resource.data.professorUid == request.auth.uid)
                           )
                        && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'nome', 'professorUid', 'professorEmail', 'professorNome', 'arquivada'])
+                       .hasOnly(['codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'nome', 'professorUid', 'professorEmail', 'professorNome', 'arquivada', 'cor'])
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nome'])
                            || request.resource.data.nome is string)
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDuracaoMin'])
                            || request.resource.data.codigoDuracaoMin is int)
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['arquivada'])
-                           || request.resource.data.arquivada is bool);
+                           || request.resource.data.arquivada is bool)
+                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cor'])
+                           || request.resource.data.cor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza']);
          allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
          match /alunos/{alunoId} {
@@ -425,7 +434,7 @@ Tudo fica no Cloud Firestore, no projeto Firebase de cada instalação, organiza
 
 ```
 turmas/{turmaId}
-  nome, codigoDoDia, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorEmail, professorNome, arquivada
+  nome, codigoDoDia, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorEmail, professorNome, arquivada, cor
   alunos/{alunoId}
     nome
   presencas/{presencaId}

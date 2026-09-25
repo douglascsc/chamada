@@ -390,6 +390,22 @@
         transition-duration: .01ms !important;
       }
     }
+    /* Chamada do professor no celular: sem o título grande, com a barra do
+       código no topo e os botões lado a lado (no computador, nada muda) */
+    .bar-label-short { display: none; }
+    @media (max-width: 639px) {
+      #attendance-list-panel.teacher-compact:not(.hidden) { display: flex; flex-direction: column; }
+      .teacher-compact #list-heading-block { display: none; }
+      .teacher-compact #list-header { padding-bottom: 1rem; gap: 0; }
+      .teacher-compact #teacher-code-bar { order: -1; margin-top: 0; margin-bottom: 1rem; }
+      .teacher-compact #teacher-code-bar-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+      .teacher-compact #teacher-code-bar-buttons > .hidden { display: none; }
+      .teacher-compact .bar-label-long { display: none; }
+      .teacher-compact .bar-label-short { display: inline; }
+    }
+    /* Presença marcada sem internet, ainda não enviada */
+    .present-status-label.is-pending { color: #b45309; }
+
     /* Lista para assinatura (plano B sem internet): só aparece na impressão */
     #print-sheet { display: none; }
     @media print {
@@ -425,7 +441,7 @@
    <div class="accent-disc accent-disc--teal" aria-hidden="true"></div>
 
    <div id="offline-banner" class="hidden sticky top-0 z-40 w-full bg-amber-500 px-4 py-2 text-center text-sm font-semibold text-amber-950" role="alert">
-    Sem internet. O que você fizer agora só será enviado quando a conexão voltar — não feche a página.
+    <span id="offline-banner-text">Sem internet. O que você fizer agora só será enviado quando a conexão voltar — não feche a página.</span>
    </div>
 
    <header class="relative z-10 w-full px-5 pt-4 sm:px-8 sm:pt-8">
@@ -551,8 +567,8 @@
      </section>
 
      <section id="attendance-list-panel" class="hidden glass-surface reveal delay-1 mt-6 rounded-[30px] p-5 sm:p-8" aria-labelledby="list-heading">
-      <div class="flex flex-col gap-5 border-b border-slate-200/90 pb-6 md:flex-row md:items-end md:justify-between">
-       <div>
+      <div id="list-header" class="flex flex-col gap-5 border-b border-slate-200/90 pb-6 md:flex-row md:items-end md:justify-between">
+       <div id="list-heading-block">
         <div class="mb-2 flex items-center gap-2">
          <span class="h-2 w-8 rounded-full bg-[#2B7A40]" aria-hidden="true"></span> <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Chamada de hoje</span>
         </div>
@@ -568,13 +584,16 @@
         </div>
        </div>
       </div>
-      <div id="teacher-code-bar" class="hidden mt-5 flex flex-col gap-3 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div id="teacher-code-bar" class="hidden mt-5 flex flex-col gap-3 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
        <p id="teacher-code-bar-text" class="text-sm font-semibold text-[var(--ink)]"></p>
-       <div class="flex flex-wrap gap-2">
-        <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código agora</button>
+       <div id="teacher-code-bar-buttons" class="flex flex-wrap gap-2">
+        <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button"><span class="bar-label-long">Encerrar código agora</span><span class="bar-label-short">Encerrar código</span></button>
         <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button">Gerar código 1h</button>
         <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
        </div>
+       <label id="bar-auto-end-wrap" class="hidden auto-end-option inline-flex items-center gap-2 text-xs font-semibold text-slate-600 sm:basis-full">
+        <input id="bar-auto-end" type="checkbox" class="h-4 w-4 accent-[#2B7A40]"> Encerrar o código sozinho quando todos marcarem
+       </label>
       </div>
       <div id="global-message" class="notice notice-info mt-5 hidden" role="status" aria-live="polite">
        <i id="global-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="global-message-text"></span>
@@ -714,11 +733,18 @@
        <code id="manage-turma-link" class="mt-2 block break-all rounded-lg bg-slate-100 px-2 py-1.5 text-xs text-slate-700"></code>
        <div class="mt-2 flex flex-wrap gap-2">
         <button id="btn-copy-turma-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar link</button>
+        <button id="btn-share-turma-link" class="hidden share-button action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button"><i data-lucide="share-2" class="h-3.5 w-3.5" aria-hidden="true"></i> Compartilhar</button>
         <button id="btn-show-turma-qr" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Mostrar QR Code</button>
         <button id="btn-print-turma-poster" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha A4 com o QR grande para colar na sala ou no mural">
          <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir cartaz
         </button>
        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+       <p class="text-sm font-semibold text-slate-700" id="manage-color-label">Cor da turma</p>
+       <p class="text-xs text-slate-500">Uma faixa colorida no cartão, para achar a turma de relance.</p>
+       <div id="manage-color-options" class="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="manage-color-label"></div>
       </div>
 
       <div class="mt-6">
@@ -1007,7 +1033,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    <footer class="relative z-10 w-full px-5 pb-8 sm:px-8">
     <div class="mx-auto flex max-w-6xl flex-col items-center gap-1 text-center text-slate-500 text-sm">
      <span class="text-xs text-slate-500">Este projeto é de iniciativa docente. Não substitui os sistemas institucionais do IFSul — a chamada oficial é registrada no SUAP, após validação do professor.</span>
-     <span class="text-xs text-slate-500">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a></span>
+     <span class="text-xs text-slate-500">Sistema em fase piloto. Em caso de qualquer problema, avise: <a href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a> · <a id="link-report-problem" href="mailto:douglascamargo@ifsul.edu.br" class="font-semibold text-[#2B7A40] hover:underline">Relatar problema</a></span>
      <span id="footer-credit" class="text-xs text-slate-500"><span id="footer-year"></span> - Desenvolvido por <a href="https://douglasc.top/sobre/" target="_blank" rel="noopener" class="underline hover:text-slate-600">Prof. Douglas Camargo Carvalho</a>, docente do IFSul — Campus Sapiranga.</span>
     </div>
    </footer>
@@ -1182,10 +1208,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      <div class="min-w-0 text-sm text-slate-600">
       <p class="font-semibold text-[var(--ink)]">Alunos: apontem a câmera</p>
       <p class="mt-0.5 text-xs">O QR abre direto esta turma. O código acima continua sendo pedido. Toque no QR para ampliar.</p>
-      <button id="btn-code-display-copy-link" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar link da turma</button>
+      <div class="mt-2 flex flex-wrap gap-2">
+       <button id="btn-code-display-copy-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar link da turma</button>
+       <button id="btn-code-display-share" class="hidden share-button action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button"><i data-lucide="share-2" class="h-3.5 w-3.5" aria-hidden="true"></i> Compartilhar</button>
+      </div>
      </div>
     </div>
-    <div class="mt-6 grid gap-2 sm:grid-cols-2">
+    <label class="auto-end-option mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600">
+     <input id="code-display-auto-end" type="checkbox" class="h-4 w-4 accent-[#2B7A40]"> Encerrar o código sozinho quando todos marcarem
+    </label>
+    <div class="mt-4 grid gap-2 sm:grid-cols-2">
      <button id="btn-code-display-chamada" class="action-button focus-ring rounded-xl px-4 py-3 bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold" type="button">Ver chamada</button>
      <button id="btn-close-code-display" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
     </div>
@@ -1262,7 +1294,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
   <script type="module">
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import {
-      getFirestore, collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
+      getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, terminate, clearIndexedDbPersistence,
+      collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
       onSnapshot, query, where, orderBy, getDocs, getDoc, getCountFromServer, writeBatch, serverTimestamp, Timestamp, Bytes
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import {
@@ -1313,7 +1346,30 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
-    const db = getFirestore(firebaseApp);
+    // Chamada sem internet. Com "Manter conectado" (celular pessoal do
+    // professor), o banco guarda uma cópia no aparelho: presenças marcadas
+    // sem internet ficam salvas mesmo se o navegador fechar e são enviadas
+    // quando a conexão voltar. Sem "Manter conectado" (aparelho da sala,
+    // compartilhado) nada fica gravado no aparelho: as marcações esperam a
+    // internet só enquanto a página estiver aberta.
+    let usingDeviceCache = false;
+    function createDb() {
+      let keepSignedIn = false;
+      try { keepSignedIn = localStorage.getItem("chamada:manterConectado") === "1"; } catch (error) { /* sem acesso ao armazenamento */ }
+      if (keepSignedIn) {
+        try {
+          const persistentDb = initializeFirestore(firebaseApp, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+          });
+          usingDeviceCache = true;
+          return persistentDb;
+        } catch (error) {
+          console.warn("Cópia local do banco indisponível neste navegador:", error);
+        }
+      }
+      return getFirestore(firebaseApp);
+    }
+    const db = createDb();
     const auth = getAuth(firebaseApp);
     const turmasCollection = collection(db, "turmas");
 
@@ -2007,10 +2063,21 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     document.getElementById("turma-select-search").addEventListener("input", renderFilteredTurmaSelectCards);
 
+    // Cor da turma: faixa colorida no cartão (campo "cor" da turma)
+    const TURMA_CORES = {
+      verde: "#2B7A40", azul: "#2563EB", turquesa: "#0D9488", roxo: "#7C3AED",
+      rosa: "#DB2777", vermelho: "#DC2626", laranja: "#EA580C", amarelo: "#CA8A04", cinza: "#64748B"
+    };
+    function applyTurmaColor(el, turma) {
+      const hex = turma && TURMA_CORES[turma.cor];
+      el.style.borderLeft = hex ? `6px solid ${hex}` : "";
+    }
+
     function createTurmaSelectCard(turma) {
       const card = document.createElement("button");
       card.type = "button";
       card.className = "turma-card flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-5 py-4 text-left";
+      applyTurmaColor(card, turma);
       const info = document.createElement("div");
       info.className = "min-w-0";
       const title = document.createElement("div");
@@ -2083,8 +2150,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       unsubPresencas = onSnapshot(
         collection(db, "turmas", selectedTurmaId, "presencas"),
+        { includeMetadataChanges: true }, // para saber quando uma marcação sem internet foi enviada
         (snap) => {
-          presencas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          presencas = snap.docs.map((d) => ({ id: d.id, ...d.data(), pendente: d.metadata.hasPendingWrites }));
           renderAttendance();
         },
         (error) => {
@@ -2339,7 +2407,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       // "Desfazer" (que pede a senha do professor) só aparece para professor.
       const record = getTodayRecord(name);
       const canUndo = isTeacherModeActive || isTeacherAuthenticated;
-      row.querySelector(".present-status-label").textContent = record && record.horario ? `Presente · ${record.horario}` : "Presente";
+      const statusLabel = row.querySelector(".present-status-label");
+      statusLabel.textContent = (record && record.horario ? `Presente · ${record.horario}` : "Presente")
+        + (record && record.pendente && navigator.onLine === false ? " · aguardando internet" : "");
+      statusLabel.classList.toggle("is-pending", Boolean(record && record.pendente && navigator.onLine === false));
       row.classList.toggle("is-present", isPresent);
       markButton.classList.toggle("hidden", isPresent);
       presentActions.classList.toggle("hidden", !isPresent || !canUndo);
@@ -2470,33 +2541,29 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       // dia e sem a trava de "um aparelho por aluno" (o professor pode marcar
       // vários alunos seguidos no mesmo celular/computador).
       if (isTeacherModeActive) {
-        busyName = name;
-        setRowBusy(row, true);
-        const slowTeacher = setTimeout(showSlowConnectionMessage, 8000);
-        try {
-          const presencaRef = await addDoc(collection(db, "turmas", selectedTurmaId, "presencas"), {
-            nome: name,
-            data: current.isoDate,
-            horario: current.time,
-            maquina: "professor",
-            expiraEm: presencaExpiraEm()
-          });
-          // Toque errado? "Desfazer" no aviso, por alguns segundos, sem senha
-          // (foi o próprio professor que acabou de marcar). Depois disso o
-          // Desfazer da linha pede a senha, como antes.
-          const turmaDaMarcacao = selectedTurmaId;
-          showToast("success", `${name} marcado(a) como presente.`, {
-            label: "Desfazer",
-            ms: QUICK_UNDO_MS,
-            onClick: () => quickUndoTeacherMark(turmaDaMarcacao, presencaRef.id, name)
-          });
-        } catch (error) {
-          showMessage("error", "Não foi possível registrar a presença. Tente novamente.");
-        } finally {
-          clearTimeout(slowTeacher);
-          busyName = "";
-          setRowBusy(row, false);
-        }
+        // Não espera o servidor: a presença aparece na hora e, sem internet,
+        // fica na fila ("aguardando internet") até a conexão voltar.
+        const turmaDaMarcacao = selectedTurmaId;
+        const presencaRef = doc(collection(db, "turmas", turmaDaMarcacao, "presencas"));
+        setDoc(presencaRef, {
+          nome: name,
+          data: current.isoDate,
+          horario: current.time,
+          maquina: "professor",
+          expiraEm: presencaExpiraEm()
+        }).catch(() => {
+          showToast("error", `Não foi possível registrar a presença de ${name}. Tente novamente.`);
+        });
+        // Toque errado? "Desfazer" no aviso, por alguns segundos, sem senha
+        // (foi o próprio professor que acabou de marcar). Depois disso o
+        // Desfazer da linha pede a senha, como antes.
+        showToast("success", navigator.onLine === false
+          ? `${name} marcado(a). Sem internet: será enviado quando a conexão voltar.`
+          : `${name} marcado(a) como presente.`, {
+          label: "Desfazer",
+          ms: QUICK_UNDO_MS,
+          onClick: () => quickUndoTeacherMark(turmaDaMarcacao, presencaRef.id, name)
+        });
         renderAttendance();
         return;
       }
@@ -2539,6 +2606,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         showMessage("success", isTeacherModeActive
           ? `Presença de ${name} registrada.`
           : `Presença de ${name} registrada às ${current.time}. Pode fechar esta página.`);
+        // o celular vibra ao confirmar (onde o navegador permite; no iPhone não vibra)
+        try { if (navigator.vibrate) navigator.vibrate([60, 60, 120]); } catch (error) { /* sem vibração */ }
       } catch (error) {
         showMessage("error", "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
       } finally {
@@ -2556,21 +2625,47 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       showMessage("info", "A internet está lenta ou caiu. A presença será enviada assim que a conexão voltar — não feche esta página.");
     }
 
+    // "Relatar problema": e-mail já preenchido com o que ajuda a achar o erro
+    const APP_VERSION = "2026.09.25";
+    document.getElementById("link-report-problem").addEventListener("click", (event) => {
+      const turmaNome = selectedTurmaData && selectedTurmaData.nome;
+      const linhas = [
+        "Descreva o problema (o que você fez e o que aconteceu):",
+        "",
+        "",
+        "",
+        "— Informações automáticas (ajudam a encontrar o erro) —",
+        `Versão: ${APP_VERSION}`,
+        `Data/hora: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+        `Tela: ${location.hash || "(inicial)"}${turmaNome ? ` — turma "${turmaNome}"` : ""}`,
+        `Professor logado: ${auth.currentUser ? auth.currentUser.email : "não"}${isTeacherModeActive ? " (Modo professor ativo)" : ""}`,
+        `Internet: ${navigator.onLine === false ? "sem conexão" : "conectado"}`,
+        `Tamanho da tela: ${window.innerWidth}x${window.innerHeight}`,
+        `Navegador: ${navigator.userAgent}`
+      ];
+      // o próprio link abre o e-mail (o endereço é montado na hora do clique)
+      event.currentTarget.href = `mailto:douglascamargo@ifsul.edu.br?subject=${encodeURIComponent("Chamada — problema")}&body=${encodeURIComponent(linhas.join("\n"))}`;
+    });
+
     function updateOnlineBanner() {
       document.getElementById("offline-banner").classList.toggle("hidden", navigator.onLine !== false);
+      // Com "Manter conectado" as marcações ficam guardadas no aparelho
+      if (usingDeviceCache) {
+        document.getElementById("offline-banner-text").textContent = "Sem internet. O que você marcar fica guardado neste aparelho e será enviado quando a conexão voltar.";
+      }
+      if (selectedTurmaId) renderAttendance();
     }
     window.addEventListener("online", updateOnlineBanner);
     window.addEventListener("offline", updateOnlineBanner);
     updateOnlineBanner();
 
     const QUICK_UNDO_MS = 8000;
-    async function quickUndoTeacherMark(turmaId, presencaId, name) {
-      try {
-        await deleteDoc(doc(db, "turmas", turmaId, "presencas", presencaId));
-        showToast("info", `Presença de ${name} desfeita.`);
-      } catch (error) {
+    function quickUndoTeacherMark(turmaId, presencaId, name) {
+      // também sem esperar o servidor (funciona sem internet)
+      deleteDoc(doc(db, "turmas", turmaId, "presencas", presencaId)).catch(() => {
         showToast("error", "Não foi possível desfazer. Use o botão Desfazer na linha do aluno.");
-      }
+      });
+      showToast("info", `Presença de ${name} desfeita.`);
     }
 
     async function undoAttendance(row) {
@@ -2881,6 +2976,17 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       } catch (error) {
         // ignora — onAuthStateChanged já atualiza a interface quando aplicável
       }
+      // Com "Manter conectado" o banco tinha uma cópia no aparelho: ao sair,
+      // ela é apagada (e a página recarrega sem ela).
+      if (usingDeviceCache) {
+        try {
+          await terminate(db);
+          await clearIndexedDbPersistence(db);
+        } catch (error) {
+          console.warn("Não foi possível apagar a cópia local do banco:", error);
+        }
+        location.reload();
+      }
     });
 
     async function saveTeacherDisplayName(novoNome, button, statusEl) {
@@ -3184,6 +3290,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function createTeacherTurmaRow(turma) {
       const row = document.createElement("div");
       row.className = "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/90 px-4 py-3";
+      applyTurmaColor(row, turma);
       const info = document.createElement("div");
       info.className = "min-w-0";
       const name = document.createElement("div");
@@ -3482,6 +3589,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         document.getElementById("manage-turma-link").textContent = turmaLink(snap.id);
         document.getElementById("btn-archive-turma").textContent = teacherManagingTurmaData.arquivada ? "Reativar turma" : "Arquivar turma";
         renderManageTransfer();
+        renderManageColorOptions();
         manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
         manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
         const definedAtMillis = codeDefinedAtMillis(teacherManagingTurmaData);
@@ -3971,6 +4079,33 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     document.getElementById("btn-print-turma-poster").addEventListener("click", printTurmaPoster);
 
     document.getElementById("btn-print-sign-sheet").addEventListener("click", printSignSheet);
+
+    function renderManageColorOptions() {
+      const box = document.getElementById("manage-color-options");
+      box.innerHTML = "";
+      const atual = (teacherManagingTurmaData && teacherManagingTurmaData.cor) || "";
+      [["", "Sem cor"], ...Object.keys(TURMA_CORES).map((k) => [k, k[0].toUpperCase() + k.slice(1)])].forEach(([chave, rotulo]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        const escolhida = chave === atual;
+        b.className = `focus-ring flex h-11 w-11 items-center justify-center rounded-full border-2 text-xs font-bold sm:h-9 sm:w-9 ${escolhida ? "border-[var(--ink)] ring-2 ring-offset-2 ring-slate-400" : "border-white shadow"}`;
+        b.style.background = chave ? TURMA_CORES[chave] : "#fff";
+        if (!chave) { b.classList.remove("border-white"); b.classList.add("border-slate-300"); b.textContent = "∅"; b.style.color = "#64748B"; }
+        else if (escolhida) { b.textContent = "✓"; b.style.color = "#fff"; }
+        b.setAttribute("aria-label", rotulo);
+        b.setAttribute("aria-pressed", String(escolhida));
+        b.title = rotulo;
+        b.addEventListener("click", async () => {
+          if (!teacherManagingTurmaId || escolhida) return;
+          try {
+            await updateDoc(doc(db, "turmas", teacherManagingTurmaId), { cor: chave });
+          } catch (error) {
+            showToast("error", "Não foi possível salvar a cor. Tente novamente.");
+          }
+        });
+        box.appendChild(b);
+      });
+    }
 
     function renderManageAlunosList() {
       manageAlunoCount.textContent = String(teacherManagingAlunos.length);
@@ -4722,8 +4857,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       document.getElementById("list-student-hint").classList.toggle("hidden", isTeacherModeActive); // instrução é para o aluno
       const show = Boolean(selectedTurmaData) && (attendanceFromDashboard || (isTeacherModeActive && isTeacherAuthenticated));
       teacherCodeBar.classList.toggle("hidden", !show);
+      attendanceListPanel.classList.toggle("teacher-compact", show); // layout enxuto no celular (ver CSS)
       if (!show) return;
       const active = isCodeActive(selectedTurmaData);
+      document.getElementById("bar-auto-end-wrap").classList.toggle("hidden", !active);
+      document.getElementById("bar-auto-end").checked = readAutoEnd();
       const expira = codeExpiresAtMillis(selectedTurmaData);
       teacherCodeBarText.textContent = active
         ? `Código ${selectedTurmaData.codigoDoDia} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
@@ -4732,7 +4870,43 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnBarNewCode.classList.toggle("hidden", active);
       const ausentes = alunos.filter((a) => !getTodayRecord(a.nome)).length;
       btnBarCopyAbsent.textContent = `Copiar ausentes (${ausentes})`;
+      if (active && alunos.length && ausentes === 0) autoEndCodeIfAllMarked(selectedTurmaData, alunos.length);
     }
+
+    // ---------------------------------------------------------------------
+    // Encerrar o código sozinho quando todos marcarem (opção do aparelho,
+    // vale para todas as turmas). Funciona enquanto o professor está com a
+    // Chamada ou a janela do código aberta.
+    // ---------------------------------------------------------------------
+    // (chave "chamada:encerrarQuandoTodos"; funções declaradas, pois a lista
+    // pode ser desenhada antes desta parte do script rodar)
+    function readAutoEnd() {
+      try { return localStorage.getItem("chamada:encerrarQuandoTodos") === "1"; } catch (error) { return false; }
+    }
+    function writeAutoEnd(value) {
+      try {
+        if (value) localStorage.setItem("chamada:encerrarQuandoTodos", "1");
+        else localStorage.removeItem("chamada:encerrarQuandoTodos");
+      } catch (error) { /* só conveniência */ }
+    }
+    const autoEndedCodes = new Set(); // não encerra o mesmo código duas vezes
+    async function autoEndCodeIfAllMarked(turma, total) {
+      if (!readAutoEnd() || !turma || !isCodeActive(turma)) return;
+      const chave = `${turma.id}|${turma.codigoDoDia}|${codeDefinedAtMillis(turma)}`;
+      if (autoEndedCodes.has(chave)) return;
+      autoEndedCodes.add(chave);
+      try {
+        await updateDoc(doc(db, "turmas", turma.id), { codigoDoDia: "" });
+        showToast("success", `Todos os ${total} alunos marcaram: código de "${turma.nome || "a turma"}" encerrado.`);
+        if (codeDisplayTurmaId === turma.id) markCodeDisplayEnded(total);
+      } catch (error) {
+        autoEndedCodes.delete(chave);
+      }
+    }
+    document.getElementById("bar-auto-end").addEventListener("change", (event) => {
+      writeAutoEnd(event.target.checked);
+      renderTeacherCodeBar();
+    });
     setInterval(() => { if (!teacherCodeBar.classList.contains("hidden")) renderTeacherCodeBar(); }, 30000);
 
     btnBarEndCode.addEventListener("click", () => { if (selectedTurmaData) endCodeForTurma(selectedTurmaData); });
@@ -4858,6 +5032,28 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         container.textContent = "QR indisponível agora (sem internet?). Use o link.";
       }
     }
+
+    // Compartilhar (menu do celular: WhatsApp, e-mail…). Só aparece onde o
+    // navegador oferece esse menu; senão fica só o "Copiar link".
+    const canShareLinks = typeof navigator.share === "function";
+    document.querySelectorAll(".share-button").forEach((b) => b.classList.toggle("hidden", !canShareLinks));
+    async function shareTurmaLink(turma) {
+      if (!turma) return;
+      try {
+        await navigator.share({
+          title: turma.nome || "Turma",
+          text: `Chamada — ${turma.nome || "turma"}: abra o link e digite o código do dia que o professor passar em aula.`,
+          url: turmaLink(turma.id)
+        });
+      } catch (error) {
+        if (error && error.name === "AbortError") return; // a pessoa fechou o menu
+        copyTurmaLink(turma.id);
+      }
+    }
+    document.getElementById("btn-share-turma-link").addEventListener("click", () => shareTurmaLink(teacherManagingTurmaData));
+    document.getElementById("btn-code-display-share").addEventListener("click", () => {
+      shareTurmaLink(allTeacherTurmas.find((t) => t.id === codeDisplayTurmaId));
+    });
 
     async function copyTurmaLink(turmaId) {
       const ok = await copyText(turmaLink(turmaId));
@@ -5067,13 +5263,61 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // mostrar a tela aos alunos ou projetar.
     let codeDisplayTurmaId = null;
     let codeDisplayExpiresAt = 0;
+    let codeDisplayEnded = false;
 
     function updateCodeDisplayValidity() {
+      if (codeDisplayEnded) return;
       codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(codeDisplayExpiresAt)} · expira em ${formatRemaining(codeDisplayExpiresAt - Date.now())}`;
     }
 
+    function markCodeDisplayEnded(total) {
+      codeDisplayEnded = true;
+      codeDisplayValidity.textContent = `Encerrado: todos os ${total} alunos marcaram presença.`;
+      codeDisplayValue.classList.add("line-through", "opacity-40");
+      stopCodeDisplayWatch();
+    }
+
+    // Enquanto a janela do código está aberta (e a opção ligada), acompanha
+    // quantos alunos já marcaram, para encerrar o código quando todos marcarem.
+    let codeDisplayWatch = [];
+    function stopCodeDisplayWatch() {
+      codeDisplayWatch.forEach((unsub) => unsub());
+      codeDisplayWatch = [];
+    }
+    function startCodeDisplayWatch() {
+      stopCodeDisplayWatch();
+      const turmaId = codeDisplayTurmaId;
+      if (!turmaId || !readAutoEnd() || codeDisplayEnded) return;
+      // Na Chamada da mesma turma a própria lista já faz essa conta
+      if (selectedTurmaId === turmaId) return;
+      let nomesAlunos = null;
+      let presentesHoje = null;
+      const verificar = () => {
+        if (!nomesAlunos || !presentesHoje || !nomesAlunos.length) return;
+        const todos = nomesAlunos.every((nome) => presentesHoje.has(normalize(nome)));
+        const turma = allTeacherTurmas.find((t) => t.id === turmaId);
+        if (todos && turma) autoEndCodeIfAllMarked(turma, nomesAlunos.length);
+      };
+      codeDisplayWatch.push(onSnapshot(collection(db, "turmas", turmaId, "alunos"), (snap) => {
+        nomesAlunos = snap.docs.map((d) => d.data().nome || "");
+        verificar();
+      }, () => {}));
+      codeDisplayWatch.push(onSnapshot(query(collection(db, "turmas", turmaId, "presencas"), where("data", "==", getLocalParts().isoDate)), (snap) => {
+        presentesHoje = new Set(snap.docs.map((d) => normalize(d.data().nome)));
+        verificar();
+      }, () => {}));
+    }
+    document.getElementById("code-display-auto-end").addEventListener("change", (event) => {
+      writeAutoEnd(event.target.checked);
+      if (event.target.checked) startCodeDisplayWatch();
+      else stopCodeDisplayWatch();
+    });
+
     function showCodeDisplay(turma, code, minutes) {
       codeDisplayTurmaId = turma ? turma.id : null;
+      codeDisplayEnded = false;
+      codeDisplayValue.classList.remove("line-through", "opacity-40");
+      document.getElementById("code-display-auto-end").checked = readAutoEnd();
       codeDisplayTurma.textContent = (turma && turma.nome) || "";
       codeDisplayValue.textContent = code;
       codeDisplayExpiresAt = Date.now() + minutes * 60 * 1000;
@@ -5082,10 +5326,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codeDisplayBackdrop.setAttribute("aria-hidden", "false");
       if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLink(codeDisplayTurmaId), 3);
       document.body.style.overflow = "hidden";
+      startCodeDisplayWatch();
     }
 
     function closeCodeDisplay() {
       if (codeDisplayBackdrop.classList.contains("hidden")) return;
+      stopCodeDisplayWatch();
       codeDisplayBackdrop.classList.add("hidden");
       codeDisplayBackdrop.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "auto";
