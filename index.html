@@ -652,6 +652,19 @@
         </div>
        </div>
 
+       <div id="manage-transfer-section" class="hidden mt-6 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4">
+        <h4 class="text-sm font-bold uppercase tracking-wider text-[#2B7A40]">Transferir turma (conta master)</h4>
+        <p class="mt-1 text-sm text-slate-600">Dono atual: <strong id="manage-transfer-owner">—</strong>. Alunos, histórico de presenças, código do dia e fotos de atrasos vão junto para o novo professor.</p>
+        <div class="mt-3 flex flex-wrap items-end gap-2">
+         <div class="min-w-[200px] flex-1">
+          <label class="mb-1 block text-xs font-semibold text-slate-500" for="manage-transfer-select">Novo professor</label>
+          <select id="manage-transfer-select" class="text-field"></select>
+         </div>
+         <button id="btn-transfer-turma" class="action-button focus-ring rounded-lg px-4 py-3 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Transferir</button>
+        </div>
+        <p id="manage-transfer-status" class="mt-2 text-xs"></p>
+       </div>
+
        <div class="mt-6 rounded-2xl border border-red-200 bg-red-50/60 p-4">
         <h4 class="text-sm font-bold uppercase tracking-wider text-red-700">Zona de perigo</h4>
         <p class="mt-1 text-sm text-red-800">Excluir a turma apaga também todos os alunos, todo o histórico de presenças e todas as fotos de atrasos dela. Essa ação não pode ser desfeita.</p>
@@ -707,7 +720,7 @@
 
      <details id="admin-panel-section" class="hidden group glass-surface rounded-2xl mt-5 border-2 border-[#CFE6C8]">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
-       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — criar professor</span>
+       <span class="text-lg font-bold text-[var(--ink)]">Painel admin — professores</span>
        <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"></i>
       </summary>
       <div class="px-5 pb-5 sm:px-6 sm:pb-6">
@@ -715,7 +728,7 @@
        <div class="mt-3 grid max-w-sm gap-3">
         <div>
          <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-nome">Nome</label>
-         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Juliane Moura">
+         <input id="admin-new-professor-nome" class="text-field" type="text" placeholder="Ex: Douglas Carvalho">
         </div>
         <div>
          <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-new-professor-email">E-mail</label>
@@ -725,6 +738,16 @@
          <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
         </div>
         <p id="create-professor-status" class="text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+         <h4 class="font-bold text-[var(--ink)]">Professores</h4>
+         <button id="btn-refresh-professores" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar lista</button>
+        </div>
+        <p class="mt-1 text-xs text-slate-500">Um professor aparece aqui depois do primeiro acesso ao sistema (ou se já tiver alguma turma).</p>
+        <div id="admin-professores-list" class="mt-3 flex flex-col gap-2"></div>
+        <p id="admin-professores-status" class="mt-2 text-xs"></p>
        </div>
       </div>
      </details>
@@ -1224,7 +1247,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       try {
         await setDoc(doc(db, "acordosProfessor", auth.currentUser.uid), {
           avisosAceitosEm: serverTimestamp(),
-          email: auth.currentUser.email
+          email: auth.currentUser.email,
+          nome: auth.currentUser.displayName || ""
         });
       } catch (error) {
         // se não conseguir salvar agora (ex: rede), libera o uso mesmo assim;
@@ -1534,6 +1558,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Migra turmas antigas (criadas antes de existir professorUid) para o
     // professor que estiver logado agora, e mantém professorEmail/professorNome
     // das turmas dele em dia (ex: depois de trocar o nome de exibição).
+    // acordosProfessor/{uid} também serve de "lista de professores" para a
+    // conta master (nome + e-mail). Só atualiza quem já aceitou os avisos —
+    // criar o documento antes disso pularia o aviso obrigatório.
+    async function syncProfessorRegistry() {
+      if (!auth.currentUser) return;
+      const ref = doc(db, "acordosProfessor", auth.currentUser.uid);
+      try {
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+        const nome = auth.currentUser.displayName || "";
+        const data = snap.data();
+        if (data.email !== auth.currentUser.email || (data.nome || "") !== nome) {
+          await updateDoc(ref, { email: auth.currentUser.email, nome });
+        }
+      } catch (error) {
+        // só alimenta a lista da conta master; não deve travar o professor
+      }
+    }
+
     async function syncOwnedTurmasProfessorInfo() {
       if (!auth.currentUser) return;
       const myUid = auth.currentUser.uid;
@@ -2325,6 +2368,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherNameGate.classList.add("hidden");
       teacherDashboardContent.classList.remove("hidden");
       syncOwnedTurmasProfessorInfo();
+      syncProfessorRegistry();
       subscribeMyTurmasList();
     }
 
@@ -2469,6 +2513,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       try {
         await updateProfile(auth.currentUser, { displayName: novoNome });
         await syncOwnedTurmasProfessorInfo();
+        syncProfessorRegistry();
         statusEl.textContent = "Nome salvo! Já atualizado nas suas turmas.";
         statusEl.className = "mt-1 text-xs text-emerald-600 font-semibold";
         return true;
@@ -2843,6 +2888,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       unsubManageTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
         if (!snap.exists()) return;
         teacherManagingTurmaData = { id: snap.id, ...snap.data() };
+        renderManageTransfer();
         manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
         manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
         const definedAtMillis = codeDefinedAtMillis(teacherManagingTurmaData);
@@ -2873,6 +2919,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherManagingTurmaData = null;
       teacherManagingAlunos = [];
       teacherManagePanel.classList.add("hidden");
+      manageTransferSection.classList.add("hidden");
+      manageTransferStatus.textContent = "";
       closeEditTurmaNomeForm();
       resetHistoryUI();
     }
@@ -3033,6 +3081,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
+    // Apaga a turma e tudo dentro dela (fotos de atrasos, presenças, alunos)
+    async function deleteTurmaCompletely(turmaId) {
+      await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasosImg"));
+      await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasos"));
+      await deleteAllDocsIn(collection(db, "turmas", turmaId, "presencas"));
+      await deleteAllDocsIn(collection(db, "turmas", turmaId, "alunos"));
+      await deleteDoc(doc(db, "turmas", turmaId));
+    }
+
     btnDeleteTurma.addEventListener("click", async () => {
       if (!teacherManagingTurmaId || !teacherManagingTurmaData || !auth.currentUser) return;
       const nomeTurma = teacherManagingTurmaData.nome || "esta turma";
@@ -3062,11 +3119,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
 
       try {
-        await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasosImg"));
-        await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasos"));
-        await deleteAllDocsIn(collection(db, "turmas", turmaId, "presencas"));
-        await deleteAllDocsIn(collection(db, "turmas", turmaId, "alunos"));
-        await deleteDoc(doc(db, "turmas", turmaId));
+        await deleteTurmaCompletely(turmaId);
         stopManagingTurma();
         showTeacherMessage("success", `Turma "${nomeTurma}" excluída com sucesso.`);
         await refreshMyTurmasList();
@@ -3305,6 +3358,339 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     btnExportCsv.addEventListener("click", exportAttendanceCsv);
+
+    // ---------------------------------------------------------------------
+    // Conta master: professores (lista, transferir turma, redefinir senha,
+    // remover). Sem backend, a master não consegue listar nem apagar logins
+    // do Firebase Authentication: a lista vem de acordosProfessor/{uid}
+    // (quem já acessou) + donos de turmas, e apagar o login continua sendo
+    // feito no Firebase Console.
+    // ---------------------------------------------------------------------
+    const adminProfessoresList = document.getElementById("admin-professores-list");
+    const adminProfessoresStatus = document.getElementById("admin-professores-status");
+    const manageTransferSection = document.getElementById("manage-transfer-section");
+    const manageTransferOwner = document.getElementById("manage-transfer-owner");
+    const manageTransferSelect = document.getElementById("manage-transfer-select");
+    const manageTransferStatus = document.getElementById("manage-transfer-status");
+    const btnTransferTurma = document.getElementById("btn-transfer-turma");
+    const FIREBASE_USERS_CONSOLE_URL = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/users`;
+
+    let professoresCache = [];
+    let professoresLoaded = false;
+
+    function professorDisplay(p) {
+      const base = p.nome || p.email || "Professor sem nome";
+      return auth.currentUser && p.uid === auth.currentUser.uid ? `${base} (você)` : base;
+    }
+
+    async function loadProfessores() {
+      const map = new Map();
+      const snap = await getDocs(collection(db, "acordosProfessor"));
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        map.set(d.id, { uid: d.id, email: data.email || "", nome: data.nome || "" });
+      });
+      allTeacherTurmas.forEach((t) => {
+        if (!t.professorUid) return;
+        const p = map.get(t.professorUid) || { uid: t.professorUid, email: "", nome: "" };
+        if (!p.nome && t.professorNome && t.professorNome !== t.professorEmail) p.nome = t.professorNome;
+        if (!p.email && t.professorEmail) p.email = t.professorEmail;
+        map.set(t.professorUid, p);
+      });
+      if (auth.currentUser && !map.has(auth.currentUser.uid)) {
+        map.set(auth.currentUser.uid, { uid: auth.currentUser.uid, email: auth.currentUser.email, nome: auth.currentUser.displayName || "" });
+      }
+      professoresCache = [...map.values()].sort((a, b) => professorDisplay(a).localeCompare(professorDisplay(b), "pt-BR"));
+      professoresLoaded = true;
+    }
+
+    function turmasDoProfessor(uid) {
+      return allTeacherTurmas.filter((t) => t.professorUid === uid);
+    }
+
+    function setAdminStatus(type, text) {
+      adminProfessoresStatus.className = `mt-2 text-xs ${type === "error" ? "text-red-600 font-semibold" : type === "success" ? "text-emerald-600 font-semibold" : "text-slate-500"}`;
+      adminProfessoresStatus.textContent = text || "";
+    }
+
+    function fillProfessorSelect(select, excludeUid, preferredUid) {
+      select.innerHTML = "";
+      professoresCache.filter((p) => p.uid !== excludeUid).forEach((p) => {
+        const option = document.createElement("option");
+        option.value = p.uid;
+        option.textContent = p.email && p.nome ? `${professorDisplay(p)} — ${p.email}` : professorDisplay(p);
+        select.appendChild(option);
+      });
+      if (preferredUid && [...select.options].some((o) => o.value === preferredUid)) select.value = preferredUid;
+    }
+
+    async function transferTurmaTo(turmaId, professor) {
+      await updateDoc(doc(db, "turmas", turmaId), {
+        professorUid: professor.uid,
+        professorEmail: professor.email || "",
+        professorNome: professor.nome || professor.email || ""
+      });
+    }
+
+    async function confirmWithMasterPassword(message) {
+      const senha = prompt(`${message}\n\nPara confirmar, digite sua senha (${auth.currentUser.email}):`);
+      if (!senha) return false;
+      try {
+        await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, senha));
+        return true;
+      } catch (error) {
+        alert("Senha incorreta. Nada foi alterado.");
+        return false;
+      }
+    }
+
+    // --- Lista de professores (Painel admin) ------------------------------
+    async function refreshAdminProfessores() {
+      if (!isMasterAccount) return;
+      setAdminStatus("info", "Carregando professores…");
+      try {
+        await loadProfessores();
+        setAdminStatus("info", "");
+      } catch (error) {
+        setAdminStatus("error", "Não foi possível carregar a lista de professores. Tente novamente.");
+        return;
+      }
+      renderAdminProfessores();
+    }
+
+    function renderAdminProfessores() {
+      adminProfessoresList.innerHTML = "";
+      professoresCache.forEach((p) => adminProfessoresList.appendChild(createAdminProfessorRow(p)));
+    }
+
+    function createAdminProfessorRow(p) {
+      const isSelf = auth.currentUser && p.uid === auth.currentUser.uid;
+      const turmas = turmasDoProfessor(p.uid);
+      const row = document.createElement("div");
+      row.className = "rounded-xl border border-slate-200 bg-white/90 px-4 py-3";
+      row.dataset.uid = p.uid;
+
+      const top = document.createElement("div");
+      top.className = "flex flex-wrap items-center justify-between gap-2";
+      const info = document.createElement("div");
+      info.className = "min-w-0";
+      const name = document.createElement("div");
+      name.className = "font-semibold text-[var(--ink)] truncate";
+      name.textContent = professorDisplay(p);
+      const meta = document.createElement("div");
+      meta.className = "text-xs text-slate-500 break-all";
+      meta.textContent = `${p.email || "e-mail desconhecido"} · ${turmas.length} turma${turmas.length === 1 ? "" : "s"}`;
+      info.append(name, meta);
+
+      const actions = document.createElement("div");
+      actions.className = "flex flex-wrap gap-2";
+      const btnReset = document.createElement("button");
+      btnReset.type = "button";
+      btnReset.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+      btnReset.textContent = "Redefinir senha";
+      btnReset.disabled = !p.email;
+      btnReset.addEventListener("click", () => sendProfessorPasswordReset(p, btnReset));
+      actions.appendChild(btnReset);
+      if (!isSelf) {
+        const btnRemove = document.createElement("button");
+        btnRemove.type = "button";
+        btnRemove.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700";
+        btnRemove.textContent = "Remover";
+        btnRemove.addEventListener("click", () => toggleRemoveProfessorForm(row, p));
+        actions.appendChild(btnRemove);
+      }
+      top.append(info, actions);
+      row.appendChild(top);
+      return row;
+    }
+
+    async function sendProfessorPasswordReset(p, button) {
+      if (!confirm(`Enviar para ${p.email} um e-mail para ${p.nome || "o professor"} definir uma nova senha?\n\nA senha atual continua valendo até ele(a) definir a nova.`)) return;
+      button.disabled = true;
+      try {
+        await sendPasswordResetEmail(auth, p.email);
+        setAdminStatus("success", `E-mail de redefinição de senha enviado para ${p.email}.`);
+      } catch (error) {
+        setAdminStatus("error", `Não foi possível enviar o e-mail para ${p.email}. Confira se esse login ainda existe.`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    // --- Remover professor --------------------------------------------------
+    function toggleRemoveProfessorForm(row, p) {
+      const existing = row.querySelector(".remove-professor-form");
+      if (existing) { existing.remove(); return; }
+      const turmas = turmasDoProfessor(p.uid);
+      const form = document.createElement("div");
+      form.className = "remove-professor-form mt-3 rounded-xl border border-red-200 bg-red-50/60 p-3 text-sm text-slate-700";
+
+      const intro = document.createElement("p");
+      intro.className = "font-semibold text-red-800";
+      intro.textContent = `Remover ${p.nome || p.email} do sistema`;
+      form.appendChild(intro);
+
+      let radioTransfer = null;
+      let select = null;
+      if (turmas.length) {
+        const q = document.createElement("p");
+        q.className = "mt-2";
+        q.textContent = `Tem ${turmas.length} turma${turmas.length === 1 ? "" : "s"} (${turmas.map((t) => t.nome).join(", ")}). O que fazer com ${turmas.length === 1 ? "ela" : "elas"}?`;
+        form.appendChild(q);
+
+        const name = `remove-choice-${p.uid}`;
+        const optTransfer = document.createElement("label");
+        optTransfer.className = "mt-2 flex cursor-pointer items-start gap-2";
+        radioTransfer = document.createElement("input");
+        radioTransfer.type = "radio"; radioTransfer.name = name; radioTransfer.value = "transfer"; radioTransfer.checked = true;
+        radioTransfer.className = "mt-1 accent-[#2B7A40]";
+        const tText = document.createElement("span");
+        tText.textContent = "Transferir para outro professor (alunos, histórico e fotos vão junto)";
+        optTransfer.append(radioTransfer, tText);
+        select = document.createElement("select");
+        select.className = "text-field mt-2";
+        fillProfessorSelect(select, p.uid, auth.currentUser.uid);
+
+        const optDelete = document.createElement("label");
+        optDelete.className = "mt-3 flex cursor-pointer items-start gap-2";
+        const radioDelete = document.createElement("input");
+        radioDelete.type = "radio"; radioDelete.name = name; radioDelete.value = "delete";
+        radioDelete.className = "mt-1 accent-red-600";
+        const dText = document.createElement("span");
+        dText.innerHTML = "<strong>Excluir</strong> as turmas, com alunos, histórico de presenças e fotos de atrasos (não pode ser desfeito)";
+        optDelete.append(radioDelete, dText);
+        radioTransfer.addEventListener("change", () => { select.disabled = false; });
+        radioDelete.addEventListener("change", () => { select.disabled = true; });
+        form.append(optTransfer, select, optDelete);
+      } else {
+        const q = document.createElement("p");
+        q.className = "mt-2";
+        q.textContent = "Não tem nenhuma turma.";
+        form.appendChild(q);
+      }
+
+      const note = document.createElement("p");
+      note.className = "mt-3 text-xs text-slate-600";
+      note.textContent = "Depois disso ainda será preciso apagar o login no Firebase Console (o site mostra o link no final).";
+      form.appendChild(note);
+
+      const buttons = document.createElement("div");
+      buttons.className = "mt-3 flex flex-wrap gap-2";
+      const btnConfirm = document.createElement("button");
+      btnConfirm.type = "button";
+      btnConfirm.className = "action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700";
+      btnConfirm.textContent = "Confirmar remoção";
+      const btnCancel = document.createElement("button");
+      btnCancel.type = "button";
+      btnCancel.className = "action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+      btnCancel.textContent = "Cancelar";
+      btnCancel.addEventListener("click", () => form.remove());
+      buttons.append(btnConfirm, btnCancel);
+      form.appendChild(buttons);
+
+      const result = document.createElement("div");
+      result.className = "mt-2 text-xs";
+      form.appendChild(result);
+
+      btnConfirm.addEventListener("click", async () => {
+        const action = !turmas.length ? "none" : radioTransfer.checked ? "transfer" : "delete";
+        const target = action === "transfer" ? professoresCache.find((x) => x.uid === select.value) : null;
+        if (action === "transfer" && !target) { result.textContent = "Escolha para quem transferir."; return; }
+        const resumo = action === "transfer" ? `As ${turmas.length} turma(s) vão para ${professorDisplay(target)}.`
+          : action === "delete" ? `As ${turmas.length} turma(s) serão EXCLUÍDAS com alunos, presenças e fotos.`
+          : "";
+        if (!(await confirmWithMasterPassword(`Remover ${p.nome || p.email}? ${resumo}`))) return;
+        btnConfirm.disabled = true; btnCancel.disabled = true;
+        try {
+          for (let i = 0; i < turmas.length; i++) {
+            result.className = "mt-2 text-xs text-slate-600";
+            result.textContent = `${action === "transfer" ? "Transferindo" : "Excluindo"} turma ${i + 1} de ${turmas.length}…`;
+            if (action === "transfer") await transferTurmaTo(turmas[i].id, target);
+            else await deleteTurmaCompletely(turmas[i].id);
+          }
+        } catch (error) {
+          result.className = "mt-2 text-xs text-red-600 font-semibold";
+          result.textContent = "Não foi possível concluir. Algumas turmas podem já ter sido alteradas — confira a lista e tente de novo.";
+          btnConfirm.disabled = false; btnCancel.disabled = false;
+          return;
+        }
+        let registryRemoved = true;
+        try {
+          await deleteDoc(doc(db, "acordosProfessor", p.uid));
+        } catch (error) {
+          registryRemoved = false; // regras antigas: a master ainda não pode apagar esse registro
+        }
+        await refreshMyTurmasList();
+        form.innerHTML = "";
+        const done = document.createElement("div");
+        done.className = "text-sm text-slate-700";
+        const title = document.createElement("p");
+        title.className = "font-semibold text-emerald-700";
+        title.textContent = `✓ ${p.nome || p.email}: turmas ${action === "transfer" ? "transferidas" : action === "delete" ? "excluídas" : "— nenhuma"}.`;
+        const next = document.createElement("p");
+        next.className = "mt-1";
+        next.textContent = `Último passo: apagar o login (${p.email || "e-mail desconhecido"}) no Firebase Console → Authentication → Users → ⋮ → Excluir conta. Enquanto o login existir, a pessoa ainda consegue entrar (vendo o painel vazio).`;
+        const link = document.createElement("a");
+        link.href = FIREBASE_USERS_CONSOLE_URL;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.className = "mt-2 inline-block font-semibold text-[#2B7A40] underline";
+        link.textContent = "Abrir o Firebase Console (usuários)";
+        done.append(title, next, link);
+        if (!registryRemoved) {
+          const warn = document.createElement("p");
+          warn.className = "mt-2 text-xs text-amber-700";
+          warn.textContent = "Obs.: o nome continua nesta lista porque as regras do Firestore publicadas ainda são as antigas (veja o README).";
+          done.appendChild(warn);
+        }
+        form.appendChild(done);
+        professoresCache = professoresCache.filter((x) => !registryRemoved || x.uid !== p.uid);
+      });
+
+      row.appendChild(form);
+    }
+
+    document.getElementById("btn-refresh-professores").addEventListener("click", refreshAdminProfessores);
+    adminPanelSection.addEventListener("toggle", () => {
+      if (adminPanelSection.open) refreshAdminProfessores();
+    });
+
+    // --- Transferir turma (no Gerenciar) ------------------------------------
+    async function renderManageTransfer() {
+      if (!isMasterAccount || !teacherManagingTurmaData) {
+        manageTransferSection.classList.add("hidden");
+        return;
+      }
+      manageTransferSection.classList.remove("hidden");
+      const turma = teacherManagingTurmaData;
+      manageTransferOwner.textContent = turma.professorNome || turma.professorEmail || "—";
+      if (!professoresLoaded) {
+        try { await loadProfessores(); } catch (error) { manageTransferStatus.textContent = "Não foi possível carregar a lista de professores."; return; }
+      }
+      if (!teacherManagingTurmaData || teacherManagingTurmaData.id !== turma.id) return;
+      const previous = manageTransferSelect.value;
+      fillProfessorSelect(manageTransferSelect, turma.professorUid, previous);
+      btnTransferTurma.disabled = manageTransferSelect.options.length === 0;
+    }
+
+    btnTransferTurma.addEventListener("click", async () => {
+      const turma = teacherManagingTurmaData;
+      const target = professoresCache.find((p) => p.uid === manageTransferSelect.value);
+      if (!turma || !target) return;
+      if (!confirm(`Transferir "${turma.nome}" para ${professorDisplay(target)}?\n\nAlunos, histórico de presenças, código do dia e fotos de atrasos vão junto. ${turma.professorNome || "O dono atual"} deixa de ver a turma.`)) return;
+      btnTransferTurma.disabled = true;
+      try {
+        await transferTurmaTo(turma.id, target);
+        manageTransferStatus.className = "mt-2 text-xs text-emerald-600 font-semibold";
+        manageTransferStatus.textContent = `Turma transferida para ${professorDisplay(target)}.`;
+        await refreshMyTurmasList();
+      } catch (error) {
+        manageTransferStatus.className = "mt-2 text-xs text-red-600 font-semibold";
+        manageTransferStatus.textContent = "Não foi possível transferir a turma. Tente novamente.";
+      } finally {
+        btnTransferTurma.disabled = false;
+      }
+    });
 
     // ---------------------------------------------------------------------
     // Mais opções (⚙️), atalho no celular e código grande

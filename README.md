@@ -29,7 +29,8 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - trocar a própria senha a qualquer momento;
   - **📷 Atrasos**: guardar fotos de comprovantes/autorizações de atraso de cada turma — sem formulário, só a foto — e consultá-las depois, por turma ou todas juntas ("Ver todos os atrasos", com filtro por turma), filtrando por dia e baixando todas de uma vez em `.zip`. Cada foto é apagada automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**;
   - consultar o **histórico de chamadas** da turma — presentes e ausentes por dia, com exportação em `.xlsx`. Essa tela só é exibida, na interface, ao professor dono da turma ou à conta master; o que as regras do Firestore efetivamente permitem ler sobre esses mesmos dados está descrito em **[Isolamento entre professores](#isolamento-entre-professores)**;
-  - **(só a conta master)** criar login de outros professores direto pelo site, sem precisar do Firebase Console — ver **[Adicionar mais professores](#adicionar-mais-professores-no-mesmo-sitebanco-de-dados)**.
+  - **(só a conta master)** criar login de outros professores direto pelo site, sem precisar do Firebase Console — ver **[Adicionar mais professores](#adicionar-mais-professores-no-mesmo-sitebanco-de-dados)**;
+  - **(só a conta master)** administrar professores em ⚙️ Mais opções → **Painel admin — professores**: ver a lista, **enviar e-mail de redefinição de senha**, **remover** um professor (transferindo as turmas dele para outro professor ou excluindo-as) e, no **Gerenciar** de qualquer turma, **transferir a turma** para outro professor — ver **[Administrar professores](#administrar-professores-conta-master)**.
 - **Painel do professor pensado para o celular**: as turmas aparecem logo no topo; as opções usadas raramente (Minha conta, Nova turma, Painel admin, Atalho no celular) ficam recolhidas em **⚙️ Mais opções**, no fim da página — o botão **⚙️ Opções**, ao lado de "Sair", abre esse bloco. Ao gerar ou salvar um código do dia, ele aparece **em tamanho grande** com a validade, para mostrar aos alunos ou projetar.
 - **Atalho direto para a Área do professor**: o endereço do site com `#professor` no fim (ex.: `https://<usuário>.github.io/chamada/#professor`) abre direto nas turmas (ou no login, se ninguém estiver conectado). Dá para salvar como ícone na tela inicial do celular — o passo a passo está em ⚙️ Mais opções → 📱 Atalho no celular. Com "Manter conectado neste aparelho", o atalho abre direto nas turmas, sem senha.
 - **Modo professor**: com login do dono da turma (ou da conta master) ativo, permite marcar a presença de qualquer aluno diretamente, sem o código do dia — útil para chamada oral ou aluno sem celular. Nesse modo também não vale a trava de "um aparelho por aluno". Desfazer uma presença sempre exige a senha do professor de novo, mesmo com o Modo professor ativo, para que outra pessoa no mesmo computador não consiga desfazer sem a senha.
@@ -280,6 +281,8 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
        match /acordosProfessor/{uid} {
          allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
          allow write: if request.auth != null && request.auth.uid == uid;
+         // a conta master apaga o registro ao remover um professor do sistema
+         allow delete: if isMaster();
        }
      }
    }
@@ -290,7 +293,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
    Clique em **"Publicar"**. Com essas regras:
    - criar turma, gerenciar alunos, mudar o código do dia ou apagar uma presença exige estar logado como o professor dono da turma (ou a conta master);
    - a leitura de alunos e presenças de uma turma é liberada para o professor dono/master, ou para quem informar o código do dia dentro do prazo de validade escolhido — ver **[Código do dia](#código-do-dia)** para o que isso garante de fato;
-   - `acordosProfessor/{uid}` guarda o registro de que aquele professor confirmou os "Avisos importantes" — cada um só lê/escreve o próprio registro; a conta master também pode ler todos;
+   - `acordosProfessor/{uid}` guarda o registro de que aquele professor confirmou os "Avisos importantes" (e o nome/e-mail dele, usados na lista de professores da conta master) — cada um só lê/escreve o próprio registro; a conta master também pode ler todos e apagar o registro ao remover um professor;
    - `atrasos`/`atrasosImg` (fotos de comprovantes de atraso) só podem ser lidos, criados e apagados pelo professor dono da turma (ou pela conta master) — o código do dia não dá acesso a elas; ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 
    > Sempre que o formato dos dados mudar, as regras precisam ser atualizadas — este README sempre tem o bloco completo mais recente para copiar e colar.
@@ -380,7 +383,17 @@ Cada turma pertence a quem a criou — cada professor só vê e gerencia as pró
 
 Se a ideia é que os professores não tenham nenhum vínculo entre si, o caminho é a **[cópia independente](#cópia-independente-para-outro-professor)**, não esta seção.
 
-> **Sobre remover um professor**: hoje só é possível pelo Firebase Console (Authentication → Users) — ver **[Criação de novos professores](#criação-de-novos-professores)** para o motivo técnico.
+> **Sobre remover um professor**: o site cuida das turmas dele (ver abaixo), mas apagar o login em si só é possível pelo Firebase Console (Authentication → Users) — ver **[Criação de novos professores](#criação-de-novos-professores)** para o motivo técnico.
+
+### Administrar professores (conta master)
+
+Em ⚙️ Mais opções → **Painel admin — professores** (só a conta master vê):
+
+- **Lista de professores**: vem de `acordosProfessor` (todo professor que já acessou o sistema e aceitou os avisos, com nome e e-mail) somada aos donos de turmas existentes. Sem backend, o site não consegue listar as contas do Firebase Authentication — por isso um professor recém-criado só aparece depois do primeiro acesso.
+- **Redefinir senha**: envia para o professor o e-mail padrão do Firebase para ele definir uma senha nova. A conta master nunca define nem vê a senha de ninguém; a senha atual continua valendo até a pessoa definir a nova.
+- **Transferir turma**: no **Gerenciar** de qualquer turma, a conta master escolhe o novo professor. Alunos, histórico de presenças, código do dia e fotos de atrasos vão junto (as regras de acesso seguem o dono atual da turma), e o professor anterior deixa de ver a turma na hora.
+- **Remover professor**: pede a senha da conta master; transfere as turmas dele para outro professor **ou** as exclui por completo (alunos, presenças e fotos); e apaga o registro dele em `acordosProfessor` (sai da lista). **O login em si continua existindo** até ser apagado no Firebase Console (Authentication → Users → ⋮ → Excluir conta) — o site mostra o link no final. Enquanto o login existir, a pessoa ainda consegue entrar (vê o painel vazio e poderia criar turmas novas).
+- **Não é possível pelo site** (exigiria backend/Cloud Functions, que exigem o plano pago Blaze): trocar o e-mail de login de outro professor, apagar o login, ou editar o nome de outro professor (o nome é do próprio professor, em Minha conta).
 
 ## Modelo de dados
 
