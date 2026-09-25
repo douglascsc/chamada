@@ -740,6 +740,13 @@
         <label class="mb-1 block text-sm font-semibold text-slate-700" for="manage-import-alunos">Importar vários alunos de uma vez</label>
         <textarea id="manage-import-alunos" class="text-field" rows="3" placeholder="Cole os nomes, um por linha"></textarea>
         <button id="btn-import-alunos" class="action-button focus-ring mt-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Importar lista</button>
+        <div id="import-preview" class="hidden mt-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700" role="status">
+         <p id="import-preview-text"></p>
+         <div class="mt-2 flex flex-wrap gap-2">
+          <button id="btn-import-confirm" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Importar</button>
+          <button id="btn-import-cancel" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Cancelar</button>
+         </div>
+        </div>
        </div>
 
        <div class="mt-6 border-t border-slate-200 pt-5">
@@ -910,6 +917,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           <select id="new-turma-copy-from" class="text-field w-full py-2 text-sm sm:w-auto sm:min-w-[18rem] sm:max-w-sm"></select>
          </div>
          <textarea id="new-turma-alunos" class="text-field" rows="4" placeholder="Cole os nomes, um por linha (opcional — dá para adicionar depois)"></textarea>
+         <p id="new-turma-alunos-count" class="mt-1 hidden text-xs text-slate-500" aria-live="polite"></p>
          <button id="btn-fill-example" class="action-button focus-ring mt-2 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Preencher com lista de exemplo (30 alunos)</button>
         </div>
         <div>
@@ -3298,7 +3306,21 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     btnFillExample.addEventListener("click", () => {
       newTurmaAlunos.value = EXAMPLE_STUDENTS.join("\n");
+      updateNewTurmaAlunosCount();
     });
+
+    // Nova turma: contagem ao vivo do que será cadastrado
+    function updateNewTurmaAlunosCount() {
+      const el = document.getElementById("new-turma-alunos-count");
+      if (!newTurmaAlunos.value.trim()) { el.classList.add("hidden"); return; }
+      const analise = analyzeStudentList(newTurmaAlunos.value, []);
+      const n = analise.novos.length;
+      el.textContent = `${n} ${n === 1 ? "aluno" : "alunos"}` + (analise.repetidos
+        ? ` · ${analise.repetidos} ${analise.repetidos === 1 ? "nome repetido será ignorado" : "nomes repetidos serão ignorados"}`
+        : "");
+      el.classList.remove("hidden");
+    }
+    newTurmaAlunos.addEventListener("input", updateNewTurmaAlunosCount);
 
     // --- Nova turma: copiar a lista de alunos de outra turma ------------------
     const newTurmaCopyRow = document.getElementById("new-turma-copy-row");
@@ -3345,6 +3367,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           return true;
         });
         newTurmaAlunos.value = [...atuais, ...novos].join("\n");
+        updateNewTurmaAlunosCount();
         showToast("success", `${novos.length} aluno${novos.length === 1 ? "" : "s"} copiado${novos.length === 1 ? "" : "s"} de "${origem ? origem.nome : "outra turma"}". Confira a lista e clique em Criar turma.`);
       } catch (error) {
         showToast("error", "Não foi possível copiar os alunos dessa turma. Verifique a conexão.");
@@ -3419,7 +3442,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           professorNome: auth.currentUser.displayName || auth.currentUser.email
         });
 
-        const lines = newTurmaAlunos.value.split("\n").map((s) => s.trim()).filter(Boolean);
+        const lines = analyzeStudentList(newTurmaAlunos.value, []).novos; // sem repetidos nem linhas vazias
         if (lines.length) {
           const batch = writeBatch(db);
           const alunosCol = collection(db, "turmas", turmaRef.id, "alunos");
@@ -3432,6 +3455,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         newTurmaDisciplina.value = "";
         updateNewTurmaNomePreview();
         newTurmaAlunos.value = "";
+        updateNewTurmaAlunosCount();
         showTeacherMessage("success", `Turma "${nome}" criada com sucesso.`);
         await refreshMyTurmasList();
         manageTurma(turmaRef.id); // troca direto da tela de Opções para o Gerenciar da nova turma
@@ -3482,6 +3506,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function stopManagingTurma() {
+      hideImportPreview(); // a prévia de importação é da turma que estava aberta
       if (unsubManageTurmaDoc) { unsubManageTurmaDoc(); unsubManageTurmaDoc = null; }
       if (unsubManageAlunos) { unsubManageAlunos(); unsubManageAlunos = null; }
       teacherManagingTurmaId = null;
@@ -4174,21 +4199,75 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     });
 
-    btnImportAlunos.addEventListener("click", async () => {
+    // Separa o texto colado em: novos, já cadastrados, repetidos e vazios
+    function analyzeStudentList(text, existingNames) {
+      const existentes = new Set(existingNames.map(normalize));
+      const vistos = new Set();
+      const result = { novos: [], jaExistem: [], repetidos: 0, vazias: 0 };
+      const linhas = text.split("\n");
+      if (linhas.length && !linhas[linhas.length - 1].trim()) linhas.pop(); // a última quebra de linha não conta
+      linhas.forEach((linha) => {
+        const nome = linha.trim().replace(/\s+/g, " ");
+        if (!nome) { result.vazias += 1; return; }
+        const chave = normalize(nome);
+        if (existentes.has(chave)) { result.jaExistem.push(nome); return; }
+        if (vistos.has(chave)) { result.repetidos += 1; return; }
+        vistos.add(chave);
+        result.novos.push(nome);
+      });
+      return result;
+    }
+
+    // Importar no Gerenciar: primeiro mostra a prévia, só grava ao confirmar
+    let pendingImport = null;
+    const importPreview = document.getElementById("import-preview");
+    const btnImportConfirm = document.getElementById("btn-import-confirm");
+    function hideImportPreview() {
+      pendingImport = null;
+      importPreview.classList.add("hidden");
+    }
+    btnImportAlunos.addEventListener("click", () => {
       if (!teacherManagingTurmaId) return;
-      const lines = manageImportAlunos.value.split("\n").map((s) => s.trim()).filter(Boolean);
-      if (!lines.length) return;
-      btnImportAlunos.disabled = true;
+      if (!manageImportAlunos.value.trim()) {
+        showToast("info", "Cole os nomes no campo acima, um por linha.");
+        manageImportAlunos.focus();
+        return;
+      }
+      const analise = analyzeStudentList(manageImportAlunos.value, teacherManagingAlunos.map((a) => a.nome));
+      const partes = [`${analise.novos.length} ${analise.novos.length === 1 ? "novo" : "novos"}`];
+      if (analise.jaExistem.length) {
+        const exemplos = analise.jaExistem.slice(0, 3).join(", ") + (analise.jaExistem.length > 3 ? "…" : "");
+        partes.push(`${analise.jaExistem.length} já ${analise.jaExistem.length === 1 ? "cadastrado" : "cadastrados"} (${exemplos})`);
+      }
+      if (analise.repetidos) partes.push(`${analise.repetidos} ${analise.repetidos === 1 ? "repetido" : "repetidos"} na lista`);
+      if (analise.vazias) partes.push(`${analise.vazias} ${analise.vazias === 1 ? "linha vazia" : "linhas vazias"}`);
+      document.getElementById("import-preview-text").textContent = analise.novos.length === 1 && partes.length === 1
+        ? "1 aluno novo será adicionado."
+        : `${partes.join(" · ")}.${partes.length > 1 ? " Só os novos serão adicionados." : ""}`;
+      btnImportConfirm.textContent = analise.novos.length ? `Importar ${analise.novos.length}` : "Nada novo para importar";
+      btnImportConfirm.disabled = !analise.novos.length;
+      pendingImport = analise.novos;
+      importPreview.classList.remove("hidden");
+    });
+    manageImportAlunos.addEventListener("input", hideImportPreview); // mudou o texto: prévia antiga não vale mais
+    document.getElementById("btn-import-cancel").addEventListener("click", hideImportPreview);
+    btnImportConfirm.addEventListener("click", async () => {
+      if (!teacherManagingTurmaId || !pendingImport || !pendingImport.length) return;
+      const nomes = pendingImport;
+      btnImportConfirm.disabled = true;
       try {
-        const batch = writeBatch(db);
         const alunosCol = collection(db, "turmas", teacherManagingTurmaId, "alunos");
-        lines.forEach((nome) => batch.set(doc(alunosCol), { nome }));
-        await batch.commit();
+        for (let i = 0; i < nomes.length; i += 450) {
+          const batch = writeBatch(db);
+          nomes.slice(i, i + 450).forEach((nome) => batch.set(doc(alunosCol), { nome }));
+          await batch.commit();
+        }
+        showToast("success", `${nomes.length} ${nomes.length === 1 ? "aluno importado" : "alunos importados"}.`);
         manageImportAlunos.value = "";
+        hideImportPreview();
       } catch (error) {
         showToast("error", "Não foi possível importar a lista. Tente novamente.");
-      } finally {
-        btnImportAlunos.disabled = false;
+        btnImportConfirm.disabled = false;
       }
     });
 
