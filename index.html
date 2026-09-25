@@ -2543,7 +2543,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       info.appendChild(codeLine);
 
       const actions = document.createElement("div");
-      actions.className = "flex shrink-0 flex-wrap items-center gap-2";
+      // Celular: grade 2×2 ocupando a largura toda (nomes completos, botões
+      // largos para o dedo). A partir de 640px: uma linha, como antes.
+      actions.className = "grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center";
 
       function makeQuickCodeButton(minutes, label) {
         const quickBtn = document.createElement("button");
