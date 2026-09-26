@@ -40,7 +40,6 @@ const now = Date.now();
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
-await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });
@@ -69,6 +68,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   const b2 = writeBatch(db); nomes.slice(0, 18).forEach((n, k) => b2.set(doc(db, `turmas/a2/presencas/p${k}`), { nome: n, data: hoje, horario: `08:${String(k).padStart(2, "0")}`, maquina: `m${k}`, expiraEm: Timestamp.fromMillis(now + 6 * 86400000) })); await b2.commit();
   await setDoc(doc(db, "turmas/vazia"), { nome: "ZZZ 2026 - Turma nova", professorUid: uidA, professorNome: "Ana Souza", arquivada: true });
 });
+await migrarCodigos(env);
 const top = (p, sel) => p.locator(sel).first().evaluate((e) => Math.round(e.getBoundingClientRect().top + scrollY));
 const h = (p, sel) => p.locator(sel).first().evaluate((e) => Math.round(e.getBoundingClientRect().height));
 const card = (p, n) => p.locator("#teacher-turmas-list > div", { hasText: n });

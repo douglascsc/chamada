@@ -40,7 +40,6 @@ const now = Date.now();
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
-await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });
@@ -67,6 +66,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   }
   const b2 = writeBatch(db); ["Ana Beatriz Rocha", "Bruno Henrique Alves"].forEach((n, k) => b2.set(doc(db, `turmas/t0/presencas/p${k}`), { nome: n, data: hoje, horario: "08:0" + k, maquina: "m" + k, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b2.commit();
 });
+await migrarCodigos(env);
 const presentesHoje = async (t) => (await list(`turmas/${t}/presencas`)).filter((p) => p.data === hoje);
 async function login(page, remember = false) {
   await page.waitForSelector("#teacher-gate-modal-backdrop:not(.hidden)");

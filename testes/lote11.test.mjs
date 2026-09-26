@@ -41,7 +41,6 @@ const ontem = new Date(now - 86400000).toLocaleDateString("sv-SE", { timeZone: "
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
-await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });
@@ -71,6 +70,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   [["Ana", "10:00", "m0"], ["Bruno", "10:30", "m1"], ["Caio", "manual", "professor"]].forEach(([n, h, m], k) => b2.set(doc(db, `turmas/t0/presencas/o${k}`), { nome: n, data: ontem, horario: h, maquina: m, expiraEm: exp }));
   await b2.commit();
 });
+await migrarCodigos(env);
 const card = (p, n) => p.locator("#teacher-turmas-list > div", { hasText: n });
 const status = (p, n) => p.locator(".student-row", { hasText: n }).locator(".present-status-label").innerText();
 async function login(page) {
