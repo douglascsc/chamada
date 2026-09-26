@@ -17,11 +17,26 @@ service cloud.firestore {
              && (isMaster() || turmaAtual(turmaId).professorUid == request.auth.uid);
     }
 
-    function codigoAtivo(turmaId) {
+    // Código do dia: o valor NÃO fica na turma (que é pública). Ele é o
+    // nome (ID) do documento turmas/{id}/salas/{codigo}, que guarda a lista
+    // de nomes para os alunos. Só quem sabe o código chega nesse documento.
+    // A turma guarda só quando o código foi gerado e quanto tempo vale.
+    function codigoNoPrazo(turmaId) {
       let t = turmaAtual(turmaId);
-      return t.codigoDoDia is string && t.codigoDoDia != ''
-             && t.get('codigoDefinidoEm', null) != null
+      return t.get('codigoDefinidoEm', null) != null
              && request.time < t.codigoDefinidoEm + duration.value(t.get('codigoDuracaoMin', 180), 'm');
+    }
+
+    function salaPath(turmaId, codigo) {
+      return /databases/$(database)/documents/turmas/$(turmaId)/salas/$(codigo);
+    }
+
+    // O código informado é o código atual (e ainda no prazo) da turma
+    function salaValida(turmaId, codigo) {
+      return codigo is string && codigo.matches('^[0-9]{4,10}$')
+             && codigoNoPrazo(turmaId)
+             && exists(salaPath(turmaId, codigo))
+             && get(salaPath(turmaId, codigo)).data.definidoEm == turmaAtual(turmaId).codigoDefinidoEm;
     }
 
     // Texto com tamanho máximo (evita documentos enormes)
@@ -34,10 +49,13 @@ service cloud.firestore {
     }
 
     // Campos da turma com tipo e tamanho corretos (vale para criar e alterar)
-    function turmaValida(d) {
+    // (codigoAntes: turmas antigas ainda podem ter um código velho gravado;
+    // alterar outra coisa nelas continua permitido, sem trocar esse valor)
+    function turmaValida(d, codigoAntes) {
       return textoAte(d.nome, 120) && d.nome.size() > 0
              && (!('professorNome' in d) || textoAte(d.professorNome, 120))
-             && (!('codigoDoDia' in d) || textoAte(d.codigoDoDia, 10))
+             // o código do dia não pode mais ficar na turma (só vazio/removido)
+             && (!('codigoDoDia' in d) || d.codigoDoDia == '' || d.codigoDoDia == codigoAntes)
              && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
              && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
              && (!('arquivada' in d) || d.arquivada is bool)
@@ -51,7 +69,7 @@ service cloud.firestore {
                     && request.resource.data.keys().hasAll(['nome', 'professorUid'])
                     && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                     && request.resource.data.professorUid == request.auth.uid
-                    && turmaValida(request.resource.data);
+                    && turmaValida(request.resource.data, '');
       allow update: if request.auth != null
                     && (isMaster() || resource.data.professorUid == request.auth.uid)
                     && request.resource.data.diff(resource.data).affectedKeys()
@@ -60,11 +78,24 @@ service cloud.firestore {
                     && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
                     // e-mail do professor (turmas antigas): só pode ser removido
                     && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
-                    && turmaValida(request.resource.data);
+                    && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
       allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
+      // Lista de nomes para os alunos, com o código como ID. Aluno só lê
+      // (um documento, pelo código exato); listar é só do professor.
+      match /salas/{codigo} {
+        allow get: if ehProfessorDaTurma(turmaId) || salaValida(turmaId, codigo);
+        allow list, delete: if ehProfessorDaTurma(turmaId);
+        allow create, update: if ehProfessorDaTurma(turmaId)
+                              && codigo.matches('^[0-9]{4,10}$')
+                              && request.resource.data.keys().hasOnly(['nomes', 'definidoEm'])
+                              && request.resource.data.nomes is list
+                              && request.resource.data.nomes.size() <= 500
+                              && request.resource.data.definidoEm is timestamp;
+      }
+
       match /alunos/{alunoId} {
-        allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+        allow read: if ehProfessorDaTurma(turmaId);
         allow create: if ehProfessorDaTurma(turmaId)
                       && request.resource.data.keys().hasAll(['nome'])
                       && request.resource.data.nome is string;
@@ -75,7 +106,10 @@ service cloud.firestore {
       }
 
       match /presencas/{presencaId} {
-        allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+        // Aluno: só as presenças marcadas com o código atual (a consulta
+        // precisa filtrar por codigoUsado).
+        allow read: if ehProfessorDaTurma(turmaId)
+                    || salaValida(turmaId, resource.data.get('codigoUsado', ''));
         // Só os campos esperados, com tamanho limitado, e com prazo de
         // retenção obrigatório (no máximo 8 dias à frente).
         allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
@@ -89,9 +123,11 @@ service cloud.firestore {
                       && (
                            ehProfessorDaTurma(turmaId)
                            || (
-                                textoAte(request.resource.data.get('codigoUsado', null), 10)
-                                && codigoAtivo(turmaId)
-                                && request.resource.data.codigoUsado == turmaAtual(turmaId).codigoDoDia
+                                // aluno: código atual, nome da lista da turma e
+                                // um documento por aparelho por dia
+                                salaValida(turmaId, request.resource.data.get('codigoUsado', ''))
+                                && request.resource.data.nome in get(salaPath(turmaId, request.resource.data.codigoUsado)).data.nomes
+                                && presencaId == request.resource.data.data + '_' + request.resource.data.maquina
                               )
                          );
         allow update: if false;

@@ -1,3 +1,4 @@
+import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, writeBatch, Timestamp } from "firebase/firestore";
@@ -19,6 +20,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "turmas/t0"), { nome: NOME, professorUid: r.localId, professorNome: "Prof", codigoDoDia: "4821", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 });
   const b = writeBatch(db); ["Ana", "Bruno", "Carla"].forEach((n, k) => b.set(doc(db, `turmas/t0/alunos/a${k}`), { nome: n })); await b.commit();
 });
+await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function ctxFor(w) {
   const mobile = w < 640;

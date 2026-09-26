@@ -1,3 +1,4 @@
+import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp, Bytes } from "firebase/firestore";
@@ -51,6 +52,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
+await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });

@@ -1,3 +1,4 @@
+import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, setDoc, getDoc, getDocs, updateDoc, collection, writeBatch, Timestamp } from "firebase/firestore";
@@ -50,6 +51,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
+await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });
@@ -99,10 +101,10 @@ for (const n of alunos) {
 }
 await page.waitForFunction(() => document.getElementById("present-count").textContent === "4", null, { timeout: 8000 });
 await page.waitForTimeout(800);
-check("Opção desligada: todos marcaram e o código continua", (await read("turmas/t0")).codigoDoDia === "4821");
+check("Opção desligada: todos marcaram e o código continua", (await codigoAtual(env, "t0")) === "4821");
 await page.check("#bar-auto-end");
 await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 });
-check("Opção ligada: encerra o código (banco)", (await read("turmas/t0")).codigoDoDia === "");
+check("Opção ligada: encerra o código (banco)", (await codigoAtual(env, "t0")) === "");
 await page.waitForTimeout(500);
 check("Depois de encerrar: barra mostra \"Nenhum código ativo\" e some a opção", /Nenhum código ativo/.test(await page.textContent("#teacher-code-bar-text")) && (await page.isHidden("#bar-auto-end-wrap")));
 check("Celular/professor sem código: \"Gerar código 30 min\" e \"Copiar ausentes\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
@@ -116,13 +118,13 @@ check("Janela do código: botão Compartilhar (onde o celular permite)", await p
 await page.click("#btn-code-display-share");
 const shared = await page.evaluate(() => window.__shared);
 check("Compartilhar: manda o nome e o link da turma", shared && shared.url === APP + "#turma=t1" && shared.title === "INF3M 2026 - Web" && /digite o código do dia/.test(shared.text), JSON.stringify(shared));
-const codigoT1 = (await read("turmas/t1")).codigoDoDia;
+const codigoT1 = (await codigoAtual(env, "t1"));
 await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const b = writeBatch(f); alunos.slice(0, 3).forEach((n, k) => b.set(doc(f, `turmas/t1/presencas/p${k}`), { nome: n, data: hoje, horario: "08:00", maquina: `m${k}`, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b.commit(); });
 await page.waitForTimeout(1500);
-check("Janela do código: 3 de 4 marcaram, código continua", (await read("turmas/t1")).codigoDoDia === codigoT1 && codigoT1 !== "");
+check("Janela do código: 3 de 4 marcaram, código continua", (await codigoAtual(env, "t1")) === codigoT1 && codigoT1 !== "");
 await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), "turmas/t1/presencas/p3"), { nome: alunos[3].toUpperCase(), data: hoje, horario: "08:01", maquina: "m3", expiraEm: Timestamp.fromMillis(now + 86400000) }); });
 await page.waitForFunction(() => /Encerrado: todos os 4 alunos marcaram/.test(document.getElementById("code-display-validity").textContent), null, { timeout: 8000 });
-check("Janela do código: o 4º marcou → encerra e avisa na janela", (await read("turmas/t1")).codigoDoDia === "");
+check("Janela do código: o 4º marcou → encerra e avisa na janela", (await codigoAtual(env, "t1")) === "");
 await page.screenshot({ path: `${OUT}/l7-02-janela-encerrado-celular.png` });
 await page.click("#btn-close-code-display");
 // desligando a opção
@@ -131,7 +133,7 @@ await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 await page.uncheck("#code-display-auto-end");
 await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const b = writeBatch(f); alunos.forEach((n, k) => b.set(doc(f, `turmas/t2/presencas/p${k}`), { nome: n, data: hoje, horario: "08:00", maquina: `m${k}`, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b.commit(); });
 await page.waitForTimeout(1500);
-check("Opção desligada na janela: não encerra", (await read("turmas/t2")).codigoDoDia !== "");
+check("Opção desligada na janela: não encerra", (await codigoAtual(env, "t2")) !== "");
 await page.click("#btn-close-code-display");
 
 // ===== Compartilhar no Gerenciar + cor da turma =====
@@ -164,6 +166,7 @@ await ctx.close();
 
 // ===== Aluno: vibra, cor no cartão, sem layout de professor =====
 await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); await updateDoc(doc(f, "turmas/t0"), { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000) }); await setDoc(doc(f, "turmas/t0/alunos/s9"), { nome: "Eva Nova" }); });
+await migrarCodigos(env);
 ctx = await newCtx(true);
 await ctx.addInitScript(() => { navigator.vibrate = (p) => { window.__vib = p; return true; }; });
 page = await open(ctx, APP);

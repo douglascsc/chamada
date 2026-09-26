@@ -19,7 +19,10 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, "turmas/tA/alunos/a1"), { nome: "Aluno 1" });
   await setDoc(doc(db, "turmas/tA/presencas/p0"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:00", maquina: "m0", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) });
   // código ativo na turma A
-  await updateDoc(doc(db, "turmas/tA"), { codigoDoDia: "1234", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 });
+  // (o código fica em turmas/tA/salas/1234, não na turma)
+  const definidoEm = Timestamp.now();
+  await updateDoc(doc(db, "turmas/tA"), { codigoDefinidoEm: definidoEm, codigoDuracaoMin: 60 });
+  await setDoc(doc(db, "turmas/tA/salas/1234"), { nomes: ["Aluno 1"], definidoEm });
 });
 
 const A = env.authenticatedContext("profA", { email: "a@x.br" }).firestore();
@@ -76,12 +79,14 @@ await t("editar foto existente é recusado", assertFails(updateDoc(doc(A, "turma
 
 // --- Regressão das regras existentes
 await t("[regressão] qualquer um lê turmas", assertSucceeds(getDoc(doc(U, "turmas/tA"))));
-await t("[regressão] aluno com código ativo lê alunos", assertSucceeds(getDocs(collection(U, "turmas/tA/alunos"))));
-await t("[regressão] aluno com código correto cria presença", assertSucceeds(setDoc(doc(U, "turmas/tA/presencas/p1"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m1", codigoUsado: "1234", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
-await t("[regressão] código errado NÃO cria presença", assertFails(setDoc(doc(U, "turmas/tA/presencas/p2"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m2", codigoUsado: "9999", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[código secreto] aluno com o código lê a lista de nomes (sala)", assertSucceeds(getDoc(doc(U, "turmas/tA/salas/1234"))));
+await t("[código secreto] aluno NÃO lê a coleção de alunos (nem com código ativo)", assertFails(getDocs(collection(U, "turmas/tA/alunos"))));
+await t("[regressão] aluno com código correto cria presença", assertSucceeds(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m1"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m1", codigoUsado: "1234", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[regressão] código errado NÃO cria presença", assertFails(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m2"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m2", codigoUsado: "9999", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
 await t("[regressão] sem código NÃO lê alunos da turma B", assertFails(getDocs(collection(U, "turmas/tB/alunos"))));
 await t("[regressão] prof B NÃO edita turma A", assertFails(updateDoc(doc(B, "turmas/tA"), { nome: "hack" })));
-await t("[regressão] prof A gera código na turma A", assertSucceeds(updateDoc(doc(A, "turmas/tA"), { codigoDoDia: "5555", codigoDefinidoEm: serverTimestamp(), codigoDuracaoMin: 60 })));
+await t("[regressão] prof A gera código na turma A (turma + sala, juntos)", assertSucceeds((async () => { const b = writeBatch(A); b.update(doc(A, "turmas/tA"), { codigoDefinidoEm: serverTimestamp(), codigoDuracaoMin: 60 }); b.delete(doc(A, "turmas/tA/salas/1234")); b.set(doc(A, "turmas/tA/salas/5555"), { nomes: ["Aluno 1"], definidoEm: serverTimestamp() }); await b.commit(); })()));
+await t("[código secreto] prof A NÃO grava o código na turma (pública)", assertFails(updateDoc(doc(A, "turmas/tA"), { codigoDoDia: "7777" })));
 await t("[regressão] prof A apaga presença da turma A", assertSucceeds(deleteDoc(doc(A, "turmas/tA/presencas/p0"))));
 
 // --- Registro de professores (acordosProfessor)
@@ -106,10 +111,10 @@ await t("[pendentes] prof A NÃO cria pendente", assertFails(setDoc(doc(A, "prof
 await t("[pendentes] não autenticado NÃO lê", assertFails(getDoc(doc(U, "professoresPendentes/juliane@ifsul.edu.br"))));
 await t("[pendentes] master apaga pendente", assertSucceeds(deleteDoc(doc(M, "professoresPendentes/juliane@ifsul.edu.br"))));
 await t("[último acesso] prof A atualiza o próprio ultimoAcesso", assertSucceeds(updateDoc(doc(A, "acordosProfessor/profA"), { ultimoAcesso: serverTimestamp() })));
-await t("[encerrar código] dono encerra o código (codigoDoDia vazio)", assertSucceeds(updateDoc(doc(A, "turmas/tA"), { codigoDoDia: "" })));
-await t("[encerrar código] com código vazio, aluno NÃO marca presença", assertFails(setDoc(doc(U, "turmas/tA/presencas/p9"), { nome: "Aluno 1", data: "2026-09-25", horario: "09:00", maquina: "m9", codigoUsado: "", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
-await t("[encerrar código] com código vazio, aluno NÃO lê alunos", assertFails(getDocs(collection(U, "turmas/tA/alunos"))));
-await t("[encerrar código] prof B NÃO encerra código da turma A", assertFails(updateDoc(doc(B, "turmas/tA"), { codigoDoDia: "" })));
+await t("[encerrar código] prof B NÃO encerra código da turma A", assertFails(updateDoc(doc(B, "turmas/tA"), { codigoDefinidoEm: null })));
+await t("[encerrar código] dono encerra o código (turma + apaga sala)", assertSucceeds((async () => { const b = writeBatch(A); b.update(doc(A, "turmas/tA"), { codigoDefinidoEm: null }); b.delete(doc(A, "turmas/tA/salas/5555")); await b.commit(); })()));
+await t("[encerrar código] encerrado, aluno NÃO marca presença com o código antigo", assertFails(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m9"), { nome: "Aluno 1", data: "2026-09-25", horario: "09:00", maquina: "m9", codigoUsado: "5555", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[encerrar código] encerrado, aluno NÃO lê a lista", assertFails(getDoc(doc(U, "turmas/tA/salas/5555"))));
 
 // --- Arquivar turma
 await t("[arquivar] dono arquiva a turma (arquivada: true)", assertSucceeds(updateDoc(doc(A, "turmas/tA"), { arquivada: true })));

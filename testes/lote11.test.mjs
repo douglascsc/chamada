@@ -1,3 +1,4 @@
+import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp } from "firebase/firestore";
@@ -40,6 +41,7 @@ const ontem = new Date(now - 86400000).toLocaleDateString("sv-SE", { timeZone: "
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 const list = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDocs(collection(ctx.firestore(), p))).docs.map((d) => ({ id: d.id, ...d.data() })); }); return out; };
 
+await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR" });
@@ -146,6 +148,7 @@ await ctx.close();
 
 // ----- Aluno não vê "atrasado" -----
 await env.withSecurityRulesDisabled(async (c) => { const { updateDoc } = await import("firebase/firestore"); await updateDoc(doc(c.firestore(), "turmas/t0"), { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000), codigoDuracaoMin: 30 }); });
+await migrarCodigos(env);
 ctx = await newCtx(true);
 page = await open(ctx, APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)");

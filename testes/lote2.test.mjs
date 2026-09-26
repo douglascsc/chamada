@@ -1,3 +1,4 @@
+import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp } from "firebase/firestore";
@@ -58,6 +59,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
 });
 const read = async (p) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = (await getDoc(doc(ctx.firestore(), p))).data(); }); return out; };
 
+await migrarCodigos(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newCtx(mobile = true) {
   const ctx = await browser.newContext({ ...(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } }), locale: "pt-BR", acceptDownloads: true, permissions: ["clipboard-read", "clipboard-write"] });
@@ -92,7 +94,7 @@ check("Cartão com código ativo mostra \"Encerrar\"", await row(page, "INF2M 20
 await page.screenshot({ path: `${OUT}/l2-01-painel-celular.png` });
 await row(page, "INF2M 2026").getByRole("button", { name: /Encerrar o código/ }).click();
 await page.waitForFunction(() => /encerrado/.test(document.getElementById("toast-text").textContent));
-check("Encerrar (cartão): código apagado no banco", (await read("turmas/t0")).codigoDoDia === "");
+check("Encerrar (cartão): código apagado no banco", (await codigoAtual(env, "t0")) === "");
 await page.waitForTimeout(500);
 check("Encerrar (cartão): cartão mostra \"Nenhum código ativo\"", (await row(page, "INF2M 2026").textContent()).includes("Nenhum código ativo"));
 
@@ -196,7 +198,7 @@ await page.close();
 // sem internet
 page = await open(ctx, APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)");
-const codigo = (await read("turmas/t0")).codigoDoDia;
+const codigo = (await codigoAtual(env, "t0"));
 await page.fill("#student-daily-code", codigo);
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 5);
 await ctx.setOffline(true);
