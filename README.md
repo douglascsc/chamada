@@ -83,6 +83,16 @@ Essa simplicidade tem um custo, em comparação com uma arquitetura instituciona
 
 **Simplicidade não é o mesmo que segurança.** As duas coisas são avaliadas separadamente ao longo deste documento, em especial em **[Segurança e controle de acesso](#segurança-e-controle-de-acesso)**.
 
+### Cota gratuita do Firebase (leituras)
+
+No plano gratuito (Spark), o Firestore permite **50 mil leituras por dia**. Estourar **não gera cobrança**, mas o banco para de responder até a cota reiniciar (por volta das 4h, horário de Brasília) — a chamada fica parada no resto do dia. Para ficar longe desse limite:
+
+- cada aparelho lê **só as presenças de hoje** da turma (não as dos últimos 7 dias); o Histórico, no Gerenciar do professor, faz a própria busca dos 7 dias quando é aberto;
+- a **lista de todas as turmas** só é lida na tela de escolher turma: quem entra pelo **link/QR da turma** não a baixa, e ela deixa de ser acompanhada depois que o aluno entra numa turma;
+- com a página aberta de um dia para o outro, a chamada passa a buscar o dia novo sozinha.
+
+Estimativa com uma turma de 32 alunos: cerca de **2 mil a 2,5 mil leituras por aula** (antes, de 3 mil a quase 8 mil no fim da semana) — algo em torno de **20 aulas por dia** no sistema inteiro. O uso real aparece no Firebase Console → Firestore Database → aba **Uso**.
+
 ## Segurança e controle de acesso
 
 Esta seção separa, para cada mecanismo do sistema, o que é **proteção de interface** (o `index.html` esconde ou bloqueia uma ação, mas o dado em si pode estar acessível a quem consulta o Firestore diretamente) do que é **segurança aplicada pelas regras do Firestore** (avaliada pelo servidor do Google, independente do que o navegador de quem pede faz ou deixa de fazer). Tratar as duas coisas como equivalentes é o principal jeito de criar uma falsa sensação de segurança — por isso a distinção é explícita em cada item abaixo.

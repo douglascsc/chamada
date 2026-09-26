@@ -1856,6 +1856,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Navegação entre telas
     // ---------------------------------------------------------------------
     function showView(name) {
+      // A lista de todas as turmas só é lida (e acompanhada) na tela de
+      // escolher turma — quem entra pelo link/QR da turma não a baixa.
+      // (ao entrar numa turma, ela só para de ser acompanhada depois que os
+      // dados da turma chegam — ver enterTurma — para não buscá-los duas vezes)
+      if (name === "turma-select") { if (!unsubTurmasList) subscribeTurmasList(); }
+      else if (name === "teacher-dashboard") stopTurmasList();
       btnTeacherArea.classList.toggle("hidden", name === "teacher-dashboard");
       viewTurmaSelect.classList.toggle("hidden", name !== "turma-select");
       viewAttendance.classList.toggle("hidden", name !== "attendance");
@@ -1865,6 +1871,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // ---------------------------------------------------------------------
     // Lista de turmas (global, fica sempre ativa)
     // ---------------------------------------------------------------------
+    function stopTurmasList() {
+      if (unsubTurmasList) { unsubTurmasList(); unsubTurmasList = null; }
+    }
+
     function subscribeTurmasList() {
       const q = query(turmasCollection, orderBy("nome"));
       unsubTurmasList = onSnapshot(
@@ -2149,12 +2159,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       hideMessage();
       showView("attendance");
 
+      let primeiraLeitura = true;
       unsubSelectedTurmaDoc = onSnapshot(doc(db, "turmas", turmaId), (snap) => {
+        updateDbStatusUI("connected");
+        if (viewTurmaSelect.classList.contains("hidden")) stopTurmasList(); // dentro da turma, a lista não é mais necessária
         if (!snap.exists()) return;
         selectedTurmaData = { id: snap.id, ...snap.data() };
         attendanceTurmaName.textContent = selectedTurmaData.nome || "Turma";
         updateDailyCodeStatusUI();
         renderAttendance();
+        // Código digitado antes de os dados da turma chegarem: confere agora
+        if (primeiraLeitura && !isDailyCodeVerified && !isTeacherModeActive && studentDailyCodeInput.value.length === 4) {
+          verifyDailyCode(true);
+        }
+        primeiraLeitura = false;
       });
 
       // TESTE (branch teste/codigo-ativo, não publicado): a lista de alunos
@@ -2185,8 +2203,19 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         }
       );
 
+      subscribePresencasDeHoje();
+    }
+
+    // Só as presenças de HOJE (a chamada só usa as de hoje; o histórico faz
+    // a própria busca). Antes vinham as dos últimos 7 dias, a cada aluno —
+    // era a maior parte das leituras do banco (cota grátis: 50 mil/dia).
+    let presencasDate = null;
+    function subscribePresencasDeHoje() {
+      if (!selectedTurmaId) return;
+      if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
+      presencasDate = getLocalParts().isoDate;
       unsubPresencas = onSnapshot(
-        collection(db, "turmas", selectedTurmaId, "presencas"),
+        query(collection(db, "turmas", selectedTurmaId, "presencas"), where("data", "==", presencasDate)),
         { includeMetadataChanges: true }, // para saber quando uma marcação sem internet foi enviada
         (snap) => {
           presencas = snap.docs.map((d) => ({ id: d.id, ...d.data(), pendente: d.metadata.hasPendingWrites }));
@@ -2198,6 +2227,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         }
       );
     }
+
+    // Página aberta de um dia para o outro: passa a buscar as presenças do dia novo
+    setInterval(() => {
+      if (selectedTurmaId && unsubPresencas && presencasDate !== getLocalParts().isoDate) {
+        presencas = [];
+        subscribePresencasDeHoje();
+        document.getElementById("current-date").textContent = getLocalParts().displayDate;
+        renderAttendance();
+      }
+    }, 60000);
 
     function exitAttendanceIfAny() {
       if (toastActionHandler) hideToast(); // o "Desfazer" rápido é só para a tela da chamada
@@ -6224,8 +6263,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const currentYear = getLocalParts().isoDate.slice(0, 4);
       document.getElementById("footer-year").textContent = currentYear;
       updateDbStatusUI("connecting");
-      showView("turma-select");
-      subscribeTurmasList();
+      // Aberto pelo link/QR da turma: vai direto para ela, sem baixar a lista
+      if (!turmaIdFromHash()) showView("turma-select");
       openTurmaFromHash();
       if (window.lucide) lucide.createIcons();
     }
