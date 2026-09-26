@@ -40,7 +40,7 @@ const uidA = await createUser("ana@teste.br", "Ana Souza");
 const uidB = await createUser("bruno@teste.br", "Bruno Lima");
 const uidC = await createUser("carla@teste.br", "Carla Dias");
 const uidN = await createUser("novo@teste.br", "Nelson Novo");
-const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8") } });
+const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8").replace("COLE_AQUI_O_UID_DA_CONTA_MASTER", uidM) /* conta master do teste */ } });
 let adminDb;
 await env.withSecurityRulesDisabled(async (ctx) => { adminDb = ctx.firestore(); const db = adminDb;
   await setDoc(doc(db, "acordosProfessor", uidM), { avisosAceitosEm: Timestamp.now(), email: "douglascamargo@ifsul.edu.br", nome: "Douglas" });
@@ -110,7 +110,7 @@ await openAdmin(pM);
 let rows = await adminRows(pM);
 console.log("   lista:", rows.join(" || "));
 check("Lista: todos os professores (registro + donos de turma), com nº de turmas",
-  rows.length === 5 && rows.some((r) => r.startsWith("Ana Souza | ana@teste.br · 2 turmas")) && rows.some((r) => r.startsWith("Carla Dias | carla@teste.br · 1 turma")) && rows.some((r) => r.startsWith("Nelson Novo | novo@teste.br · 0 turmas")) && rows.some((r) => r.startsWith("Douglas (você)")));
+  rows.length === 5 && rows.some((r) => r.startsWith("Ana Souza | ana@teste.br · 2 turmas")) && rows.some((r) => r.startsWith("Carla Dias | e-mail desconhecido · 1 turma")) /* sem cadastro: o e-mail não vem mais da turma (pública) */ && rows.some((r) => r.startsWith("Nelson Novo | novo@teste.br · 0 turmas")) && rows.some((r) => r.startsWith("Douglas (você)")));
 check("Lista: a própria conta master não tem botão Remover", await pM.locator("#admin-professores-list > div", { hasText: "(você)" }).getByRole("button", { name: "Remover" }).count() === 0);
 await pM.screenshot({ path: `${OUT}/adm-01-lista.png`, fullPage: false });
 
@@ -134,7 +134,7 @@ await pM.selectOption("#manage-transfer-select", uidB);
 await pM.click("#btn-transfer-turma");
 await pM.waitForFunction(() => /transferida/.test(document.getElementById("manage-transfer-status").textContent));
 const tA1 = await read("turmas/tA1");
-check("Transferir: turma passa para o Bruno (uid, nome, e-mail)", tA1.professorUid === uidB && tA1.professorNome === "Bruno Lima" && tA1.professorEmail === "bruno@teste.br");
+check("Transferir: turma passa para o Bruno (uid e nome; sem e-mail na turma)", tA1.professorUid === uidB && tA1.professorNome === "Bruno Lima" && !("professorEmail" in tA1));
 check("Transferir: alunos e fotos continuam na turma", (await count("turmas/tA1/alunos")) === 1 && (await count("turmas/tA1/atrasos")) === 1);
 await pM.waitForTimeout(500);
 check("Transferir: dono atual atualiza na tela", (await pM.textContent("#manage-transfer-owner")) === "Bruno Lima");

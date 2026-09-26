@@ -58,7 +58,7 @@ const uidB = await createUser("profb@teste.br", PASS, "Prof B");
 const uidM = await createUser("douglascamargo@ifsul.edu.br", PASS, "Master");
 
 // ---------- dados iniciais (regras desligadas, só no emulador) ----------
-const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8") } });
+const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8").replace("COLE_AQUI_O_UID_DA_CONTA_MASTER", uidM) /* conta master do teste */ } });
 const admin = async (fn) => { let out; await env.withSecurityRulesDisabled(async (ctx) => { out = await fn(ctx.firestore()); }); return out; };
 const DAY = 86400000;
 const tinyThumb = Bytes.fromUint8Array(new Uint8Array(readFileSync(`${IMG}/pequena_800x600.jpg`)).slice(0, 2000));

@@ -41,6 +41,7 @@ O script termina com código 0 só se todos os testes passarem.
 | `ux.test.mjs` | Login, "Manter conectado", atalho `#professor`, modo professor |
 | `novidades.test.mjs` | Tela Chamada do professor, histórico, exportar |
 | `lote2` … `lote7` | Lotes de melhorias (link/QR, arquivar, prévia de importação, sem internet, cor da turma…) |
+| `lote12` | Segurança: validação de presenças e turmas, master pelo UID, e-mail fora da turma, turmas sem dono |
 | `lote11` | Código de 30 min e 1h; presença com atraso (limites de 20 min, professor, histórico, Excel, aluno não vê) |
 | `lote10` | Menos leituras: só presenças de hoje, lista de turmas sob demanda (lê o tráfego do banco), virada do dia, aluno que digita rápido |
 | `lote9` | Nomes inteiros, marcar todos presentes, ir para outra turma, marcações não enviadas |
@@ -50,5 +51,8 @@ O script termina com código 0 só se todos os testes passarem.
 
 - `firestore.rules` aqui deve ser **igual** ao bloco de regras do README da
   `main`. Ao mudar as regras, copie para cá também.
+- As regras identificam a conta master pelo UID (`COLE_AQUI_O_UID_DA_CONTA_MASTER`
+  no arquivo). Os testes trocam esse texto pelo UID da conta master criada no
+  emulador; o arquivo em si fica com o texto de exemplo.
 - `build-site.sh` troca o projeto do Firebase pelo emulador; se a forma de
   iniciar o Firebase mudar no `index.html`, ajuste este script.

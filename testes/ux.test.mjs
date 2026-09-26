@@ -38,7 +38,7 @@ async function createUser(email, displayName) {
 const uidA = await createUser("profa@teste.br", "Prof A");
 const uidN = await createUser("novo@teste.br", "Prof Novo");
 const uidM = await createUser("douglascamargo@ifsul.edu.br", "Master");
-const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8") } });
+const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8").replace("COLE_AQUI_O_UID_DA_CONTA_MASTER", uidM) /* conta master do teste */ } });
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   for (const u of [uidA, uidN, uidM]) await setDoc(doc(db, "acordosProfessor", u), { avisosAceitosEm: Timestamp.now() });
   const nomes = ["INF1M 2026 - Algoritmos", "INF2M 2026 - Banco de Dados", "INF2N 2026 - Web", "INF3M 2026 - Redes", "INF3N 2026 - POO", "INF4M 2026 - Projeto"];

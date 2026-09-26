@@ -39,7 +39,7 @@ async function createUser(email, displayName) {
 const uidM = await createUser("douglascamargo@ifsul.edu.br", "Douglas");
 const uidA = await createUser("prof.ana@ifsul.edu.br", "Ana Souza");
 const uidJ = await createUser("juliane@ifsul.edu.br", "Juliane Moura"); // conta criada antes, nunca entrou
-const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8") } });
+const env = await initializeTestEnvironment({ projectId: "demo-chamada", firestore: { host: "127.0.0.1", port: 8080, rules: readFileSync("firestore.rules", "utf8").replace("COLE_AQUI_O_UID_DA_CONTA_MASTER", uidM) /* conta master do teste */ } });
 const alunos = ["Ana Beatriz Rocha", "Bruno Henrique Alves", "Camila Ferreira", "Daniel Souza Lima", "Eduarda Martins", "Felipe Carvalho"];
 const now = Date.now();
 const iso = (d) => new Date(now - d * 86400000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });

@@ -1,7 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
+  // Conta master: identificada pelo UID (não pelo e-mail, que não é
+  // verificado). Troque o texto abaixo pelo UID da sua conta:
+  // Firebase Console → Authentication → Users → coluna "User UID".
   function isMaster() {
-    return request.auth != null && request.auth.token.email == 'douglascamargo@ifsul.edu.br';
+    return request.auth != null && request.auth.uid == 'COLE_AQUI_O_UID_DA_CONTA_MASTER';
   }
 
   match /databases/{database}/documents {
@@ -21,28 +24,43 @@ service cloud.firestore {
              && request.time < t.codigoDefinidoEm + duration.value(t.get('codigoDuracaoMin', 180), 'm');
     }
 
+    // Texto com tamanho máximo (evita documentos enormes)
+    function textoAte(valor, max) {
+      return valor is string && valor.size() <= max;
+    }
+
+    function corValida(valor) {
+      return valor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza'];
+    }
+
+    // Campos da turma com tipo e tamanho corretos (vale para criar e alterar)
+    function turmaValida(d) {
+      return textoAte(d.nome, 120) && d.nome.size() > 0
+             && (!('professorNome' in d) || textoAte(d.professorNome, 120))
+             && (!('codigoDoDia' in d) || textoAte(d.codigoDoDia, 10))
+             && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
+             && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
+             && (!('arquivada' in d) || d.arquivada is bool)
+             && (!('cor' in d) || corValida(d.cor));
+    }
+
     match /turmas/{turmaId} {
       allow read: if true;
+      // O e-mail do professor NÃO fica na turma (que é pública).
       allow create: if request.auth != null
                     && request.resource.data.keys().hasAll(['nome', 'professorUid'])
-                    && request.resource.data.nome is string
-                    && request.resource.data.professorUid == request.auth.uid;
+                    && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
+                    && request.resource.data.professorUid == request.auth.uid
+                    && turmaValida(request.resource.data);
       allow update: if request.auth != null
-                    && (
-                         isMaster()
-                         || resource.data.professorUid == request.auth.uid
-                         || (!('professorUid' in resource.data) && request.resource.data.professorUid == request.auth.uid)
-                       )
+                    && (isMaster() || resource.data.professorUid == request.auth.uid)
                     && request.resource.data.diff(resource.data).affectedKeys()
                     .hasOnly(['codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'nome', 'professorUid', 'professorEmail', 'professorNome', 'arquivada', 'cor'])
-                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nome'])
-                        || request.resource.data.nome is string)
-                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDuracaoMin'])
-                        || request.resource.data.codigoDuracaoMin is int)
-                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['arquivada'])
-                        || request.resource.data.arquivada is bool)
-                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cor'])
-                        || request.resource.data.cor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza']);
+                    // só a conta master troca o dono (transferência / turmas antigas sem dono)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
+                    // e-mail do professor (turmas antigas): só pode ser removido
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
+                    && turmaValida(request.resource.data);
       allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
       match /alunos/{alunoId} {
@@ -58,16 +76,20 @@ service cloud.firestore {
 
       match /presencas/{presencaId} {
         allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
-        allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina'])
-                      && request.resource.data.nome is string
-                      && request.resource.data.data is string
-                      && request.resource.data.horario is string
-                      && request.resource.data.maquina is string
+        // Só os campos esperados, com tamanho limitado, e com prazo de
+        // retenção obrigatório (no máximo 8 dias à frente).
+        allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
+                      && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado'])
+                      && textoAte(request.resource.data.nome, 120) && request.resource.data.nome.size() > 0
+                      && request.resource.data.data is string && request.resource.data.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                      && textoAte(request.resource.data.horario, 10)
+                      && textoAte(request.resource.data.maquina, 64)
+                      && request.resource.data.expiraEm is timestamp
+                      && request.resource.data.expiraEm <= request.time + duration.value(8, 'd')
                       && (
                            ehProfessorDaTurma(turmaId)
                            || (
-                                request.resource.data.keys().hasAll(['codigoUsado'])
-                                && request.resource.data.codigoUsado is string
+                                textoAte(request.resource.data.get('codigoUsado', null), 10)
                                 && codigoAtivo(turmaId)
                                 && request.resource.data.codigoUsado == turmaAtual(turmaId).codigoDoDia
                               )
