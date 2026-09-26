@@ -596,7 +596,7 @@
        <p id="teacher-code-bar-text" class="text-sm font-semibold text-[var(--ink)]"></p>
        <div id="teacher-code-bar-buttons" class="flex flex-wrap gap-2">
         <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código</button>
-        <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button">Gerar código 30 min</button>
+        <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button" aria-label="Gerar código 30 min">Gerar cód. 30 min</button>
         <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
         <button id="btn-bar-all-present" class="hidden action-button focus-ring col-span-2 rounded-lg px-3 py-2 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32] border border-[#CFE6C8]" type="button">Marcar todos presentes</button>
        </div>
@@ -1147,7 +1147,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
   <!-- Modal: avisos importantes (privacidade/LGPD, segurança e limitações) -->
   <div id="terms-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
-   <section class="teacher-modal bg-white max-w-lg" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+   <section id="terms-modal-box" class="teacher-modal bg-white max-w-lg" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title" tabindex="-1">
     <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF6EC] text-[#2B7A40]">
      <i data-lucide="shield-alert" aria-hidden="true" class="h-6 w-6"></i>
     </div>
@@ -1180,7 +1180,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      </div>
     </div>
 
-    <div class="mt-5 flex justify-end">
+    <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
+     <p id="terms-scroll-hint" class="hidden text-xs font-semibold text-amber-700" aria-live="polite">Role até o fim para aceitar.</p>
      <button id="btn-close-terms" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Entendi</button>
     </div>
    </section>
@@ -1517,11 +1518,35 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let termsMandatory = false;
     let termsAcknowledgmentChecked = false;
 
+    // Abre sempre no topo. No 1º acesso (aceite obrigatório), o "Concordo"
+    // só é liberado depois de rolar até o fim dos avisos.
+    const termsModalBox = document.getElementById("terms-modal-box");
+    const termsScrollHint = document.getElementById("terms-scroll-hint");
+    function updateTermsScrollGate() {
+      if (!termsMandatory) {
+        termsScrollHint.classList.add("hidden");
+        btnCloseTerms.disabled = false;
+        btnCloseTerms.classList.remove("opacity-50");
+        return;
+      }
+      const noFim = termsModalBox.scrollTop + termsModalBox.clientHeight >= termsModalBox.scrollHeight - 24;
+      if (noFim) termsReadToEnd = true;
+      btnCloseTerms.disabled = !termsReadToEnd;
+      btnCloseTerms.classList.toggle("opacity-50", !termsReadToEnd);
+      termsScrollHint.classList.toggle("hidden", termsReadToEnd);
+    }
+    let termsReadToEnd = false;
+    termsModalBox.addEventListener("scroll", updateTermsScrollGate, { passive: true });
+
     function openTermsModal() {
       btnCloseTerms.textContent = termsMandatory ? "Concordo" : "Entendi";
+      termsReadToEnd = false;
       termsModalBackdrop.classList.remove("hidden");
       termsModalBackdrop.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
+      termsModalBox.scrollTop = 0;
+      termsModalBox.focus({ preventScroll: true });
+      requestAnimationFrame(() => { termsModalBox.scrollTop = 0; updateTermsScrollGate(); });
     }
 
     function closeTermsModal() {
@@ -1546,6 +1571,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         // o registro é só um histórico, não deve travar o professor de usar.
       }
       btnCloseTerms.disabled = false;
+      btnCloseTerms.classList.remove("opacity-50");
       termsMandatory = false;
       closeTermsModal();
     }
@@ -3809,6 +3835,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         quickBtn.type = "button";
         quickBtn.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]";
         quickBtn.textContent = label;
+        quickBtn.setAttribute("aria-label", label.replace("cód.", "código")); // leitor de tela lê por extenso
         quickBtn.addEventListener("click", async () => {
           quickBtn.disabled = true;
           const originalText = quickBtn.textContent;
@@ -3824,8 +3851,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
 
       // Código de 30 min (o mais usado) e 1h; outras durações no Gerenciar
-      const btnCode30 = makeQuickCodeButton(30, "Gerar código 30 min");
-      const btnCode1h = makeQuickCodeButton(60, "Gerar código 1h");
+      const btnCode30 = makeQuickCodeButton(30, "Gerar cód. 30 min");
+      const btnCode1h = makeQuickCodeButton(60, "Gerar cód. 1h");
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -3846,8 +3873,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnAtrasos.innerHTML = '<i data-lucide="camera" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i><span>Atrasos</span>';
       btnAtrasos.addEventListener("click", () => openAtrasosModal(turma));
 
-      // Celular: uma linha com as ações do dia a dia (Gerar código 30 min,
-      // Chamada, Atrasos); "Gerar código 1h" e "Gerenciar" ficam no "⋯".
+      // Celular: uma linha com as ações do dia a dia (Gerar cód. 30 min,
+      // Chamada, Atrasos); "Gerar cód. 1h" e "Gerenciar" ficam no "⋯".
       // No computador, todas numa linha, como antes.
       [btnCode1h, btn].forEach((b) => b.classList.add("max-sm:hidden"));
       [btnCode30, btnChamada, btnAtrasos].forEach((b) => b.classList.add("max-sm:px-1.5", "max-sm:leading-tight"));
@@ -3856,7 +3883,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const moreRow = document.createElement("div");
       moreRow.className = "hidden w-full grid-cols-2 gap-2 sm:!hidden";
       moreRow.id = `turma-more-${turma.id}`;
-      const btnCode1hMobile = makeQuickCodeButton(60, "Gerar código 1h");
+      const btnCode1hMobile = makeQuickCodeButton(60, "Gerar cód. 1h");
       const btnManageMobile = document.createElement("button");
       btnManageMobile.type = "button";
       btnManageMobile.className = btn.className.replace("max-sm:hidden", "");
@@ -6692,7 +6719,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           setTimeout(() => {
             if (!backdrop.contains(document.activeElement)) {
               const first = focusablesIn(backdrop)[0];
-              if (first) first.focus();
+              if (first) first.focus({ preventScroll: true }); // a janela abre no topo
             }
           }, 0);
         } else if (!isOpen && index >= 0) {
