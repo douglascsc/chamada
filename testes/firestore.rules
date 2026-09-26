@@ -169,7 +169,13 @@ service cloud.firestore {
                                 && request.resource.data.get('criadoEm', null) == request.time
                               )
                          );
-        allow update: if false;
+        // Saída antecipada: só o professor da turma, só esse campo (a hora da
+        // saída, no máximo 5 min à frente do servidor; ou apagar = desfazer)
+        allow update: if ehProfessorDaTurma(turmaId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saidaEm'])
+                      && (!('saidaEm' in request.resource.data)
+                          || (request.resource.data.saidaEm is timestamp
+                              && request.resource.data.saidaEm <= request.time + duration.value(5, 'm')));
         allow delete: if ehProfessorDaTurma(turmaId);
       }
 

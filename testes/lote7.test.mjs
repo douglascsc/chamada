@@ -88,7 +88,7 @@ check("Celular/professor: título grande \"Lista de Presença\" escondido", awai
 const bBar = await box(page, "#teacher-code-bar"), bHeader = await box(page, "#list-header"), bList = await box(page, "#student-list");
 check("Celular/professor: barra do código antes do contador", bBar.y < bHeader.y && bHeader.y < bList.y, `barra ${Math.round(bBar.y)} · contador ${Math.round(bHeader.y)}`);
 const bEnd = await box(page, "#btn-bar-end-code"), bCopy = await box(page, "#btn-bar-copy-absent");
-check("Celular/professor: \"Encerrar código\" e \"Copiar ausentes\" lado a lado", Math.abs(bEnd.y - bCopy.y) < 8 && bEnd.x < bCopy.x);
+check("Celular/professor: \"Encerrar código\" e \"Copiar ocorrências\" lado a lado", Math.abs(bEnd.y - bCopy.y) < 8 && bEnd.x < bCopy.x);
 check("Celular/professor: rótulo curto \"Encerrar código\"", (await page.locator("#btn-bar-end-code").innerText()).trim() === "Encerrar código");
 check("Celular/professor: contador de presentes continua", await page.isVisible("#present-count"));
 await page.screenshot({ path: `${OUT}/l7-01-chamada-enxuta-celular.png` });
@@ -100,12 +100,13 @@ for (const n of alunos) {
   await page.waitForTimeout(250);
 }
 await page.waitForFunction(() => document.getElementById("present-count").textContent === "4", null, { timeout: 8000 });
-await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 })
-  .then(() => check("Todos marcaram: avisa que o código foi encerrado", true), () => check("Todos marcaram: avisa que o código foi encerrado", false));
+// (o aviso não cobre o "Desfazer" da última marcação; a barra mostra que encerrou)
+await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent) || /Nenhum código ativo/.test(document.getElementById("teacher-code-bar-text").textContent), null, { timeout: 8000 })
+  .then(() => check("Todos marcaram: mostra que o código foi encerrado (aviso ou barra)", true), () => check("Todos marcaram: mostra que o código foi encerrado (aviso ou barra)", false));
 check("Todos marcaram: encerra o código sozinho (banco)", (await codigoAtual(env, "t0")) === "");
 await page.waitForTimeout(500);
 check("Depois de encerrar: barra mostra \"Nenhum código ativo\"", /Nenhum código ativo/.test(await page.textContent("#teacher-code-bar-text")));
-check("Celular/professor sem código: \"Gerar código 30 min\" e \"Copiar ausentes\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
+check("Celular/professor sem código: \"Gerar código 30 min\" e \"Copiar ocorrências\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
 // ===== Encerrar sozinho pela janela do código =====
