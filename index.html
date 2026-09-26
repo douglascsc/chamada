@@ -3524,7 +3524,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await sendPasswordResetEmail(secondaryAuth, email);
         await signOut(secondaryAuth);
         await liberarProfessor({ uid: credential.user.uid, email, nome }).catch(() => {});
-        const naLista = await addPendingProfessor(nome, email);
+        const naLista = await addPendingProfessor(nome, email, credential.user.uid);
         createProfessorStatus.textContent = `Professor "${nome}" criado! Um e-mail foi enviado para ${email} para ele(a) definir a própria senha.${naLista ? " Já aparece na lista como “aguardando 1º acesso”." : ""}`;
         createProfessorStatus.className = "text-xs text-emerald-600 font-semibold";
         refreshAdminProfessores();
@@ -4981,11 +4981,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (auth.currentUser && !map.has(auth.currentUser.uid)) {
         map.set(auth.currentUser.uid, { uid: auth.currentUser.uid, email: auth.currentUser.email, nome: auth.currentUser.displayName || "" });
       }
+      let autDocs = [];
       try {
         const autSnap = await getDocs(collection(db, "professoresAutorizados"));
+        autDocs = autSnap.docs;
         autorizadosUids = new Set(autSnap.docs.map((d) => d.id));
+        autorizadosEmails = new Set(autSnap.docs.map((d) => String(d.data().email || "").toLowerCase()).filter(Boolean));
       } catch (error) {
         autorizadosUids = null; // regras ainda sem professoresAutorizados
+        autorizadosEmails = new Set();
       }
       // Professores criados pelo Painel admin que ainda não entraram no sistema
       const registradosPorEmail = new Map([...map.values()].map((p) => [(p.email || "").toLowerCase(), p]));
@@ -5004,11 +5008,22 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
             deleteDoc(d.ref).catch(() => {}); // sai da lista de pendentes
             continue;
           }
-          pendentes.push({ uid: null, pendingId: d.id, email, nome: data.nome || "", pendente: true });
+          // (uidPendente: guardado quando a conta foi criada pelo Painel admin)
+          pendentes.push({ uid: null, uidPendente: typeof data.uid === "string" ? data.uid : null, pendingId: d.id, email, nome: data.nome || "", pendente: true });
         }
       } catch (error) {
         // regras antigas (sem professoresPendentes): segue só com os registrados
       }
+      // Liberados que ainda não entraram e não estão em nenhuma outra lista
+      // (ex.: liberados direto no Firestore Console): aparecem também
+      const uidsListados = new Set([...map.keys(), ...pendentes.map((p) => p.uidPendente).filter(Boolean)]);
+      const emailsListados = new Set([...map.values(), ...pendentes].map((p) => (p.email || "").toLowerCase()).filter(Boolean));
+      autDocs.forEach((d) => {
+        const data = d.data();
+        const email = String(data.email || "").toLowerCase();
+        if (uidsListados.has(d.id) || (email && emailsListados.has(email))) return;
+        pendentes.push({ uid: null, uidPendente: d.id, pendingId: null, soLiberado: true, email, nome: data.nome || "", pendente: true });
+      });
       professoresCache = [...map.values(), ...pendentes].sort((a, b) => professorDisplay(a).localeCompare(professorDisplay(b), "pt-BR"));
       professoresLoaded = true;
     }
@@ -5021,6 +5036,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // uma conta não cria turmas, mesmo que alguém crie um login direto no
     // Firebase.
     let autorizadosUids = null; // null = não deu para saber (ex.: regras antigas)
+    let autorizadosEmails = new Set();
     async function liberarProfessor(p) {
       await setDoc(doc(db, "professoresAutorizados", p.uid), {
         email: (p.email || "").slice(0, 200),
@@ -5028,11 +5044,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         autorizadoEm: serverTimestamp()
       });
       if (autorizadosUids) autorizadosUids.add(p.uid);
+      if (p.email) autorizadosEmails.add(p.email.toLowerCase());
     }
 
-    async function addPendingProfessor(nome, email) {
+    // Situação de cada linha do Painel admin:
+    // "liberado" | "liberar" (tem o botão) | "no-1o-acesso" (conta que já
+    // existia; é liberada quando entrar e você abrir este painel) | null
+    function statusLiberacao(p, isSelf) {
+      if (isSelf || autorizadosUids === null) return null;
+      if (p.uid && autorizadosUids.has(p.uid)) return "liberado";
+      if (p.pendente && (autorizadosEmails.has(p.email) || (p.uidPendente && autorizadosUids.has(p.uidPendente)))) return "liberado";
+      if (p.uid || p.uidPendente) return "liberar";
+      return "no-1o-acesso";
+    }
+
+    async function addPendingProfessor(nome, email, uid = null) {
       try {
-        await setDoc(doc(db, "professoresPendentes", email.toLowerCase()), { nome, email: email.toLowerCase(), criadoEm: serverTimestamp() });
+        await setDoc(doc(db, "professoresPendentes", email.toLowerCase()), { nome, email: email.toLowerCase(), criadoEm: serverTimestamp(), ...(uid ? { uid } : {}) });
         return true;
       } catch (error) {
         return false; // regras ainda sem professoresPendentes
@@ -5079,6 +5107,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         return;
       }
       renderAdminProfessores();
+      if (autorizadosUids === null) {
+        setAdminStatus("error", "Não foi possível ler quem está liberado para criar turmas: publique as regras do Firestore mais recentes (README → Instalação).");
+      }
     }
 
     function renderAdminProfessores() {
@@ -5110,11 +5141,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         meta.textContent = `${p.email || "e-mail desconhecido"} · ${turmas.length} turma${turmas.length === 1 ? "" : "s"} · último acesso: ${acesso}`;
       }
       info.append(name, meta);
-      const precisaLiberar = !p.pendente && !isSelf && p.uid && autorizadosUids && !autorizadosUids.has(p.uid);
-      if (precisaLiberar) {
+      const liberacao = statusLiberacao(p, isSelf);
+      const precisaLiberar = liberacao === "liberar";
+      if (liberacao) {
         const aviso = document.createElement("div");
-        aviso.className = "mt-1 text-xs font-semibold text-amber-700";
-        aviso.textContent = "Não liberado: não consegue criar turmas";
+        aviso.className = liberacao === "liberado" ? "mt-1 text-xs font-semibold text-emerald-700"
+          : liberacao === "liberar" ? "mt-1 text-xs font-semibold text-amber-700"
+          : "mt-1 text-xs text-slate-500";
+        aviso.textContent = liberacao === "liberado" ? "✓ Liberado para criar turmas"
+          : liberacao === "liberar" ? "Não liberado: não consegue criar turmas"
+          : "Será liberado quando entrar pela 1ª vez (abra este painel depois disso)";
         info.appendChild(aviso);
       }
 
@@ -5136,7 +5172,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           if (!confirm(`Liberar ${p.nome || p.email || "este professor"} para criar turmas?\n\nSó libere quem você sabe que é professor.`)) return;
           btnLiberar.disabled = true;
           try {
-            await liberarProfessor(p);
+            await liberarProfessor({ ...p, uid: p.uid || p.uidPendente });
             setAdminStatus("success", `${p.nome || p.email} liberado(a) para criar turmas.`);
             renderAdminProfessores();
           } catch (error) {
@@ -5174,7 +5210,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       });
       if (!ok) return;
       try {
-        await deleteDoc(doc(db, "professoresPendentes", p.pendingId));
+        if (p.pendingId) await deleteDoc(doc(db, "professoresPendentes", p.pendingId));
+        // tira também a liberação (quem ainda não entrou não deve criar turmas)
+        const uidLiberacao = p.uidPendente || null;
+        if (uidLiberacao) await deleteDoc(doc(db, "professoresAutorizados", uidLiberacao)).catch(() => {});
         await refreshAdminProfessores();
         setAdminStatus("success", `${p.nome || p.email} saiu da lista. Para apagar o login, use o Firebase Console (Authentication → Users).`);
       } catch (error) {
