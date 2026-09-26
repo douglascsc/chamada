@@ -133,7 +133,7 @@ A trava de "um aparelho, um aluno, por dia" funciona assim:
 
 Sem estar logado, alguém só consegue criar uma presença informando `nome`, `data`, `horario`, `maquina` **e** um `codigoUsado` igual ao código atual da turma, dentro do prazo de validade (`salaValida()`) — isso é verificado pelo servidor, não só pela interface. Além disso, o `nome` precisa estar na lista de nomes da turma (a da sala) e o ID do documento precisa ser `data_maquina`. Dentro dessa exigência, ainda existem lacunas conhecidas:
 
-- **Não é verificado** se `data`/`horario` correspondem ao momento real — quem conhece o código ativo pode, em tese, enviar uma presença com uma data diferente (retroativa ou futura), dentro da janela em que aquele código é válido.
+- **É verificado** (presença do aluno): a `data` tem que ser **hoje** (horário de Brasília, UTC-3) e a presença leva `criadoEm` com a **hora do servidor** (`criadoEm == request.time`). A tela e o cálculo de atraso usam essa hora, não a do celular — mudar o relógio do aparelho não adianta. O campo `horario` continua sendo gravado (presenças antigas e as marcadas pelo professor usam ele), mas deixa de valer para a presença do aluno.
 - **É verificado e bloqueado**: reescrever a mesma presença de um mesmo aparelho no mesmo dia, e criar uma presença sem um código correto e ativo (a menos que quem estiver criando seja o professor dono da turma, autenticado).
 - **É verificado e bloqueado** (desde a revisão de segurança): campos além de `nome`, `data`, `horario`, `maquina`, `expiraEm` e `codigoUsado`; `nome` vazio ou com mais de 120 caracteres; `data` fora do formato `AAAA-MM-DD`; `horario` e `maquina` longos demais; e presença **sem `expiraEm`** ou com `expiraEm` mais de 8 dias à frente (antes era possível criar presenças que nunca seriam apagadas pela retenção, ou documentos enormes que enchiam o banco).
 
@@ -158,6 +158,13 @@ Se a conta master for recriada, o UID muda: é preciso atualizar as regras.
 ### Criação de novos professores
 
 O botão "Criar professor" usa `createUserWithEmailAndPassword` do Firebase Authentication, chamado direto do navegador — consequência direta de não haver backend nesta arquitetura (ver **[Arquitetura e decisões técnicas](#arquitetura-e-decisões-técnicas)**). Isso só é possível porque o provedor "E-mail/senha" está ativado no projeto; essa mesma possibilidade já existe de forma independente do painel admin, já que qualquer requisição com o `apiKey` público do projeto pode pedir a criação de conta enquanto esse provedor estiver ativo — o painel admin apenas torna essa operação mais conveniente para a conta master, sem ser o que a habilita.
+
+**Professores liberados.** Como qualquer pessoa pode criar um login com o `apiKey` público (enquanto o cadastro estiver ativo), ter um login **não basta** para ser professor: as regras só deixam criar turma quem está em `professoresAutorizados/{uid}` — lista que **só a conta master** escreve (e a própria master, que não precisa estar nela). Assim, ninguém consegue pôr uma turma falsa na tela dos alunos.
+- "Criar professor" no Painel admin já libera o professor novo.
+- Conta que já existia (adicionada pelo Painel admin com o mesmo e-mail) é liberada sozinha quando a master abre o Painel admin depois do 1º acesso dela.
+- Qualquer outra conta aparece no Painel admin como **"Não liberado"**, com o botão **Liberar** — só libere quem você sabe que é professor.
+- Quem não foi liberado vê um aviso ao entrar, e as turmas que já tinha continuam funcionando (só criar turma nova é bloqueado). "Remover" um professor no Painel admin também tira a liberação.
+- **Ao atualizar para esta versão**, os professores que já usam o sistema precisam ser liberados uma vez no Painel admin (a master não precisa).
 
 Remover a conta de um professor, hoje, só é possível pelo Firebase Console (Authentication → Users) — o painel admin cria contas, mas não remove. Uma arquitetura com backend (por exemplo, Cloud Functions usando o Admin SDK) permitiria centralizar essa administração pelo próprio site, incluindo a remoção. Isso não torna a abordagem atual incorreta; é a consequência coerente de manter o projeto sem servidor próprio.
 
@@ -258,6 +265,23 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                 && get(salaPath(turmaId, codigo)).data.definidoEm == turmaAtual(turmaId).codigoDefinidoEm;
        }
 
+       // Professores liberados pela conta master (lista professoresAutorizados).
+       // Só eles (e a master) criam turmas: uma conta qualquer, criada direto no
+       // Firebase, não consegue pôr uma turma falsa na tela dos alunos.
+       function professorAutorizado() {
+         return isMaster()
+                || (request.auth != null
+                    && exists(/databases/$(database)/documents/professoresAutorizados/$(request.auth.uid)));
+       }
+
+       // Data de hoje em Brasília (UTC-3, sem horário de verão), "AAAA-MM-DD"
+       function hojeBrasilia() {
+         let t = request.time - duration.value(3, 'h');
+         return string(t.year()) + '-'
+                + (t.month() < 10 ? '0' : '') + string(t.month()) + '-'
+                + (t.day() < 10 ? '0' : '') + string(t.day());
+       }
+
        // Texto com tamanho máximo (evita documentos enormes)
        function textoAte(valor, max) {
          return valor is string && valor.size() <= max;
@@ -288,6 +312,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && request.resource.data.keys().hasAll(['nome', 'professorUid'])
                        && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                        && request.resource.data.professorUid == request.auth.uid
+                       && professorAutorizado()
                        && turmaValida(request.resource.data, '');
          allow update: if request.auth != null
                        && (isMaster() || resource.data.professorUid == request.auth.uid)
@@ -332,7 +357,9 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
            // Só os campos esperados, com tamanho limitado, e com prazo de
            // retenção obrigatório (no máximo 8 dias à frente).
            allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
-                         && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado'])
+                         && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado', 'criadoEm'])
+                         // criadoEm: hora do servidor (não dá para "voltar o relógio")
+                         && (!('criadoEm' in request.resource.data) || request.resource.data.criadoEm == request.time)
                          && textoAte(request.resource.data.nome, 120) && request.resource.data.nome.size() > 0
                          && request.resource.data.data is string && request.resource.data.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
                          && textoAte(request.resource.data.horario, 10)
@@ -347,6 +374,9 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                                    salaValida(turmaId, request.resource.data.get('codigoUsado', ''))
                                    && request.resource.data.nome in get(salaPath(turmaId, request.resource.data.codigoUsado)).data.nomes
                                    && presencaId == request.resource.data.data + '_' + request.resource.data.maquina
+                                   // aluno: dia de hoje e hora do servidor (o atraso usa essa hora)
+                                   && request.resource.data.data == hojeBrasilia()
+                                   && request.resource.data.get('criadoEm', null) == request.time
                                  )
                             );
            allow update: if false;
@@ -380,6 +410,17 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
          allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
          allow write: if request.auth != null && request.auth.uid == uid;
          // a conta master apaga o registro ao remover um professor do sistema
+         allow delete: if isMaster();
+       }
+
+       // Professores liberados para criar turmas: só a conta master mexe.
+       // Cada professor pode conferir se já foi liberado.
+       match /professoresAutorizados/{uid} {
+         allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
+         allow create, update: if isMaster()
+                               && request.resource.data.keys().hasOnly(['email', 'nome', 'autorizadoEm'])
+                               && textoAte(request.resource.data.get('email', ''), 200)
+                               && textoAte(request.resource.data.get('nome', ''), 120);
          allow delete: if isMaster();
        }
 
@@ -514,13 +555,15 @@ turmas/{turmaId}
   alunos/{alunoId}
     nome
   presencas/{presencaId}
-    nome, data, horario, maquina, codigoUsado, expiraEm
+    nome, data, horario, maquina, codigoUsado, expiraEm, criadoEm   (criadoEm: hora do servidor, na presença do aluno)
   atrasos/{atrasoId}
     criadoEm, thumb
   atrasosImg/{atrasoId}
     img
 acordosProfessor/{uid}
   avisosAceitosEm, email, nome, ultimoAcesso
+professoresAutorizados/{uid}
+  email, nome, autorizadoEm     (professores liberados para criar turmas; só a master escreve)
 professoresPendentes/{email}
   nome, email, criadoEm
 ```

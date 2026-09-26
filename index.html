@@ -1411,8 +1411,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const auth = getAuth(firebaseApp);
     const turmasCollection = collection(db, "turmas");
 
-    // Login fica restrito a esta conta (criada manualmente no Firebase
-    // Console → Authentication → Users). A senha NUNCA fica no código.
+    // E-mail do responsável pelo sistema (contato e conta master). Aqui ele
+    // só decide o que a TELA mostra (Painel admin etc.): quem é master de
+    // verdade é decidido pelas regras do Firestore, pelo UID da conta
+    // (isMaster()). Professores só criam turmas depois de liberados pela
+    // master (professoresAutorizados). A senha NUNCA fica no código.
     const TEACHER_EMAIL = "douglascamargo@ifsul.edu.br";
 
     // Encerra a sessão do professor ao fechar a aba (mais seguro em
@@ -1717,7 +1720,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let attendanceKey = null;        // modo + código (aluno): muda → busca de novo
     let isTeacherModeActive = false;
     let isTeacherAuthenticated = false;
-    let isMasterAccount = false; // TEACHER_EMAIL: acesso a todas as turmas de todos os professores
+    let isMasterAccount = false; // só para a tela (as regras conferem o UID): vê todas as turmas e o Painel admin
     let teacherGateIntent = "dashboard"; // "dashboard" | "teacher-mode" | "undo"
 
     let teacherManagingTurmaId = null;
@@ -1905,6 +1908,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // acordosProfessor/{uid} também serve de "lista de professores" para a
     // conta master (nome + e-mail). Só atualiza quem já aceitou os avisos —
     // criar o documento antes disso pularia o aviso obrigatório.
+    // Professor ainda não liberado pela master: avisa (as turmas que ele já
+    // tem continuam funcionando; só criar turma nova é bloqueado).
+    async function checkProfessorLiberado() {
+      if (!auth.currentUser || isMasterAccount) return;
+      try {
+        const snap = await getDoc(doc(db, "professoresAutorizados", auth.currentUser.uid));
+        if (!snap.exists()) {
+          showTeacherMessage("info", `Sua conta ainda não foi liberada para criar turmas novas. Peça ao responsável pelo sistema (${TEACHER_EMAIL}).`);
+        }
+      } catch (error) {
+        // regras antigas ou sem internet: não avisa
+      }
+    }
+
     async function syncProfessorRegistry() {
       if (!auth.currentUser) return;
       const ref = doc(db, "acordosProfessor", auth.currentUser.uid);
@@ -2240,7 +2257,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           },
           (error) => {
             console.error("Erro ao ler alunos:", error.code, error.message);
-            showMessage("error", `Não foi possível carregar a lista de alunos (${error.code}). Veja o Console (F12) para detalhes.`);
+            showMessage("error", "Não foi possível carregar a lista de alunos. Verifique a internet e recarregue a página.");
           }
         );
       }
@@ -2273,7 +2290,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           console.error("Erro ao ler presenças:", error.code, error.message);
           // Aluno: o código foi encerrado ou trocado; a lista fica como estava
           if (modoDaEscuta === "aluno") return;
-          showMessage("error", `Não foi possível carregar as presenças (${error.code}). Veja o Console (F12) para detalhes.`);
+          showMessage("error", "Não foi possível carregar as presenças. Verifique a internet e recarregue a página.");
         }
       );
     }
@@ -2373,16 +2390,24 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // dos horários — nada é gravado a mais. Só o professor vê.
     // ---------------------------------------------------------------------
     const ATRASO_MIN = 20;
+    // Horário da presença: a do aluno vem da hora do SERVIDOR (criadoEm), que
+    // não dá para falsificar mudando o relógio do celular. A do professor
+    // (e as antigas) usam o horário anotado na hora da marcação.
+    function horarioDe(record) {
+      const ts = record && record.criadoEm;
+      if (ts && typeof ts.toMillis === "function") return formatTimeOfDay(ts.toMillis());
+      return record ? record.horario || "" : "";
+    }
     function horarioEmMinutos(horario) {
       const m = /^(\d{1,2}):(\d{2})/.exec(horario || "");
       return m ? Number(m[1]) * 60 + Number(m[2]) : null; // "manual" (correção no histórico) não tem horário
     }
     function inicioDaChamada(records) {
-      const mins = records.map((r) => horarioEmMinutos(r.horario)).filter((v) => v !== null);
+      const mins = records.map((r) => horarioEmMinutos(horarioDe(r))).filter((v) => v !== null);
       return mins.length ? Math.min(...mins) : null;
     }
     function isAtrasado(record, inicio) {
-      const m = record ? horarioEmMinutos(record.horario) : null;
+      const m = record ? horarioEmMinutos(horarioDe(record)) : null;
       return inicio !== null && m !== null && m - inicio > ATRASO_MIN;
     }
 
@@ -2721,7 +2746,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const canUndo = isTeacherModeActive || isTeacherAuthenticated;
       const statusLabel = row.querySelector(".present-status-label");
       const atrasado = isTeacherModeActive && isAtrasado(record, chamadaInicio);
-      statusLabel.textContent = (record && record.horario ? `Presente · ${record.horario}` : "Presente")
+      statusLabel.textContent = (record && horarioDe(record) ? `Presente · ${horarioDe(record)}` : "Presente")
         + (atrasado ? " · atrasado" : "")
         + (record && record.pendente && navigator.onLine === false ? " · aguardando internet" : "");
       statusLabel.classList.toggle("is-late", atrasado);
@@ -2755,7 +2780,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!record) return;
       attendanceListPanel.classList.add("hidden");
       document.getElementById("student-done-name").textContent = record.nome;
-      document.getElementById("student-done-when").textContent = `às ${record.horario} · ${getLocalParts().displayDate}`;
+      document.getElementById("student-done-when").textContent = `às ${horarioDe(record)} · ${getLocalParts().displayDate}`;
       document.getElementById("student-done-turma").textContent = (selectedTurmaData && selectedTurmaData.nome) || "";
     }
 
@@ -2796,8 +2821,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (!recordA && recordB) return -1;
 
         if (recordA && recordB) {
-          const dateTimeA = `${recordA.data}T${recordA.horario}`;
-          const dateTimeB = `${recordB.data}T${recordB.horario}`;
+          const dateTimeA = `${recordA.data}T${horarioDe(recordA)}`;
+          const dateTimeB = `${recordB.data}T${horarioDe(recordB)}`;
           if (dateTimeA !== dateTimeB) return dateTimeB.localeCompare(dateTimeA);
         }
 
@@ -2975,7 +3000,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           horario: current.time,
           maquina: deviceId,
           codigoUsado: codigoVerificado,
-          expiraEm: presencaExpiraEm()
+          expiraEm: presencaExpiraEm(),
+          criadoEm: serverTimestamp() // hora do servidor (conferida pelas regras)
         });
         showMessage("success", isTeacherModeActive
           ? `Presença de ${name} registrada.`
@@ -3093,7 +3119,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         showMessage("info", `A presença de ${name} foi desfeita pelo professor.`);
       } catch (error) {
         console.error("[undoAttendance] erro ao desfazer presença:", error.code, error.message);
-        showMessage("error", `Não foi possível desfazer a presença (${error.code}). Veja o Console (F12) para detalhes.`);
+        showMessage("error", "Não foi possível desfazer a presença. Verifique a internet e tente de novo.");
       }
 
       busyName = "";
@@ -3172,22 +3198,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
-    // O login vem preenchido com o último e-mail usado NESTE aparelho (no
-    // primeiro acesso, vazio) — nunca com o e-mail da conta master, para
-    // ninguém tentar a própria senha no e-mail do administrador.
-    const LAST_LOGIN_EMAIL_KEY = "chamada:ultimoEmail";
-    function readLastLoginEmail() {
-      try { return localStorage.getItem(LAST_LOGIN_EMAIL_KEY) || ""; } catch (error) { return ""; }
-    }
-    function writeLastLoginEmail(email) {
-      try { localStorage.setItem(LAST_LOGIN_EMAIL_KEY, email); } catch (error) { /* só conveniência */ }
-    }
+    // O último e-mail de login NÃO fica guardado no aparelho (num computador
+    // compartilhado, mostraria quem usou). Versões anteriores guardavam:
+    // apaga o que tiver ficado.
+    try { localStorage.removeItem("chamada:ultimoEmail"); } catch (error) { /* sem acesso ao armazenamento */ }
 
     const teacherGateRememberWrap = document.getElementById("teacher-gate-remember-wrap");
     const teacherGateRemember = document.getElementById("teacher-gate-remember");
 
     function openTeacherGateModal() {
-      if (!teacherGateEmail.value) teacherGateEmail.value = readLastLoginEmail();
       // Confirmar senha para desfazer presença não muda como a sessão é guardada
       teacherGateRememberWrap.classList.toggle("hidden", teacherGateIntent === "undo");
       teacherGateRemember.checked = readKeepSignedIn();
@@ -3250,6 +3269,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       teacherDashboardContent.classList.remove("hidden");
       syncOwnedTurmasProfessorInfo();
       syncProfessorRegistry();
+      checkProfessorLiberado();
       subscribeMyTurmasList();
     }
 
@@ -3313,7 +3333,6 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       try {
         await signInWithEmailAndPassword(auth, teacherGateEmail.value.trim(), teacherGatePassword.value);
         if (rememberOffered) writeKeepSignedIn(keepSignedIn);
-        writeLastLoginEmail(teacherGateEmail.value.trim());
       } catch (error) {
         teacherGateErrorText.textContent = authErrorMessage(error);
         teacherGateError.classList.remove("hidden");
@@ -3504,6 +3523,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await updateProfile(credential.user, { displayName: nome });
         await sendPasswordResetEmail(secondaryAuth, email);
         await signOut(secondaryAuth);
+        await liberarProfessor({ uid: credential.user.uid, email, nome }).catch(() => {});
         const naLista = await addPendingProfessor(nome, email);
         createProfessorStatus.textContent = `Professor "${nome}" criado! Um e-mail foi enviado para ${email} para ele(a) definir a própria senha.${naLista ? " Já aparece na lista como “aguardando 1º acesso”." : ""}`;
         createProfessorStatus.className = "text-xs text-emerald-600 font-semibold";
@@ -4031,7 +4051,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         await refreshMyTurmasList();
         manageTurma(turmaRef.id); // troca direto da tela de Opções para o Gerenciar da nova turma
       } catch (error) {
-        showTeacherMessage("error", "Não foi possível criar a turma. Verifique a conexão com o Firebase.");
+        showTeacherMessage("error", error && error.code === "permission-denied"
+          ? `Sua conta ainda não foi liberada para criar turmas. Peça ao responsável pelo sistema (${TEACHER_EMAIL}) para liberar no Painel admin.`
+          : "Não foi possível criar a turma. Verifique a conexão com o Firebase.");
       } finally {
         btnCreateTurma.disabled = false;
       }
@@ -4298,7 +4320,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const status = document.createElement("span");
         const atrasado = isAtrasado(record, inicio);
         status.className = `shrink-0 font-semibold ${record ? (atrasado ? "text-amber-700" : "text-slate-500") : "text-red-600"}`;
-        status.textContent = record ? `${record.horario || ""}${atrasado ? " · atrasado" : ""}` : "Ausente";
+        status.textContent = record ? `${horarioDe(record)}${atrasado ? " · atrasado" : ""}` : "Ausente";
         const right = document.createElement("div");
         right.className = "flex shrink-0 items-center gap-2";
         right.appendChild(status);
@@ -4339,7 +4361,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
             teacherManagingTurmaData.nome || "",
             aluno.nome,
             record ? (isAtrasado(record, inicio) ? "Atrasado" : "Presente") : "Ausente",
-            record ? record.horario || "" : "",
+            record ? horarioDe(record) : "",
             displayDate
           ];
         });
@@ -4907,7 +4929,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           selectedTurmaData.nome || "",
           aluno.nome,
           record ? (isAtrasado(record, inicio) ? "Atrasado" : "Presente") : "Ausente",
-          record ? record.horario : "",
+          record ? horarioDe(record) : "",
           today.displayDate
         ];
       });
@@ -4959,16 +4981,27 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (auth.currentUser && !map.has(auth.currentUser.uid)) {
         map.set(auth.currentUser.uid, { uid: auth.currentUser.uid, email: auth.currentUser.email, nome: auth.currentUser.displayName || "" });
       }
+      try {
+        const autSnap = await getDocs(collection(db, "professoresAutorizados"));
+        autorizadosUids = new Set(autSnap.docs.map((d) => d.id));
+      } catch (error) {
+        autorizadosUids = null; // regras ainda sem professoresAutorizados
+      }
       // Professores criados pelo Painel admin que ainda não entraram no sistema
-      const registrados = new Set([...map.values()].map((p) => (p.email || "").toLowerCase()));
+      const registradosPorEmail = new Map([...map.values()].map((p) => [(p.email || "").toLowerCase(), p]));
       const pendentes = [];
       try {
         const pendSnap = await getDocs(collection(db, "professoresPendentes"));
         for (const d of pendSnap.docs) {
           const data = d.data();
           const email = (data.email || "").toLowerCase();
-          if (registrados.has(email)) {
-            deleteDoc(d.ref).catch(() => {}); // já entrou: sai da lista de pendentes
+          const registrado = email && registradosPorEmail.get(email);
+          if (registrado) {
+            // já entrou: foi a master que pôs na lista, então fica liberado
+            if (autorizadosUids && !autorizadosUids.has(registrado.uid)) {
+              await liberarProfessor({ uid: registrado.uid, email, nome: registrado.nome || data.nome || "" }).catch(() => {});
+            }
+            deleteDoc(d.ref).catch(() => {}); // sai da lista de pendentes
             continue;
           }
           pendentes.push({ uid: null, pendingId: d.id, email, nome: data.nome || "", pendente: true });
@@ -4982,6 +5015,19 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     function turmasDoProfessor(uid) {
       return uid ? allTeacherTurmas.filter((t) => t.professorUid === uid) : [];
+    }
+
+    // Lista de professores liberados (só a master escreve). Sem estar nela,
+    // uma conta não cria turmas, mesmo que alguém crie um login direto no
+    // Firebase.
+    let autorizadosUids = null; // null = não deu para saber (ex.: regras antigas)
+    async function liberarProfessor(p) {
+      await setDoc(doc(db, "professoresAutorizados", p.uid), {
+        email: (p.email || "").slice(0, 200),
+        nome: (p.nome || "").slice(0, 120),
+        autorizadoEm: serverTimestamp()
+      });
+      if (autorizadosUids) autorizadosUids.add(p.uid);
     }
 
     async function addPendingProfessor(nome, email) {
@@ -5064,6 +5110,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         meta.textContent = `${p.email || "e-mail desconhecido"} · ${turmas.length} turma${turmas.length === 1 ? "" : "s"} · último acesso: ${acesso}`;
       }
       info.append(name, meta);
+      const precisaLiberar = !p.pendente && !isSelf && p.uid && autorizadosUids && !autorizadosUids.has(p.uid);
+      if (precisaLiberar) {
+        const aviso = document.createElement("div");
+        aviso.className = "mt-1 text-xs font-semibold text-amber-700";
+        aviso.textContent = "Não liberado: não consegue criar turmas";
+        info.appendChild(aviso);
+      }
 
       const actions = document.createElement("div");
       actions.className = "flex flex-wrap gap-2";
@@ -5074,6 +5127,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnReset.disabled = !p.email;
       btnReset.addEventListener("click", () => sendProfessorPasswordReset(p, btnReset));
       actions.appendChild(btnReset);
+      if (precisaLiberar) {
+        const btnLiberar = document.createElement("button");
+        btnLiberar.type = "button";
+        btnLiberar.className = "action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DCEFD5] text-[#2B7A40]";
+        btnLiberar.textContent = "Liberar";
+        btnLiberar.addEventListener("click", async () => {
+          if (!confirm(`Liberar ${p.nome || p.email || "este professor"} para criar turmas?\n\nSó libere quem você sabe que é professor.`)) return;
+          btnLiberar.disabled = true;
+          try {
+            await liberarProfessor(p);
+            setAdminStatus("success", `${p.nome || p.email} liberado(a) para criar turmas.`);
+            renderAdminProfessores();
+          } catch (error) {
+            setAdminStatus("error", "Não foi possível liberar. Confira se as regras do Firestore estão atualizadas (README).");
+            btnLiberar.disabled = false;
+          }
+        });
+        actions.appendChild(btnLiberar);
+      }
       if (p.pendente) {
         const btnRemovePending = document.createElement("button");
         btnRemovePending.type = "button";
@@ -5226,6 +5298,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         } catch (error) {
           registryRemoved = false; // regras antigas: a master ainda não pode apagar esse registro
         }
+        // deixa de poder criar turmas
+        await deleteDoc(doc(db, "professoresAutorizados", p.uid)).catch(() => {});
+        if (autorizadosUids) autorizadosUids.delete(p.uid);
         await refreshMyTurmasList();
         form.innerHTML = "";
         const done = document.createElement("div");
@@ -5511,8 +5586,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const cells = dates.map((d) => {
           const r = byDate.get(d).get(normalize(nome));
           if (!r) return "Falta";
-          if (isAtrasado(r, inicioPorDia.get(d))) { atrasos += 1; return `${r.horario} (atrasado)`; }
-          return r.horario || "P";
+          if (isAtrasado(r, inicioPorDia.get(d))) { atrasos += 1; return `${horarioDe(r)} (atrasado)`; }
+          return horarioDe(r) || "P";
         });
         const faltas = cells.filter((c) => c === "Falta").length;
         const row = sheet.addRow([nome, ...cells, cells.length - faltas, faltas, atrasos]);
