@@ -92,6 +92,12 @@ const adminRows = (page) => page.$$eval("#admin-professores-list > div", (rows) 
 let pN = await login("novo@teste.br");
 await pN.waitForSelector("#terms-modal-backdrop:not(.hidden)", { timeout: 8000 }).catch(() => {});
 check("Professor novo: aviso obrigatório no 1º acesso", await pN.isVisible("#terms-modal-backdrop"));
+await pN.waitForTimeout(400);
+const termos = await pN.$eval("#terms-modal-box", (b) => ({ top: b.scrollTop, rola: b.scrollHeight > b.clientHeight + 24 }));
+check("Avisos (1º acesso): abrem no topo", termos.top === 0, JSON.stringify(termos));
+if (termos.rola) check("Avisos: \"Concordo\" travado até rolar até o fim, com a dica", (await pN.isDisabled("#btn-close-terms")) && (await pN.isVisible("#terms-scroll-hint")));
+await pN.$eval("#terms-modal-box", (b) => b.scrollTo(0, b.scrollHeight)); await pN.waitForTimeout(300);
+check("Avisos: no fim, \"Concordo\" liberado e a dica some", (await pN.isEnabled("#btn-close-terms")) && (await pN.isHidden("#terms-scroll-hint")));
 await pN.click("#btn-close-terms");
 await pN.waitForTimeout(800);
 const regN = await read(`acordosProfessor/${uidN}`);

@@ -145,7 +145,7 @@ await ctx.close();
 
 // --- B: conta não liberada pelo site
 ({ ctx, page } = await entrar("estranho@gmail.com"));
-if (await page.isVisible("#terms-modal-backdrop")) { await page.click("#btn-close-terms"); await page.waitForTimeout(500); }
+if (await page.isVisible("#terms-modal-backdrop")) { await page.$eval("#terms-modal-box", (b) => b.scrollTo(0, b.scrollHeight)); await page.waitForTimeout(300); await page.click("#btn-close-terms"); await page.waitForTimeout(500); }
 await page.waitForFunction(() => /ainda não foi liberada/.test(document.getElementById("toast-text").textContent), null, { timeout: 10000 })
   .then(() => check("Conta não liberada: aviso ao entrar", true), () => check("Conta não liberada: aviso ao entrar", false));
 await criarTurmaPeloSite(page, "HACK");

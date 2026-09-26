@@ -117,7 +117,7 @@ const stHoje = Object.fromEntries(xHoje.slice(1).map((l) => [l[1], l[2]]));
 check("Excel de hoje: Presente / Atrasado / Ausente", stHoje.Ana === "Presente" && stHoje.Caio === "Presente" && stHoje.Davi === "Atrasado" && stHoje.Eva === "Atrasado" && stHoje.Fabio === "Ausente", JSON.stringify(stHoje));
 // sem código ativo: a barra oferece 30 min
 await page.click("#btn-bar-end-code"); await page.waitForTimeout(800);
-check("Chamada sem código: botão \"Gerar código 30 min\"", (await page.isVisible("#btn-bar-new-code")) && (await page.innerText("#btn-bar-new-code")).trim() === "Gerar código 30 min");
+check("Chamada sem código: botão \"Gerar código 30 min\"", (await page.isVisible("#btn-bar-new-code")) && (await page.innerText("#btn-bar-new-code")).trim() === "Gerar cód. 30 min" && (await page.getAttribute("#btn-bar-new-code", "aria-label")) === "Gerar código 30 min");
 await page.click("#btn-bar-new-code");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 check("Barra: gera código de 30 min", (await read("turmas/t0")).codigoDuracaoMin === 30);
@@ -164,7 +164,7 @@ ctx = await newCtx(false);
 page = await open(ctx, APP + "#professor");
 await login(page);
 const bot = (await card(page, "INF3M 2026").locator("button:visible").allInnerTexts()).map((t) => t.trim());
-check("Computador: Gerar código 30 min · Gerar código 1h · Chamada · Atrasos · Gerenciar", JSON.stringify(bot) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]) || JSON.stringify(bot.slice(-5)) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
+check("Computador: Gerar código 30 min · Gerar código 1h · Chamada · Atrasos · Gerenciar", JSON.stringify(bot) === JSON.stringify(["Gerar cód. 30 min", "Gerar cód. 1h", "Chamada", "Atrasos", "Gerenciar"]) || JSON.stringify(bot.slice(-5)) === JSON.stringify(["Gerar cód. 30 min", "Gerar cód. 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
 await page.screenshot({ path: `${OUT}/l11-03-painel-computador.png` });
 await ctx.close();
 

@@ -260,7 +260,7 @@ const pJ = await open(ctxJ, APP + "#professor");
 await login(pJ, "juliane@ifsul.edu.br");
 await pJ.waitForSelector("#terms-modal-backdrop:not(.hidden)", { timeout: 10000 });
 check("Juliane no 1º acesso ainda vê o aviso obrigatório (pendente não pula o aviso)", await pJ.isVisible("#terms-modal-backdrop"));
-await pJ.click("#btn-close-terms"); await pJ.waitForTimeout(1000);
+await pJ.$eval("#terms-modal-box", (b) => b.scrollTo(0, b.scrollHeight)); await pJ.waitForTimeout(300); await pJ.click("#btn-close-terms"); await pJ.waitForTimeout(1000);
 await ctxJ.close();
 await page.click("#btn-refresh-professores");
 await page.waitForFunction(() => !/Carregando/.test(document.getElementById("admin-professores-status").textContent));

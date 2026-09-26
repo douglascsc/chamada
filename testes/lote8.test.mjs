@@ -219,7 +219,7 @@ await page.waitForSelector("#teacher-gate-modal-backdrop:not(.hidden)");
 await page.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await page.fill("#teacher-gate-password", PASS); await page.click("#teacher-gate-submit");
 await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTimeout(800);
 const bot = (await card(page, "INF1N 2026").locator("button:visible").allInnerTexts()).filter((t) => !/^[☆★]$/.test(t.trim())); // ☆ = fixar (mais de 6 turmas)
-check("Computador: cartão com as 5 ações de sempre (sem ⋯)", JSON.stringify(bot.map((t) => t.trim())) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
+check("Computador: cartão com as 5 ações de sempre (sem ⋯)", JSON.stringify(bot.map((t) => t.trim())) === JSON.stringify(["Gerar cód. 30 min", "Gerar cód. 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
 check("Computador: código ativo com o texto completo", /Código 4821 · expira em \d+ min \(\d{2}:\d{2}\)/.test(await card(page, "INF2M 2026").locator("[data-expira] span:visible").innerText()));
 check("Computador: \"Área do professor\" e \"Ver todos os atrasos\" no topo", (await page.isVisible("#view-teacher-dashboard h2")) && (await page.isVisible("#btn-open-all-atrasos")) && (await page.isHidden("#btn-open-all-atrasos-bottom")));
 await card(page, "INF2M 2026").getByRole("button", { name: "Atrasos" }).click();

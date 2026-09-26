@@ -128,7 +128,7 @@ check("Autenticação: professor autenticado entra na Área do professor", await
 const namesA = await rowNames(page);
 check("Turmas: prof A vê só as próprias turmas", namesA.length === 2 && !namesA.some((n) => n.includes("INF2N")), namesA.join(" | "));
 const btnTexts = await row(page, "INF2M").locator("button:visible").allTextContents();
-check("Botões na ordem [Gerar código 30 min][Gerar código 1h][Chamada][📷 Atrasos][Gerenciar]", JSON.stringify(btnTexts) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]), btnTexts.join(" | "));
+check("Botões na ordem [Gerar código 30 min][Gerar código 1h][Chamada][📷 Atrasos][Gerenciar]", JSON.stringify(btnTexts) === JSON.stringify(["Gerar cód. 30 min", "Gerar cód. 1h", "Chamada", "Atrasos", "Gerenciar"]), btnTexts.join(" | "));
 const cls = await row(page, "INF2M").locator("button:visible").evaluateAll((b) => [b[3].className, b[4].className]);
 check("Botão Atrasos com o mesmo estilo (cores) do botão Gerenciar", ["bg-slate-100", "text-slate-700", "rounded-lg", "font-semibold"].every((c) => cls[0].includes(c) && cls[1].includes(c)));
 check("\"Ver todos os atrasos\" no cabeçalho de Turmas cadastradas", await page.isVisible("#btn-open-all-atrasos"));
