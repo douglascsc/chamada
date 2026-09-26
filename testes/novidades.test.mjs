@@ -4,6 +4,21 @@ import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp } from 
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -67,10 +82,10 @@ const opcoes = await page.$$eval("#teacher-options-view details", (d) => d.map((
 check("Opções na ordem: Atalho, Nova turma, Minha conta, Painel admin", JSON.stringify(opcoes) === JSON.stringify(["Atalho no celular", "Nova turma", "Minha conta", "Painel admin — professores"]), opcoes.join(" | "));
 
 // ===== 10a. Alvos de toque =====
-const alturas = await page.$$eval("#teacher-turmas-list > div button", (b) => b.map((x) => Math.round(x.getBoundingClientRect().height)));
+const alturas = await page.$$eval("#teacher-turmas-list > div button", (b) => b.map((x) => Math.round(x.getBoundingClientRect().height)).filter((h) => h > 0)); // só os visíveis
 check("Celular: todos os botões das turmas com pelo menos 44px de altura", alturas.every((h) => h >= 44), `mín ${Math.min(...alturas)}px`);
-const topo = await page.$$eval("#btn-open-more-options, #btn-sign-out, #btn-open-all-atrasos", (b) => b.map((x) => Math.round(x.getBoundingClientRect().height)));
-check("Celular: Opções, Sair e Ver todos os atrasos com 44px", topo.every((h) => h >= 44), topo.join("/"));
+const topo = await page.$$eval("#btn-open-more-options, #btn-sign-out, #btn-open-all-atrasos-bottom", (b) => b.map((x) => Math.round(x.getBoundingClientRect().height)));
+check("Celular: Opções, Sair e Ver todos os atrasos (no fim da lista) com 44px", topo.every((h) => h >= 44), topo.join("/"));
 check("Contraste: nenhum texto com o cinza fraco (slate-400)", (await page.evaluate(() => document.documentElement.outerHTML.includes("text-slate-400"))) === false);
 
 // ===== 9. Busca + ⭐ =====
@@ -94,6 +109,9 @@ await page.screenshot({ path: `${OUT}/nov-01-painel-busca-estrela-celular.png` }
 await row(page, "INF4M 2026").scrollIntoViewIfNeeded();
 await row(page, "INF4M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
+// a janela do código já confirma; o aviso flutuante é testado com outra ação (copiar o link)
+await page.click("#btn-code-display-copy-link");
+await page.waitForSelector("#toast:not(.hidden)");
 const toastVisivel = await page.evaluate(() => { const t = document.getElementById("toast"); const r = t.getBoundingClientRect(); return !t.classList.contains("hidden") && r.bottom <= innerHeight && r.top >= 0; });
 check("Aviso flutuante aparece dentro da tela (fixo embaixo), mesmo com a lista rolada", toastVisivel, await page.textContent("#toast-text"));
 await page.screenshot({ path: `${OUT}/nov-02-codigo-grande-ver-chamada-celular.png` });
@@ -127,7 +145,7 @@ const scrollDepois = await page.evaluate(() => Math.round(scrollY));
 check("\"Voltar às turmas\": volta ao painel na mesma posição da lista", (await page.isVisible("#teacher-turmas-list")) && Math.abs(scrollDepois - scrollAntes) < 60, `${scrollAntes} → ${scrollDepois}`);
 
 // ===== 7. Gerenciar como tela própria + histórico automático (7 dias) =====
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#history-day-panel:not(.hidden)", { timeout: 10000 });
 const g = await page.evaluate(() => ({ turmasOcultas: document.getElementById("teacher-turmas-section").classList.contains("hidden"), topo: Math.round(document.getElementById("teacher-manage-panel").getBoundingClientRect().top) }));
 check("Gerenciar: tela própria (turmas escondidas), aberta no topo", g.turmasOcultas && g.topo < 844, JSON.stringify(g));
@@ -139,7 +157,7 @@ await page.goBack(); await page.waitForTimeout(700);
 check("Gerenciar: Voltar do celular volta às turmas", (await page.isVisible("#teacher-turmas-section")) && (await page.isHidden("#teacher-manage-panel")));
 
 // ===== 3. Excluir turma com senha em campo oculto =====
-await row(page, "ADS1 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "ADS1 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.click("#btn-delete-turma");
 await page.waitForSelector("#reauth-backdrop:not(.hidden)");
@@ -181,7 +199,7 @@ await page.fill("#student-daily-code", "4821");
 await page.waitForSelector("#attendance-list-panel:not(.hidden)");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 10 && document.getElementById("present-count").textContent === "4");
 const ordemAluno = await page.$$eval(".student-row .student-name", (e) => e.map((x) => x.textContent));
-check("Aluno: presentes continuam no topo (como antes)", [...presentes, "Isabela Costa"].includes(ordemAluno[0]), ordemAluno[0]);
+check("Aluno: quem falta vem primeiro; quem já marcou fica recolhido", ![...presentes, "Isabela Costa"].includes(ordemAluno[0]) && (await page.locator(".student-row:visible").count()) === 6 && /Já marcaram \(4\)/.test(await page.textContent("#present-toggle")), `${ordemAluno[0]} · visíveis ${await page.locator(".student-row:visible").count()}`);
 await page.locator(".student-row", { hasText: "João Pedro Santos" }).locator(".mark-button").click();
 await page.locator(".student-row", { hasText: "João Pedro Santos" }).locator(".confirm-attendance").click();
 await page.waitForFunction(() => /Pode fechar/.test(document.getElementById("global-message-text").textContent), null, { timeout: 10000 });

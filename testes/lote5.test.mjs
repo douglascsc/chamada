@@ -5,6 +5,21 @@ import jsQR from "jsqr";
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -99,7 +114,7 @@ await page.click("#btn-trocar-turma"); await page.waitForTimeout(500);
 check("Saindo da Chamada, o \"Desfazer\" rápido some", await page.isHidden("#toast"));
 
 // ===== Atrasos no histórico =====
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#history-day-panel:not(.hidden)");
 await page.waitForTimeout(800);
 check("Dia sem fotos: não mostra o aviso de atrasos", await page.isHidden("#history-day-atrasos"), await page.textContent("#history-day-title"));

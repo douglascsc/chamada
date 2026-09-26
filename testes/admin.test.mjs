@@ -4,6 +4,21 @@ import { doc, setDoc, getDoc, getDocs, collection, Timestamp, Bytes } from "fire
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -105,7 +120,7 @@ check("Redefinir senha: master continua conectada (na tela de Opções)", (await
 // ===== Transferir turma (Gerenciar) =====
 await pM.click("#btn-close-teacher-options");
 await pM.waitForSelector("#teacher-turmas-section:not(.hidden)");
-await pM.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026 - Banco de Dados" }).getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(pM.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026 - Banco de Dados" }), "Gerenciar"); await abrirGerenciar(pM);
 await pM.waitForSelector("#manage-transfer-section:not(.hidden)");
 await pM.waitForFunction(() => document.getElementById("manage-transfer-select").options.length > 0);
 check("Gerenciar (master): seção Transferir com dono atual", (await pM.textContent("#manage-transfer-owner")) === "Ana Souza");

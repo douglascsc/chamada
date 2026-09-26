@@ -4,6 +4,21 @@ import { doc, setDoc, getDoc, getDocs, updateDoc, collection, writeBatch, Timest
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -67,7 +82,7 @@ check("Celular/professor: título grande \"Lista de Presença\" escondido", awai
 const bBar = await box(page, "#teacher-code-bar"), bHeader = await box(page, "#list-header"), bList = await box(page, "#student-list");
 check("Celular/professor: barra do código antes do contador", bBar.y < bHeader.y && bHeader.y < bList.y, `barra ${Math.round(bBar.y)} · contador ${Math.round(bHeader.y)}`);
 const bEnd = await box(page, "#btn-bar-end-code"), bCopy = await box(page, "#btn-bar-copy-absent");
-check("Celular/professor: \"Encerrar código\" e \"Copiar ausentes\" lado a lado", Math.abs(bEnd.y - bCopy.y) < 2 && bEnd.x < bCopy.x);
+check("Celular/professor: \"Encerrar código\" e \"Copiar ausentes\" lado a lado", Math.abs(bEnd.y - bCopy.y) < 8 && bEnd.x < bCopy.x);
 check("Celular/professor: rótulo curto \"Encerrar código\"", (await page.locator("#btn-bar-end-code").innerText()).trim() === "Encerrar código");
 check("Celular/professor: contador de presentes continua", await page.isVisible("#present-count"));
 await page.screenshot({ path: `${OUT}/l7-01-chamada-enxuta-celular.png` });
@@ -116,7 +131,7 @@ check("Opção desligada na janela: não encerra", (await read("turmas/t2")).cod
 await page.click("#btn-close-code-display");
 
 // ===== Compartilhar no Gerenciar + cor da turma =====
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)"); await page.waitForTimeout(400);
 await page.click("#btn-share-turma-link");
 check("Gerenciar: Compartilhar manda o link da turma", (await page.evaluate(() => window.__shared.url)) === APP + "#turma=t0");

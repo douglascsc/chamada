@@ -4,6 +4,21 @@ import { doc, setDoc, Timestamp } from "firebase/firestore";
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -64,7 +79,7 @@ check("Celular: painel mostra as turmas, sem cartão de opções embaixo", !pos.
 check("Celular: a primeira turma já aparece sem rolar", pos.primeiraTurma + 60 < pos.h, `topo da 1ª turma em ${Math.round(pos.primeiraTurma)}px de ${pos.h}px`);
 check("Tela de Opções começa escondida", !pos.opcoesVisivel);
 check("Minha conta / Nova turma / Admin / Atalho estão na tela de Opções", await page.evaluate(() => { const m = document.getElementById("teacher-options-view"); return m.contains(document.getElementById("new-turma-details")) && m.contains(document.getElementById("teacher-display-name-input")) && m.contains(document.getElementById("admin-panel-section")) && m.contains(document.getElementById("shortcut-details")); }));
-check("Aviso do SUAP compacto (uma linha) com link para Avisos importantes", (await page.isVisible("#btn-open-terms")) && (await page.$eval("#btn-open-terms", (b) => b.closest("p").getBoundingClientRect().height)) < 60);
+check("Aviso do SUAP e \"Avisos importantes\" ficam em Opções (fora do painel)", (await page.isHidden("#btn-open-terms")) && (await page.$eval("#btn-open-terms", (b) => !!b.closest("#teacher-options-view"))));
 await page.screenshot({ path: `${OUT}/ux-01-painel-celular.png` });
 await page.click("#btn-open-more-options");
 await page.waitForTimeout(700);
@@ -97,7 +112,7 @@ check("Código grande: fonte de pelo menos 64px", fontPx >= 64, `${fontPx}px`);
 await page.screenshot({ path: `${OUT}/ux-03-codigo-grande-celular.png` });
 await page.click("#btn-close-code-display");
 check("Código grande: fecha pelo botão", await page.isHidden("#code-display-backdrop"));
-await page.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026" }).getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(page.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026" }), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.click('.btn-generate-code-duration[data-minutes="15"]');
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");

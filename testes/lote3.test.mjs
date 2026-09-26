@@ -4,6 +4,21 @@ import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp } from 
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -79,7 +94,7 @@ await page.waitForFunction(() => document.getElementById("present-count").textCo
 check("Professor marca com 1 toque (sem \"Sim, sou eu\")", (await page.textContent("#present-count")) === "1" && (await page.locator(".identity-actions:not(.hidden)").count()) === 0);
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(500);
 // 7. corrigir dia anterior
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#history-day-panel:not(.hidden)");
 const chipOntem = page.locator("#history-dates-list button", { hasText: `${ontem.slice(8, 10)}/${ontem.slice(5, 7)}/${ontem.slice(0, 4)}` });
 await chipOntem.click();
@@ -97,7 +112,7 @@ await page.waitForFunction(() => /1 presente\(s\) de 4/.test(document.getElement
 check("Histórico: \"Desfazer\" pede a senha e remove", !(await list("turmas/t0/presencas")).some((p) => p.nome === "Camila Ferreira" && p.data === ontem));
 await page.click("#btn-manage-back"); await page.waitForTimeout(500);
 // 8. arquivar
-await row(page, "INF1M 2025").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF1M 2025"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.click("#btn-archive-turma");
 await page.waitForFunction(() => /arquivada/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 });

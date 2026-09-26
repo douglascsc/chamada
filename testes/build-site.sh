@@ -5,6 +5,7 @@
 set -e
 cd "$(dirname "$0")"
 CHAMADA_DIR="${CHAMADA_DIR:-../../chamada}"
+[ -f "$CHAMADA_DIR/index.html" ] || { echo "Não achei $CHAMADA_DIR/index.html (defina CHAMADA_DIR)"; exit 1; }
 mkdir -p site out
 SRC="$CHAMADA_DIR/index.html" python3 - <<'PY'
 import os, re; s=open(os.environ['SRC']).read()

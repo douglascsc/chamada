@@ -4,6 +4,21 @@ import { doc, setDoc, getDoc, getDocs, collection, writeBatch, Timestamp } from 
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -51,7 +66,7 @@ await page.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await page.fill
 await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTimeout(700);
 
 // ===== Importar com prévia (Gerenciar) =====
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.waitForFunction(() => document.getElementById("manage-aluno-count").textContent === "4");
 await page.click("#btn-import-alunos");
@@ -89,7 +104,7 @@ await page.fill("#manage-import-alunos", "Helena Prado");
 await page.click("#btn-import-alunos");
 await page.waitForSelector("#import-preview:not(.hidden)");
 await page.click("#btn-manage-back"); await page.waitForTimeout(500);
-await row(page, "INF3M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF3M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)"); await page.waitForTimeout(500);
 check("Trocando de turma, a prévia da turma anterior some", await page.isHidden("#import-preview"));
 check("Nada foi importado na turma errada", !(await list("turmas/t1/alunos")).some((a) => a.nome === "Helena Prado") && !(await list("turmas/t0/alunos")).some((a) => a.nome === "Helena Prado"));

@@ -5,6 +5,21 @@ import http from "node:http";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
 import path from "node:path";
 
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
+
 const S = process.env.S;
 const IMG = `${S}/img`;
 const OUT = process.env.OUT || "out";
@@ -108,9 +123,9 @@ await login(page, "profa@teste.br");
 check("Autenticação: professor autenticado entra na Área do professor", await page.isVisible("#teacher-turmas-list"));
 const namesA = await rowNames(page);
 check("Turmas: prof A vê só as próprias turmas", namesA.length === 2 && !namesA.some((n) => n.includes("INF2N")), namesA.join(" | "));
-const btnTexts = await row(page, "INF2M").locator("button").allTextContents();
+const btnTexts = await row(page, "INF2M").locator("button:visible").allTextContents();
 check("Botões na ordem [Gerar código 1h][Gerar código 3h][Chamada][📷 Atrasos][Gerenciar]", JSON.stringify(btnTexts) === JSON.stringify(["Gerar código 1h", "Gerar código 3h", "Chamada", "Atrasos", "Gerenciar"]), btnTexts.join(" | "));
-const cls = await row(page, "INF2M").locator("button").evaluateAll((b) => [b[3].className, b[4].className]);
+const cls = await row(page, "INF2M").locator("button:visible").evaluateAll((b) => [b[3].className, b[4].className]);
 check("Botão Atrasos com o mesmo estilo (cores) do botão Gerenciar", ["bg-slate-100", "text-slate-700", "rounded-lg", "font-semibold"].every((c) => cls[0].includes(c) && cls[1].includes(c)));
 check("\"Ver todos os atrasos\" no cabeçalho de Turmas cadastradas", await page.isVisible("#btn-open-all-atrasos"));
 
@@ -306,7 +321,7 @@ await page.waitForFunction(() => /Código \d{4} gerado/.test(document.getElement
 const code = (await page.textContent("#toast-text")).match(/Código (\d{4})/)[1];
 await page.click("#btn-close-code-display");
 check("[regressão] Gerar código 1h", Boolean(code), code);
-await row(page, "INF2M").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.waitForFunction(() => document.getElementById("manage-aluno-count").textContent === "3");
 check("[regressão] Gerenciar abre o painel com os alunos", true);
@@ -357,7 +372,7 @@ const mCaps = await page.$$eval("#atrasos-list button", (s) => s.map((x) => x.ti
 check("Master: vê fotos de todos os professores, com o nome do professor", mCaps.some((c) => c.startsWith("INF2N 2026 - Web (Prof B)")) && mCaps.some((c) => c.startsWith("INF2M 2026 - Banco de Dados (Prof A)")), [...new Set(mCaps.map((c) => c.split(" — ")[0]))].join(" | "));
 await page.click("#btn-close-atrasos");
 // excluir turma apaga as fotos junto
-await row(page, "INF2M").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#teacher-manage-panel:not(.hidden)");
 await page.click("#btn-delete-turma");
 await page.waitForSelector("#reauth-backdrop:not(.hidden)");

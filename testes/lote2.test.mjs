@@ -5,6 +5,21 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
+
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
+async function abrirGerenciar(p) {
+  await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  for (const id of ["manage-alunos-details", "manage-config-details"]) {
+    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+  }
+}
+async function cardClick(card, name) {
+  const visivel = card.getByRole("button", { name, exact: true }).locator("visible=true");
+  if (!(await visivel.count())) await card.getByRole("button", { name: /^Mais opções/ }).click();
+  await card.getByRole("button", { name, exact: true }).locator("visible=true").first().click();
+}
+
 const OUT = process.env.OUT;
 const results = [];
 const check = (name, ok, detail = "") => { results.push(Boolean(ok)); console.log(ok ? "✅" : "❌", name, detail ? `— ${detail}` : ""); };
@@ -111,7 +126,7 @@ await page.click("#btn-close-code-display");
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
 // --- Gerenciar: link, QR, copiar ausentes, 7 dias, renomear/remover aluno
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerenciar" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerenciar"); await abrirGerenciar(page);
 await page.waitForSelector("#history-day-panel:not(.hidden)");
 check("Gerenciar: link da turma", (await page.textContent("#manage-turma-link")) === APP + "#turma=t0");
 await page.click("#btn-copy-turma-link"); await page.waitForTimeout(300);
