@@ -1,3 +1,4 @@
+import { liberarProfessoresDoEmulador } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
@@ -45,6 +46,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   for (let i = 0; i < nomes.length; i++) await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA });
   await setDoc(doc(db, "turmas/t0/alunos/a1"), { nome: "Aluno 1" });
 });
+await liberarProfessoresDoEmulador(env);
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args: ["--no-proxy-server"] });
 async function newContext(mobile = true) {
   const ctx = await browser.newContext(mobile ? { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } });

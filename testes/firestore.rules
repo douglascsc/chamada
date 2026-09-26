@@ -39,6 +39,23 @@ service cloud.firestore {
              && get(salaPath(turmaId, codigo)).data.definidoEm == turmaAtual(turmaId).codigoDefinidoEm;
     }
 
+    // Professores liberados pela conta master (lista professoresAutorizados).
+    // Só eles (e a master) criam turmas: uma conta qualquer, criada direto no
+    // Firebase, não consegue pôr uma turma falsa na tela dos alunos.
+    function professorAutorizado() {
+      return isMaster()
+             || (request.auth != null
+                 && exists(/databases/$(database)/documents/professoresAutorizados/$(request.auth.uid)));
+    }
+
+    // Data de hoje em Brasília (UTC-3, sem horário de verão), "AAAA-MM-DD"
+    function hojeBrasilia() {
+      let t = request.time - duration.value(3, 'h');
+      return string(t.year()) + '-'
+             + (t.month() < 10 ? '0' : '') + string(t.month()) + '-'
+             + (t.day() < 10 ? '0' : '') + string(t.day());
+    }
+
     // Texto com tamanho máximo (evita documentos enormes)
     function textoAte(valor, max) {
       return valor is string && valor.size() <= max;
@@ -69,6 +86,7 @@ service cloud.firestore {
                     && request.resource.data.keys().hasAll(['nome', 'professorUid'])
                     && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                     && request.resource.data.professorUid == request.auth.uid
+                    && professorAutorizado()
                     && turmaValida(request.resource.data, '');
       allow update: if request.auth != null
                     && (isMaster() || resource.data.professorUid == request.auth.uid)
@@ -113,7 +131,9 @@ service cloud.firestore {
         // Só os campos esperados, com tamanho limitado, e com prazo de
         // retenção obrigatório (no máximo 8 dias à frente).
         allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
-                      && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado'])
+                      && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado', 'criadoEm'])
+                      // criadoEm: hora do servidor (não dá para "voltar o relógio")
+                      && (!('criadoEm' in request.resource.data) || request.resource.data.criadoEm == request.time)
                       && textoAte(request.resource.data.nome, 120) && request.resource.data.nome.size() > 0
                       && request.resource.data.data is string && request.resource.data.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
                       && textoAte(request.resource.data.horario, 10)
@@ -128,6 +148,9 @@ service cloud.firestore {
                                 salaValida(turmaId, request.resource.data.get('codigoUsado', ''))
                                 && request.resource.data.nome in get(salaPath(turmaId, request.resource.data.codigoUsado)).data.nomes
                                 && presencaId == request.resource.data.data + '_' + request.resource.data.maquina
+                                // aluno: dia de hoje e hora do servidor (o atraso usa essa hora)
+                                && request.resource.data.data == hojeBrasilia()
+                                && request.resource.data.get('criadoEm', null) == request.time
                               )
                          );
         allow update: if false;
@@ -161,6 +184,17 @@ service cloud.firestore {
       allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
       allow write: if request.auth != null && request.auth.uid == uid;
       // a conta master apaga o registro ao remover um professor do sistema
+      allow delete: if isMaster();
+    }
+
+    // Professores liberados para criar turmas: só a conta master mexe.
+    // Cada professor pode conferir se já foi liberado.
+    match /professoresAutorizados/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
+      allow create, update: if isMaster()
+                            && request.resource.data.keys().hasOnly(['email', 'nome', 'autorizadoEm'])
+                            && textoAte(request.resource.data.get('email', ''), 200)
+                            && textoAte(request.resource.data.get('nome', ''), 120);
       allow delete: if isMaster();
     }
 

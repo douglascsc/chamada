@@ -1,7 +1,7 @@
 import { migrarCodigos, codigoAtual } from "./codigo-helpers.mjs";
 import { chromium } from "playwright-core";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, setDoc, getDoc, getDocs, updateDoc, addDoc, deleteField, collection, writeBatch, Timestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, getDocs, updateDoc, addDoc, deleteField, collection, writeBatch, Timestamp, serverTimestamp } from "firebase/firestore";
 import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -72,7 +72,7 @@ await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
 await migrarCodigos(env);
 const exp = () => Timestamp.fromMillis(Date.now() + 7 * 86400000);
 let aparelhoN = 0;
-const presenca = (extra = {}) => ({ nome: "Aluno Um", data: hoje, horario: "08:01", maquina: `aparelho-${++aparelhoN}`, codigoUsado: "4821", expiraEm: exp(), ...extra });
+const presenca = (extra = {}) => ({ nome: "Aluno Um", data: hoje, horario: "08:01", maquina: `aparelho-${++aparelhoN}`, codigoUsado: "4821", expiraEm: exp(), criadoEm: serverTimestamp(), ...extra });
 // aluno: um documento por aparelho por dia (ID = data_aparelho)
 const marcarAluno = (db, p) => setDoc(doc(db, `turmas/T1/presencas/${p.data}_${p.maquina}`), p);
 const anon = env.unauthenticatedContext().firestore();

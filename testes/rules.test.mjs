@@ -30,6 +30,7 @@ const B = env.authenticatedContext("profB", { email: "b@x.br" }).firestore();
 const M = env.authenticatedContext("master", { email: "douglascamargo@ifsul.edu.br" }).firestore();
 const U = env.unauthenticatedContext().firestore();
 
+const HOJE = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 let pass = 0, fail = 0;
 async function t(name, p) {
   try { await p; pass++; console.log("✅", name); }
@@ -81,8 +82,8 @@ await t("editar foto existente é recusado", assertFails(updateDoc(doc(A, "turma
 await t("[regressão] qualquer um lê turmas", assertSucceeds(getDoc(doc(U, "turmas/tA"))));
 await t("[código secreto] aluno com o código lê a lista de nomes (sala)", assertSucceeds(getDoc(doc(U, "turmas/tA/salas/1234"))));
 await t("[código secreto] aluno NÃO lê a coleção de alunos (nem com código ativo)", assertFails(getDocs(collection(U, "turmas/tA/alunos"))));
-await t("[regressão] aluno com código correto cria presença", assertSucceeds(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m1"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m1", codigoUsado: "1234", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
-await t("[regressão] código errado NÃO cria presença", assertFails(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m2"), { nome: "Aluno 1", data: "2026-09-25", horario: "08:10", maquina: "m2", codigoUsado: "9999", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[regressão] aluno com código correto cria presença", assertSucceeds(setDoc(doc(U, `turmas/tA/presencas/${HOJE}_m1`), { nome: "Aluno 1", data: HOJE, criadoEm: serverTimestamp(), horario: "08:10", maquina: "m1", codigoUsado: "1234", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[regressão] código errado NÃO cria presença", assertFails(setDoc(doc(U, `turmas/tA/presencas/${HOJE}_m2`), { nome: "Aluno 1", data: HOJE, criadoEm: serverTimestamp(), horario: "08:10", maquina: "m2", codigoUsado: "9999", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
 await t("[regressão] sem código NÃO lê alunos da turma B", assertFails(getDocs(collection(U, "turmas/tB/alunos"))));
 await t("[regressão] prof B NÃO edita turma A", assertFails(updateDoc(doc(B, "turmas/tA"), { nome: "hack" })));
 await t("[regressão] prof A gera código na turma A (turma + sala, juntos)", assertSucceeds((async () => { const b = writeBatch(A); b.update(doc(A, "turmas/tA"), { codigoDefinidoEm: serverTimestamp(), codigoDuracaoMin: 60 }); b.delete(doc(A, "turmas/tA/salas/1234")); b.set(doc(A, "turmas/tA/salas/5555"), { nomes: ["Aluno 1"], definidoEm: serverTimestamp() }); await b.commit(); })()));
@@ -113,7 +114,7 @@ await t("[pendentes] master apaga pendente", assertSucceeds(deleteDoc(doc(M, "pr
 await t("[último acesso] prof A atualiza o próprio ultimoAcesso", assertSucceeds(updateDoc(doc(A, "acordosProfessor/profA"), { ultimoAcesso: serverTimestamp() })));
 await t("[encerrar código] prof B NÃO encerra código da turma A", assertFails(updateDoc(doc(B, "turmas/tA"), { codigoDefinidoEm: null })));
 await t("[encerrar código] dono encerra o código (turma + apaga sala)", assertSucceeds((async () => { const b = writeBatch(A); b.update(doc(A, "turmas/tA"), { codigoDefinidoEm: null }); b.delete(doc(A, "turmas/tA/salas/5555")); await b.commit(); })()));
-await t("[encerrar código] encerrado, aluno NÃO marca presença com o código antigo", assertFails(setDoc(doc(U, "turmas/tA/presencas/2026-09-25_m9"), { nome: "Aluno 1", data: "2026-09-25", horario: "09:00", maquina: "m9", codigoUsado: "5555", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
+await t("[encerrar código] encerrado, aluno NÃO marca presença com o código antigo", assertFails(setDoc(doc(U, `turmas/tA/presencas/${HOJE}_m9`), { nome: "Aluno 1", data: HOJE, criadoEm: serverTimestamp(), horario: "09:00", maquina: "m9", codigoUsado: "5555", expiraEm: Timestamp.fromMillis(Date.now() + 7 * 86400000) })));
 await t("[encerrar código] encerrado, aluno NÃO lê a lista", assertFails(getDoc(doc(U, "turmas/tA/salas/5555"))));
 
 // --- Arquivar turma

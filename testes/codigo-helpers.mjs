@@ -9,6 +9,7 @@ import { doc, getDocs, setDoc, updateDoc, collection, deleteField, getDoc } from
 const hojeSP = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 
 export async function migrarCodigos(env) {
+  await liberarProfessoresDoEmulador(env);
   await env.withSecurityRulesDisabled(async (c) => {
     const f = c.firestore();
     const turmas = await getDocs(collection(f, "turmas"));
@@ -42,4 +43,20 @@ export async function codigoAtual(env, turmaId) {
     out = s ? s.id : "";
   });
   return out;
+}
+
+// Professores liberados pela master (professoresAutorizados): nos testes,
+// todas as contas já criadas no emulador contam como professores liberados
+// (como os professores reais, liberados no Painel admin). Os testes de
+// "não liberado" criam a conta depois disto.
+export async function liberarProfessoresDoEmulador(env) {
+  const r = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/projects/demo-chamada/accounts:query", {
+    method: "POST", headers: { "content-type": "application/json", authorization: "Bearer owner" }, body: "{}"
+  }).then((x) => x.json());
+  await env.withSecurityRulesDisabled(async (c) => {
+    const f = c.firestore();
+    for (const u of r.userInfo || []) {
+      await setDoc(doc(f, "professoresAutorizados", u.localId), { email: u.email || "", nome: u.displayName || "" });
+    }
+  });
 }

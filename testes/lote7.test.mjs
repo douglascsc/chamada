@@ -186,7 +186,7 @@ await page.evaluate(() => document.getElementById("link-report-problem").addEven
 await page.click("#link-report-problem");
 const href = decodeURIComponent(await page.evaluate(() => window.__href));
 check("Relatar problema: e-mail para o suporte com assunto", href.startsWith("mailto:douglascamargo@ifsul.edu.br?subject=Chamada — problema&body="), href.slice(0, 80));
-check("Relatar problema: versão, tela/turma, internet, tamanho e navegador", /Versão: 2026\.09\.25/.test(href) && /Tela: #turma=t0 — turma "INF2M 2026 - Banco de Dados"/.test(href) && /Professor logado: não/.test(href) && /Internet: conectado/.test(href) && /Tamanho da tela: 390x/.test(href) && /Navegador: Mozilla/.test(href));
+check("Relatar problema: versão, tela/turma, internet, tamanho e navegador", /Versão: \d{4}\.\d{2}\.\d{2}/.test(href) && /Tela: #turma=t0 — turma "INF2M 2026 - Banco de Dados"/.test(href) && /Professor logado: não/.test(href) && /Internet: conectado/.test(href) && /Tamanho da tela: 390x/.test(href) && /Navegador: Mozilla/.test(href));
 check("Nenhum erro de JavaScript (aluno)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
 
