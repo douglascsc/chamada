@@ -45,7 +45,7 @@ const now = Date.now();
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   for (const u of [uidA, uidB]) await setDoc(doc(db, "acordosProfessor", u), { avisosAceitosEm: Timestamp.now(), email: "x", nome: "x" });
   for (let i = 0; i < turmasA.length; i++) {
-    const code = turmasA[i].startsWith("INF2M") ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 180 } : {};
+    const code = turmasA[i].startsWith("INF2M") ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 180 } : {};
     await setDoc(doc(db, `turmas/a${i}`), { nome: turmasA[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...code });
     const b = writeBatch(db); alunos.forEach((n, k) => b.set(doc(db, `turmas/a${i}/alunos/s${k}`), { nome: n })); await b.commit();
   }
@@ -201,7 +201,7 @@ page = await open(ctx, APP);
 await page.waitForSelector(".turma-card");
 await page.locator(".turma-card", { hasText: "INF2M 2026 - Banco de Dados" }).click();
 await page.waitForTimeout(1500);
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForSelector("#attendance-list-panel:not(.hidden)");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 10 && document.getElementById("present-count").textContent === "4");
 const ordemAluno = await page.$$eval(".student-row .student-name", (e) => e.map((x) => x.textContent));

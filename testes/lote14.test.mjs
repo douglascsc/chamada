@@ -90,7 +90,7 @@ await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
   await setDoc(doc(f, "turmas/T1/alunos/a2"), { nome: "Aluno Dois" });
   await setDoc(doc(f, "turmas/T1/alunos/a3"), { nome: "Aluno Três" });
 });
-await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const t = (await getDoc(doc(f, "turmas/T1"))).data(); await setDoc(doc(f, "turmas/T1/salas/4821"), { nomes: ["Aluno Dois", "Aluno Três", "Aluno Um"], definidoEm: t.codigoDefinidoEm }); });
+await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const t = (await getDoc(doc(f, "turmas/T1"))).data(); await setDoc(doc(f, "turmas/T1/salas/482193"), { nomes: ["Aluno Dois", "Aluno Três", "Aluno Um"], definidoEm: t.codigoDefinidoEm }); });
 await liberarProfessoresDoEmulador(env); // Ana (e a master) já liberadas
 // conta criada depois, sem liberação (como alguém que criou um login direto no Firebase)
 const rX = await fetch(`${AUTH}/accounts:signUp?key=fake`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "estranho@gmail.com", password: PASS, returnSecureToken: true }) }).then((x) => x.json());
@@ -119,7 +119,7 @@ await nega("Master NÃO grava campo extra na liberação", setDoc(doc(master, `p
 // --- C: presença do aluno com data e hora do servidor
 const exp = () => Timestamp.fromMillis(Date.now() + 86400000);
 const amanha = new Date(now + 86400000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
-const pres = (dia, maq, extra = {}) => ({ nome: "Aluno Um", data: dia, horario: "07:00", maquina: maq, codigoUsado: "4821", expiraEm: exp(), criadoEm: serverTimestamp(), ...extra });
+const pres = (dia, maq, extra = {}) => ({ nome: "Aluno Um", data: dia, horario: "07:00", maquina: maq, codigoUsado: "482193", expiraEm: exp(), criadoEm: serverTimestamp(), ...extra });
 await nega("Aluno NÃO marca presença com data de ontem", setDoc(doc(anon, `turmas/T1/presencas/${ontem}_m1`), pres(ontem, "m1")));
 await nega("Aluno NÃO marca presença com data de amanhã", setDoc(doc(anon, `turmas/T1/presencas/${amanha}_m2`), pres(amanha, "m2")));
 await nega("Aluno NÃO marca sem a hora do servidor", setDoc(doc(anon, `turmas/T1/presencas/${hoje}_m3`), (({ criadoEm, ...r }) => r)(pres(hoje, "m3"))));
@@ -184,7 +184,7 @@ await ctx.close();
 // --- C: aluno pelo site grava a hora do servidor
 ctx = await newCtx(true); page = await open(ctx, APP + "#turma=T1");
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(600);
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length >= 1, null, { timeout: 10000 });
 await page.waitForTimeout(500);
 check("Aluno: \"Aluno Dois\" (marcado pela professora sem o código) aparece como já marcado", await page.locator(".student-row", { hasText: "Aluno Dois" }).locator(".mark-button").isHidden());

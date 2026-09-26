@@ -64,7 +64,7 @@ const nega = (label, p) => p.then(() => check(label, false, "foi PERMITIDO"), ()
 await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
   await setDoc(doc(f, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
   await setDoc(doc(f, "acordosProfessor", uidM), { avisosAceitosEm: Timestamp.now(), email: "douglascamargo@ifsul.edu.br", nome: "Douglas" });
-  await setDoc(doc(f, "turmas/T1"), { nome: "INF2M 2026", professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 60000), codigoDuracaoMin: 30 });
+  await setDoc(doc(f, "turmas/T1"), { nome: "INF2M 2026", professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 60000), codigoDuracaoMin: 30 });
   await setDoc(doc(f, "turmas/T1/alunos/a1"), { nome: "Aluno Um" });
   await setDoc(doc(f, "turmas/OUTRA"), { nome: "Turma de outro", professorUid: "profB", professorNome: "Prof B", professorEmail: "profb@ifsul.edu.br" });
   await setDoc(doc(f, "turmas/LEGADA"), { nome: "Turma antiga sem dono", codigoDoDia: "" });
@@ -72,7 +72,7 @@ await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
 await migrarCodigos(env);
 const exp = () => Timestamp.fromMillis(Date.now() + 7 * 86400000);
 let aparelhoN = 0;
-const presenca = (extra = {}) => ({ nome: "Aluno Um", data: hoje, horario: "08:01", maquina: `aparelho-${++aparelhoN}`, codigoUsado: "4821", expiraEm: exp(), criadoEm: serverTimestamp(), ...extra });
+const presenca = (extra = {}) => ({ nome: "Aluno Um", data: hoje, horario: "08:01", maquina: `aparelho-${++aparelhoN}`, codigoUsado: "482193", expiraEm: exp(), criadoEm: serverTimestamp(), ...extra });
 // aluno: um documento por aparelho por dia (ID = data_aparelho)
 const marcarAluno = (db, p) => setDoc(doc(db, `turmas/T1/presencas/${p.data}_${p.maquina}`), p);
 const anon = env.unauthenticatedContext().firestore();
@@ -105,7 +105,7 @@ await nega("Criar turma com cor fora da lista", setDoc(doc(prof, "turmas/COR"), 
 await nega("Dono passa a turma para outro UID", updateDoc(doc(prof, "turmas/T1"), { professorUid: "intruso" }));
 await nega("Conta qualquer toma posse de turma antiga sem dono", updateDoc(doc(intruso, "turmas/LEGADA"), { professorUid: "intruso" }));
 await nega("Dono coloca o e-mail de volta na turma", updateDoc(doc(prof, "turmas/NOVA"), { professorEmail: "prof.ana@ifsul.edu.br" }));
-await ok("Dono gera código numa turma antiga que ainda tem e-mail", updateDoc(doc(prof, "turmas/T1"), { codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 30 }));
+await ok("Dono gera código numa turma antiga que ainda tem e-mail", updateDoc(doc(prof, "turmas/T1"), { codigoDefinidoEm: serverTimestamp(), codigoDuracaoMin: 30 }));
 await ok("Dono remove o e-mail da própria turma", updateDoc(doc(prof, "turmas/T1"), { professorEmail: deleteField(), professorNome: "Ana Souza" }));
 await nega("Dono renomeia turma com 500 caracteres", updateDoc(doc(prof, "turmas/T1"), { nome: "X".repeat(500) }));
 await ok("Master transfere turma (troca o dono)", updateDoc(doc(master, "turmas/OUTRA"), { professorUid: uidA, professorEmail: deleteField(), professorNome: "Ana Souza" }));
@@ -150,7 +150,7 @@ check("Master: turma de outro professor continua com o dono certo", (await read(
 check("Nenhum erro de JavaScript (master)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
 // aluno: contato LGPD é o responsável pelo sistema
-await env.withSecurityRulesDisabled(async (c) => { await updateDoc(doc(c.firestore(), "turmas/T1"), { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000) }); });
+await env.withSecurityRulesDisabled(async (c) => { await updateDoc(doc(c.firestore(), "turmas/T1"), { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000) }); });
 await migrarCodigos(env);
 ctx = await newCtx(true); page = await open(ctx, APP + "#turma=T1");
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(600);

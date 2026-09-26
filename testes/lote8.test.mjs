@@ -61,7 +61,7 @@ const PNG1 = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAA
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
   for (let i = 0; i < turmas.length; i++) {
-    await setDoc(doc(db, `turmas/a${i}`), { nome: turmas[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 2 ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 15 * 60000), codigoDuracaoMin: 60 } : {}) });
+    await setDoc(doc(db, `turmas/a${i}`), { nome: turmas[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 2 ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 15 * 60000), codigoDuracaoMin: 60 } : {}) });
     const b = writeBatch(db); nomes.forEach((n, k) => b.set(doc(db, `turmas/a${i}/alunos/s${k}`), { nome: n })); await b.commit();
     for (let d = 1; d <= 3; d++) { const dia = new Date(now - d * 86400000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }); const b3 = writeBatch(db); nomes.slice(0, 25).forEach((n, k) => b3.set(doc(db, `turmas/a${i}/presencas/h${d}_${k}`), { nome: n, data: dia, horario: "08:10", maquina: `h${k}`, expiraEm: Timestamp.fromMillis(now + 3 * 86400000) })); await b3.commit(); }
   }
@@ -78,7 +78,7 @@ const medidas = {};
 let ctx = await newCtx(true);
 let page = await open(ctx, APP + "#turma=a2");
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(500);
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 32); await page.waitForTimeout(900);
 check("Aluno: depois do código, sem o aviso verde repetido", await page.isHidden("#global-message"));
 check("Aluno: instrução \"você precisa do código\" some depois de validar", await page.isHidden("#list-student-hint"));
@@ -139,7 +139,7 @@ check("⋯ → Gerar código 1h funciona (janela do código)", /expira em (59 mi
 check("Janela do código: sem aviso flutuante por cima (a janela já confirma)", await page.isHidden("#toast"));
 await page.click("#btn-close-code-display"); await page.waitForTimeout(500);
 const c3 = card(page, "INF2M 2026");
-check("Código ativo (celular): forma curta \"Código 4821 · até HH:MM\"", /^Código 4821 · até \d{2}:\d{2}$/.test((await c3.locator("[data-expira] span:visible").innerText()).trim()));
+check("Código ativo (celular): forma curta \"Código 482193 · até HH:MM\"", /^Código 482193 · até \d{2}:\d{2}$/.test((await c3.locator("[data-expira] span:visible").innerText()).trim()));
 const bCod = await c3.locator("[data-expira]").boundingBox(), bEnc = await c3.getByRole("button", { name: /Encerrar o código de/ }).boundingBox();
 check("\"Encerrar código\" na mesma linha do código", Math.abs((bCod.y + bCod.height / 2) - (bEnc.y + bEnc.height / 2)) < 12 && (await c3.getByRole("button", { name: /Encerrar o código de/ }).innerText()).trim() === "Encerrar");
 check("\"Ver todos os atrasos\": no fim da lista no celular", (await page.isVisible("#btn-open-all-atrasos-bottom")) && (await page.isHidden("#btn-open-all-atrasos")));
@@ -220,7 +220,7 @@ await page.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await page.fill
 await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTimeout(800);
 const bot = (await card(page, "INF1N 2026").locator("button:visible").allInnerTexts()).filter((t) => !/^[☆★]$/.test(t.trim())); // ☆ = fixar (mais de 6 turmas)
 check("Computador: cartão com as 5 ações de sempre (sem ⋯)", JSON.stringify(bot.map((t) => t.trim())) === JSON.stringify(["Gerar cód. 30 min", "Gerar cód. 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
-check("Computador: código ativo com o texto completo", /Código 4821 · expira em \d+ min \(\d{2}:\d{2}\)/.test(await card(page, "INF2M 2026").locator("[data-expira] span:visible").innerText()));
+check("Computador: código ativo com o texto completo", /Código 482193 · expira em \d+ min \(\d{2}:\d{2}\)/.test(await card(page, "INF2M 2026").locator("[data-expira] span:visible").innerText()));
 check("Computador: \"Área do professor\" e \"Ver todos os atrasos\" no topo", (await page.isVisible("#view-teacher-dashboard h2")) && (await page.isVisible("#btn-open-all-atrasos")) && (await page.isHidden("#btn-open-all-atrasos-bottom")));
 await card(page, "INF2M 2026").getByRole("button", { name: "Atrasos" }).click();
 await page.waitForSelector("#atrasos-modal-backdrop:not(.hidden)"); await page.waitForTimeout(500);

@@ -86,8 +86,8 @@ check("Turma antiga: código velho apagado da turma ao entrar", !("codigoDoDia" 
 check("Turma antiga: cartão mostra \"Nenhum código ativo\"", /Nenhum código ativo/.test(await row(page, "INF1M 2026").textContent()));
 await cardClick(row(page, "INF2M 2026"), "Gerar código 30 min");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-const codigo = (await page.textContent("#code-display-value")).trim();
-check("Gerar: janela mostra o código de 4 dígitos", /^\d{4}$/.test(codigo), codigo);
+const codigo = (await page.textContent("#code-display-value")).replace(/\s/g, "");
+check("Gerar: janela mostra o código de 6 dígitos", /^\d{6}$/.test(codigo), codigo);
 const t1 = await read("turmas/T1");
 check("Gerar: o código NÃO fica na turma (pública)", !("codigoDoDia" in t1) && !JSON.stringify(t1).includes(codigo), JSON.stringify(t1));
 const salas = await list("turmas/T1/salas");
@@ -162,8 +162,8 @@ await aluno2.waitForFunction(() => /expirou ou ainda não foi definido/.test(doc
 
 // --- Gerar de novo: o código anterior não vale mais (mesmo se sobrar a sala)
 await page.click("#btn-bar-new-code");
-await page.waitForFunction(() => /Código \d{4}/.test(document.getElementById("teacher-code-bar-text").textContent), null, { timeout: 8000 });
-const novo = (await page.textContent("#teacher-code-bar-text")).match(/Código (\d{4})/)[1];
+await page.waitForFunction(() => /Código \d{6}/.test(document.getElementById("teacher-code-bar-text").textContent), null, { timeout: 8000 });
+const novo = (await page.textContent("#teacher-code-bar-text")).match(/Código (\d{6})/)[1];
 await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), "turmas/T1/salas/4444"), { nomes: alunosT, definidoEm: Timestamp.fromMillis(Date.now() - 3600000) }); });
 if (novo !== "4444") await nega("Sala velha (de outro horário) NÃO vale", getDoc(doc(anon, "turmas/T1/salas/4444")));
 await ok("Código novo vale", getDoc(doc(anon, `turmas/T1/salas/${novo}`)));

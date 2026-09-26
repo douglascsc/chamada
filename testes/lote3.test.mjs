@@ -43,7 +43,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
   const nomes = ["INF2M 2026 - Banco de Dados", "INF3M 2026 - Web", "INF1M 2025 - Algoritmos"];
   for (let i = 0; i < nomes.length; i++) {
-    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 20 * 60000), codigoDuracaoMin: 60 } : {}) });
+    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 20 * 60000), codigoDuracaoMin: 60 } : {}) });
     const b = writeBatch(db); alunos.forEach((n, k) => b.set(doc(db, `turmas/t${i}/alunos/s${k}`), { nome: n })); await b.commit();
   }
   await setDoc(doc(db, `turmas/t0/presencas/${ontem}_x`), { nome: alunos[0], data: ontem, horario: "08:05", maquina: "x", expiraEm: Timestamp.fromMillis(now + 6 * 86400000) });
@@ -85,7 +85,7 @@ await page.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await page.fill
 await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTimeout(700);
 // 4. tempo restante
 const linha = await row(page, "INF2M 2026").textContent();
-check("Tempo restante no cartão: \"expira em 40 min (hh:mm)\"", /Código 4821 · expira em (39|40) min \(\d{2}:\d{2}\)/.test(linha), linha.match(/Código[^E]*/)?.[0]);
+check("Tempo restante no cartão: \"expira em 40 min (hh:mm)\"", /Código 482193 · expira em (39|40) min \(\d{2}:\d{2}\)/.test(linha), linha.match(/Código[^E]*/)?.[0]);
 await cardClick(row(page, "INF3M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 check("Tempo restante na janela do código", /^Válido até \d{2}:\d{2} · expira em (59 min|1h)$/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
@@ -145,7 +145,7 @@ await pa.close();
 // 5. tela Pronto
 pa = await open(ctxA, APP + "#turma=t0");
 await pa.waitForSelector("#view-attendance:not(.hidden)");
-await pa.fill("#student-daily-code", "4821");
+await pa.fill("#student-daily-code", "482193");
 await pa.waitForFunction(() => document.querySelectorAll(".student-row").length === 4);
 await pa.locator(".student-row", { hasText: "Daniel Souza Lima" }).locator(".mark-button").click();
 check("Aluno ainda confirma \"Sim, sou eu\"", await pa.locator(".student-row", { hasText: "Daniel Souza Lima" }).locator(".confirm-attendance").isVisible());
@@ -158,7 +158,7 @@ check("\"Ver a lista da turma\" mostra a lista de novo", (await pa.isVisible("#a
 await pa.close();
 pa = await open(ctxA, APP + "#turma=t0");
 await pa.waitForSelector("#view-attendance:not(.hidden)");
-await pa.fill("#student-daily-code", "4821");
+await pa.fill("#student-daily-code", "482193");
 await pa.waitForSelector("#student-done-panel:not(.hidden)", { timeout: 10000 });
 check("Voltando depois no mesmo aparelho: já mostra \"Pronto ✓\"", (await pa.textContent("#student-done-name")) === "Daniel Souza Lima");
 check("Nenhum erro de JavaScript (aluno)", pa.errs.length === 0, pa.errs.join(";"));

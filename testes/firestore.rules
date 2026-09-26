@@ -74,7 +74,8 @@ service cloud.firestore {
              // o código do dia não pode mais ficar na turma (só vazio/removido)
              && (!('codigoDoDia' in d) || d.codigoDoDia == '' || d.codigoDoDia == codigoAntes)
              && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
-             && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
+             // código vale no máximo 4 horas
+             && (!('codigoDuracaoMin' in d) || (d.codigoDuracaoMin is int && d.codigoDuracaoMin > 0 && d.codigoDuracaoMin <= 240))
              && (!('arquivada' in d) || d.arquivada is bool)
              && (!('cor' in d) || corValida(d.cor));
     }
@@ -87,6 +88,7 @@ service cloud.firestore {
                     && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                     && request.resource.data.professorUid == request.auth.uid
                     && professorAutorizado()
+                    && (request.resource.data.get('codigoDefinidoEm', null) == null || request.resource.data.codigoDefinidoEm == request.time)
                     && turmaValida(request.resource.data, '');
       allow update: if request.auth != null
                     && (isMaster() || resource.data.professorUid == request.auth.uid)
@@ -96,6 +98,10 @@ service cloud.firestore {
                     && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
                     // e-mail do professor (turmas antigas): só pode ser removido
                     && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
+                    // gerar código: o horário é o do servidor (não dá para "adiantar" o prazo)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDefinidoEm'])
+                        || request.resource.data.codigoDefinidoEm == null
+                        || request.resource.data.codigoDefinidoEm == request.time)
                     && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
       allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
@@ -110,9 +116,13 @@ service cloud.firestore {
                               && request.resource.data.keys().hasOnly(['nomes', 'definidoEm', 'marcados'])
                               && request.resource.data.nomes is list
                               && request.resource.data.nomes.size() <= 500
-                              // quem o professor já marcou hoje sem o código (o aluno vê como marcado)
+                              // nomes com até ~120 caracteres cada (tamanho total limitado)
+                              && request.resource.data.nomes.join('|').size() <= 500 * 121
+                              // quem o professor já marcou hoje sem o código (o aluno vê como
+                              // marcado): só nomes que estão na lista da sala
                               && (!('marcados' in request.resource.data)
-                                  || (request.resource.data.marcados is list && request.resource.data.marcados.size() <= 500))
+                                  || (request.resource.data.marcados is list
+                                      && request.resource.data.nomes.hasAll(request.resource.data.marcados)))
                               && request.resource.data.definidoEm is timestamp;
       }
 
@@ -186,7 +196,16 @@ service cloud.firestore {
 
     match /acordosProfessor/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
-      allow write: if request.auth != null && request.auth.uid == uid;
+      // só os campos usados pelo site, com tamanho limitado
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['avisosAceitosEm', 'email', 'nome', 'ultimoAcesso'])
+                    && textoAte(request.resource.data.get('email', ''), 200)
+                    && textoAte(request.resource.data.get('nome', ''), 120);
+      allow update: if request.auth != null && request.auth.uid == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avisosAceitosEm', 'email', 'nome', 'ultimoAcesso'])
+                    && textoAte(request.resource.data.get('email', ''), 200)
+                    && textoAte(request.resource.data.get('nome', ''), 120);
+      allow delete: if request.auth != null && request.auth.uid == uid;
       // a conta master apaga o registro ao remover um professor do sistema
       allow delete: if isMaster();
     }

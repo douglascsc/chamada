@@ -98,7 +98,7 @@ await page.waitForFunction(() => document.getElementById("present-count").textCo
 await page.waitForTimeout(800);
 await page.click("#btn-bar-new-code");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-const codigo = (await page.textContent("#code-display-value")).trim();
+const codigo = (await page.textContent("#code-display-value")).replace(/\s/g, "");
 await page.click("#btn-close-code-display");
 await page.waitForTimeout(800);
 const sala = (await list("turmas/T1/salas"))[0];

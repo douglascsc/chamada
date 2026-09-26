@@ -60,7 +60,7 @@ const hoje = new Date(now).toLocaleDateString("sv-SE", { timeZone: "America/Sao_
 const nomesT0 = ["Ana (08:00, 1ª)", "Bruno (08:15)", "Caio (08:20, limite)", "Davi (08:21, atrasado)", "Eva (08:40, professor)", "Fabio (falta)"].map((n) => n.split(" (")[0]);
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
-  await setDoc(doc(db, "turmas/t0"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza", codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 });
+  await setDoc(doc(db, "turmas/t0"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza", codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 });
   await setDoc(doc(db, "turmas/t1"), { nome: "INF3M 2026 - Web", professorUid: uidA, professorNome: "Ana Souza" });
   const b = writeBatch(db); nomesT0.forEach((n, k) => b.set(doc(db, `turmas/t0/alunos/s${k}`), { nome: n })); ["Gil", "Hugo"].forEach((n, k) => b.set(doc(db, `turmas/t1/alunos/s${k}`), { nome: n })); await b.commit();
   const exp = Timestamp.fromMillis(now + 3 * 86400000);
@@ -101,7 +101,7 @@ await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 check("Gerar código 30 min: janela mostra 30 min", /expira em (29|30) min/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
 check("Gerar código 30 min: banco grava 30 minutos", (await read("turmas/t1")).codigoDuracaoMin === 30);
 await page.click("#btn-close-code-display"); await page.waitForTimeout(400);
-check("Cartão: código de 30 min com o horário certo", /Código \d{4} · até \d{2}:\d{2}/.test(await c1.locator("[data-expira] span:visible").innerText()));
+check("Cartão: código de 30 min com o horário certo", /Código \d{6} · até \d{2}:\d{2}/.test(await c1.locator("[data-expira] span:visible").innerText()));
 // Chamada com atrasos
 await card(page, "INF2M 2026").getByRole("button", { name: "Chamada" }).click();
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 6); await page.waitForTimeout(500);
@@ -147,12 +147,12 @@ check("Nenhum erro de JavaScript (professora)", page.errs.length === 0, page.err
 await ctx.close();
 
 // ----- Aluno não vê "atrasado" -----
-await env.withSecurityRulesDisabled(async (c) => { const { updateDoc } = await import("firebase/firestore"); await updateDoc(doc(c.firestore(), "turmas/t0"), { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000), codigoDuracaoMin: 30 }); });
+await env.withSecurityRulesDisabled(async (c) => { const { updateDoc } = await import("firebase/firestore"); await updateDoc(doc(c.firestore(), "turmas/t0"), { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000), codigoDuracaoMin: 30 }); });
 await migrarCodigos(env);
 ctx = await newCtx(true);
 page = await open(ctx, APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)");
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 6); await page.waitForTimeout(500);
 await page.click("#present-toggle");
 check("Aluno: não vê \"atrasado\" nem a contagem de atrasos", !/atrasado/.test(await status(page, "Davi")) && (await page.isHidden("#late-count")));

@@ -109,12 +109,13 @@ check("\"Voltar para as turmas\" volta para a lista (e o Voltar de cima reaparec
 await page.evaluate(() => scrollTo(0, 0));
 await cardClick(page.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026" }), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-const msgCode = (await page.textContent("#toast-text")).match(/Código (\d{4})/)[1];
+const msgCode = (await page.textContent("#toast-text")).match(/Código (\d{6})/)[1];
 const big = await page.textContent("#code-display-value");
-check("Gerar código 1h: abre o código em tamanho grande", big === msgCode, big);
+check("Gerar código 1h: abre o código em tamanho grande (6 dígitos, \"482 193\")", big.replace(/\s/g, "") === msgCode && /^\d{3} \d{3}$/.test(big), big);
 check("Código grande: turma e validade", (await page.textContent("#code-display-turma")) === "INF2M 2026 - Banco de Dados" && /^Válido até \d{2}:\d{2} · expira em (1h|59 min)$/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
 const fontPx = await page.$eval("#code-display-value", (e) => parseFloat(getComputedStyle(e).fontSize));
-check("Código grande: fonte de pelo menos 64px", fontPx >= 64, `${fontPx}px`);
+const cabe = await page.$eval("#code-display-value", (e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= innerWidth);
+check("Código grande: fonte de pelo menos 48px e cabe na tela do celular", fontPx >= 48 && cabe, `${fontPx}px`);
 await page.screenshot({ path: `${OUT}/ux-03-codigo-grande-celular.png` });
 await page.click("#btn-close-code-display");
 check("Código grande: fecha pelo botão", await page.isHidden("#code-display-backdrop"));

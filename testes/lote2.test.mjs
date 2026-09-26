@@ -50,7 +50,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", "orfao"), { avisosAceitosEm: Timestamp.now(), email: "teste@teste.com.br" }); // registro órfão, sem último acesso
   const nomes = ["INF2M 2026 - Banco de Dados", "INF3M 2026 - Web", "ELE1M 2026 - Circuitos", "ELE2M 2026 - Eletrônica", "MEC1M 2026 - Desenho", "ADM1 2026 - Português", "QUI1 2026 - Química", "TMS1 2026 - Informática"];
   for (let i = 0; i < nomes.length; i++) {
-    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 } : {}) });
+    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 } : {}) });
     const b = writeBatch(db); alunos.forEach((n, k) => b.set(doc(db, `turmas/t${i}/alunos/s${k}`), { nome: n })); await b.commit();
   }
   const b2 = writeBatch(db);
@@ -115,7 +115,7 @@ await page.screenshot({ path: `${OUT}/l2-02-codigo-qr-celular.png` });
 await page.click("#btn-code-display-chamada");
 await page.waitForSelector("#teacher-code-bar:not(.hidden)");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 6);
-check("Chamada: barra mostra o código ativo e até quando vale", /^Código \d{4} · expira em (1h|59 min) \(\d{2}:\d{2}\)$/.test(await page.textContent("#teacher-code-bar-text")), await page.textContent("#teacher-code-bar-text"));
+check("Chamada: barra mostra o código ativo e até quando vale", /^Código \d{6} · expira em (1h|59 min) \(\d{2}:\d{2}\)$/.test(await page.textContent("#teacher-code-bar-text")), await page.textContent("#teacher-code-bar-text"));
 check("Chamada: \"Área do professor\" escondido", await page.isHidden("#btn-teacher-area"));
 check("Chamada: botão mostra quantos ausentes", (await page.textContent("#btn-bar-copy-absent")) === "Copiar ausentes (4)", await page.textContent("#btn-bar-copy-absent"));
 await page.click("#btn-bar-copy-absent"); await page.waitForTimeout(300);
@@ -127,7 +127,7 @@ await page.waitForFunction(() => /Nenhum código ativo/.test(document.getElement
 check("Chamada: \"Encerrar código agora\" → barra mostra \"Gerar código 30 min\"", (await page.isVisible("#btn-bar-new-code")) && (await page.isHidden("#btn-bar-end-code")));
 await page.click("#btn-bar-new-code");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-check("Chamada: \"Gerar código 30 min\" pela barra abre o código grande", /^\d{4}$/.test(await page.textContent("#code-display-value")));
+check("Chamada: \"Gerar código 30 min\" pela barra abre o código grande", /^\d{3} \d{3}$/.test(await page.textContent("#code-display-value")));
 await page.click("#btn-close-code-display");
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
@@ -189,6 +189,7 @@ check("Aluno: \"Trocar turma\" limpa o link", page.url() === APP, page.url());
 await page.close();
 page = await open(ctx, APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)", { timeout: 8000 });
+await page.waitForFunction(() => document.getElementById("attendance-turma-name").textContent === "INF2M 2026 - Banco de Dados", null, { timeout: 8000 }).catch(() => {});
 check("Link da turma: abre direto a turma, pedindo o código", (await page.textContent("#attendance-turma-name")) === "INF2M 2026 - Banco de Dados" && (await page.isVisible("#student-daily-code")));
 await page.close();
 page = await open(ctx, APP + "#turma=naoexiste");

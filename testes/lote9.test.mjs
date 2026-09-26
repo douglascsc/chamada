@@ -61,7 +61,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
   const nomesT = ["INF2M 2026 - Banco de Dados", "INF3M 2026 - Web", "INF1M 2026 - Algoritmos"];
   for (let i = 0; i < 3; i++) {
-    await setDoc(doc(db, `turmas/t${i}`), { nome: nomesT[i], professorUid: uidA, professorNome: "Ana Souza", ...(i === 0 ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 } : {}), ...(i === 2 ? { arquivada: true } : {}) });
+    await setDoc(doc(db, `turmas/t${i}`), { nome: nomesT[i], professorUid: uidA, professorNome: "Ana Souza", ...(i === 0 ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 } : {}), ...(i === 2 ? { arquivada: true } : {}) });
     const b = writeBatch(db); (i === 0 ? alunosT0 : ["Diego Alves", "Elisa Moura"]).forEach((n, k) => b.set(doc(db, `turmas/t${i}/alunos/s${k}`), { nome: n })); await b.commit();
   }
   const b2 = writeBatch(db); ["Ana Beatriz Rocha", "Bruno Henrique Alves"].forEach((n, k) => b2.set(doc(db, `turmas/t0/presencas/p${k}`), { nome: n, data: hoje, horario: "08:0" + k, maquina: "m" + k, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b2.commit();
@@ -82,7 +82,7 @@ const beforeUnloadBloqueia = (p) => p.evaluate(() => { const e = new Event("befo
 let ctx = await newCtx(true);
 let page = await open(ctx, APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)");
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 5); await page.waitForTimeout(500);
 const nomesInfo = await page.$$eval(".student-row:not(.is-collapsed) .student-name", (els) => els.map((e) => ({ t: e.textContent, cabe: e.scrollHeight <= e.clientHeight + 1, linhas: Math.round(e.clientHeight / parseFloat(getComputedStyle(e).lineHeight)), largura: e.clientWidth })));
 const l1 = nomesInfo.find((n) => n.t === LONGO1), l2 = nomesInfo.find((n) => n.t === LONGO2);

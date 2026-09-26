@@ -58,7 +58,7 @@ const hoje = new Date(now).toLocaleDateString("sv-SE", { timeZone: "America/Sao_
 const dias = [1, 2, 3, 4, 5, 6].map((d) => new Date(now - d * 86400000).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }));
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
-  await setDoc(doc(db, "turmas/t0"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza", codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 });
+  await setDoc(doc(db, "turmas/t0"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza", codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 5 * 60000), codigoDuracaoMin: 60 });
   await setDoc(doc(db, "turmas/t1"), { nome: "TURMA-SECRETA-DA-LISTA 2026", professorUid: uidA, professorNome: "Ana Souza" });
   const b = writeBatch(db); ["Ana Beatriz Rocha", "Bruno Henrique Alves", "Camila Ferreira"].forEach((n, k) => b.set(doc(db, `turmas/t0/alunos/s${k}`), { nome: n })); await b.commit();
   const b2 = writeBatch(db);
@@ -100,7 +100,7 @@ await ctx.addInitScript(GRAVAR_TRAFEGO);
 let page = await ctx.newPage(); page.errs = []; page.on("pageerror", (e) => page.errs.push(e.message));
 await page.goto(APP + "#turma=t0");
 await page.waitForSelector("#view-attendance:not(.hidden)");
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 3); await page.waitForTimeout(2500);
 let tudo = await trafego(page);
 check("Captura do tráfego do banco funcionando (recebeu a presença de hoje e os alunos)", tudo.includes("MAQUINA-DE-HOJE") && tudo.includes("Camila Ferreira"), `${tudo.length} caracteres`);
@@ -129,7 +129,7 @@ await page.waitForSelector(".turma-card"); await page.waitForTimeout(500);
 check("Tela inicial: lista de turmas aparece", (await page.locator(".turma-card").count()) === 2);
 await page.locator(".turma-card", { hasText: "INF2M 2026" }).click();
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(500);
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 3); await page.waitForTimeout(800);
 check("Tela inicial → turma: presenças de hoje (2) e nenhuma antiga", (await page.textContent("#present-count")) === "2");
 check("Nenhum erro de JavaScript (aluno pela lista)", page.errs.length === 0, page.errs.join(";"));
@@ -146,7 +146,7 @@ for (const via of ["lista", "link"]) {
     } else {
       await page.goto(APP + "#turma=t0");
     }
-    await page.fill("#student-daily-code", "4821"); // sem esperar nada
+    await page.fill("#student-daily-code", "482193"); // sem esperar nada
     const ok = await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 3, null, { timeout: 8000 }).then(() => true, () => false);
     check(`Aluno rápido ${via === "lista" ? "pela lista" : "pelo link"} (rodada ${rodada + 1}): código aceito e lista aparece`, ok && page.errs.length === 0, ok ? "" : await page.textContent("#global-message-text"));
     await ctx.close();

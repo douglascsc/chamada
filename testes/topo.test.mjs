@@ -17,7 +17,7 @@ const env = await initializeTestEnvironment({ projectId: "demo-chamada", firesto
 const NOME = "INF2M 2026 - Banco de Dados e Programação Orientada a Objetos";
 await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", r.localId), { avisosAceitosEm: Timestamp.now() });
-  await setDoc(doc(db, "turmas/t0"), { nome: NOME, professorUid: r.localId, professorNome: "Prof", codigoDoDia: "4821", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 });
+  await setDoc(doc(db, "turmas/t0"), { nome: NOME, professorUid: r.localId, professorNome: "Prof", codigoDoDia: "482193", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 });
   const b = writeBatch(db); ["Ana", "Bruno", "Carla"].forEach((n, k) => b.set(doc(db, `turmas/t0/alunos/a${k}`), { nome: n })); await b.commit();
 });
 await migrarCodigos(env);

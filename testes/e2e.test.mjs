@@ -321,8 +321,8 @@ await page.click("#btn-close-atrasos");
 
 // ---------- Regressão (prof A) ----------
 await cardClick(row(page, "INF2M"), "Gerar código 1h");
-await page.waitForFunction(() => /Código \d{4} gerado/.test(document.getElementById("toast-text").textContent));
-const code = (await page.textContent("#toast-text")).match(/Código (\d{4})/)[1];
+await page.waitForFunction(() => /Código \d{6} gerado/.test(document.getElementById("toast-text").textContent));
+const code = (await page.textContent("#toast-text")).match(/Código (\d{6})/)[1];
 await page.click("#btn-close-code-display");
 check("[regressão] Gerar código 1h", Boolean(code), code);
 await cardClick(row(page, "INF2M"), "Gerenciar"); await abrirGerenciar(page);

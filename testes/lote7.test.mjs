@@ -43,7 +43,7 @@ await env.withSecurityRulesDisabled(async (ctx) => { const db = ctx.firestore();
   await setDoc(doc(db, "acordosProfessor", uidA), { avisosAceitosEm: Timestamp.now(), email: "prof.ana@ifsul.edu.br", nome: "Ana Souza" });
   const nomes = ["INF2M 2026 - Banco de Dados", "INF3M 2026 - Web", "INF1M 2025 - Algoritmos"];
   for (let i = 0; i < nomes.length; i++) {
-    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(now - 20 * 60000), codigoDuracaoMin: 60 } : {}) });
+    await setDoc(doc(db, `turmas/t${i}`), { nome: nomes[i], professorUid: uidA, professorNome: "Ana Souza", professorEmail: "prof.ana@ifsul.edu.br", ...(i === 0 ? { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(now - 20 * 60000), codigoDuracaoMin: 60 } : {}) });
     const b = writeBatch(db); alunos.forEach((n, k) => b.set(doc(db, `turmas/t${i}/alunos/s${k}`), { nome: n })); await b.commit();
   }
   await setDoc(doc(db, `turmas/t0/presencas/${ontem}_x`), { nome: alunos[0], data: ontem, horario: "08:05", maquina: "x", expiraEm: Timestamp.fromMillis(now + 6 * 86400000) });
@@ -101,7 +101,7 @@ for (const n of alunos) {
 }
 await page.waitForFunction(() => document.getElementById("present-count").textContent === "4", null, { timeout: 8000 });
 await page.waitForTimeout(800);
-check("Opção desligada: todos marcaram e o código continua", (await codigoAtual(env, "t0")) === "4821");
+check("Opção desligada: todos marcaram e o código continua", (await codigoAtual(env, "t0")) === "482193");
 await page.check("#bar-auto-end");
 await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 });
 check("Opção ligada: encerra o código (banco)", (await codigoAtual(env, "t0")) === "");
@@ -165,7 +165,7 @@ check("Computador: sem Compartilhar onde o navegador não oferece", await page.i
 await ctx.close();
 
 // ===== Aluno: vibra, cor no cartão, sem layout de professor =====
-await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); await updateDoc(doc(f, "turmas/t0"), { codigoDoDia: "4821", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000) }); await setDoc(doc(f, "turmas/t0/alunos/s9"), { nome: "Eva Nova" }); });
+await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); await updateDoc(doc(f, "turmas/t0"), { codigoDoDia: "482193", codigoDefinidoEm: Timestamp.fromMillis(Date.now() - 60000) }); await setDoc(doc(f, "turmas/t0/alunos/s9"), { nome: "Eva Nova" }); });
 await migrarCodigos(env);
 ctx = await newCtx(true);
 await ctx.addInitScript(() => { navigator.vibrate = (p) => { window.__vib = p; return true; }; });
@@ -173,7 +173,7 @@ page = await open(ctx, APP);
 await page.waitForSelector(".turma-card"); await page.waitForTimeout(500);
 check("Aluno: faixa azul no cartão da turma", (await page.locator(".turma-card", { hasText: "INF2M 2026" }).evaluate((el) => getComputedStyle(el).borderLeftColor)) === "rgb(37, 99, 235)");
 await page.locator(".turma-card", { hasText: "INF2M 2026" }).click();
-await page.fill("#student-daily-code", "4821");
+await page.fill("#student-daily-code", "482193");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 5);
 check("Aluno no celular: título da lista aparece (layout de professor só para professor)", await page.isVisible("#list-heading-block"));
 await page.locator(".student-row", { hasText: "Eva Nova" }).locator(".mark-button").click();
