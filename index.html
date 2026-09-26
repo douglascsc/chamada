@@ -656,16 +656,13 @@
        </div>
       </div>
       <div id="teacher-code-bar" class="hidden mt-5 flex flex-col gap-3 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-       <p id="teacher-code-bar-text" class="text-sm font-semibold text-[var(--ink)]"></p>
+       <button id="teacher-code-bar-text" type="button" class="focus-ring rounded text-left text-sm font-semibold text-[var(--ink)]"></button>
        <div id="teacher-code-bar-buttons" class="flex flex-wrap gap-2">
         <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código</button>
         <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button" aria-label="Gerar código 30 min">Gerar cód. 30 min</button>
         <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
         <button id="btn-bar-all-present" class="hidden action-button focus-ring col-span-2 rounded-lg px-3 py-2 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32] border border-[#CFE6C8]" type="button">Marcar todos presentes</button>
        </div>
-       <label id="bar-auto-end-wrap" class="hidden auto-end-option inline-flex items-center gap-2 text-xs font-semibold text-slate-600 sm:basis-full">
-        <input id="bar-auto-end" type="checkbox" class="h-4 w-4 accent-[#2B7A40]"> Encerrar o código sozinho quando todos marcarem
-       </label>
       </div>
       <div id="global-message" class="notice notice-info mt-5 hidden" role="status" aria-live="polite">
        <i id="global-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="global-message-text"></span>
@@ -1227,7 +1224,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
      <li>Seu nome e o horário da sua presença ficam salvos neste sistema, controlado pelo professor da turma.</li>
      <li>Este sistema é um apoio e <strong>não substitui</strong> a chamada oficial, que é registrada no SUAP.</li>
      <li>Em caso de dúvida sobre seus dados, procure o professor da turma.</li>
-     <li>Para pedir acesso, correção ou exclusão dos seus dados, escreva para <a id="student-info-contact-link" href="#" class="font-semibold text-[#2B7A40] hover:underline">o e-mail do professor</a>.</li>
+     <li>Para pedir acesso, correção ou exclusão dos seus dados, fale com seu professor ou escreva para <a id="student-info-contact-link" href="mailto:douglascamargo@ifsul.edu.br?subject=Solicita%C3%A7%C3%A3o%20LGPD%20-%20meus%20dados%20no%20Registro%20de%20Chamada" class="font-semibold text-[#2B7A40] hover:underline">douglascamargo@ifsul.edu.br</a>.</li>
     </ul>
     <div class="mt-5 flex justify-end">
      <button id="btn-close-student-info" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Entendi</button>
@@ -1241,27 +1238,27 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF6EC] text-[#2B7A40]">
      <i data-lucide="shield-alert" aria-hidden="true" class="h-6 w-6"></i>
     </div>
-    <h2 id="terms-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Avisos importantes — leia antes de usar</h2>
+    <h2 id="terms-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Avisos importantes: leia antes de usar</h2>
     <p class="mt-1 text-sm text-slate-500">Resumo para o professor.</p>
 
     <div class="mt-4 space-y-4 text-sm text-slate-700 leading-relaxed">
      <div>
       <h3 class="font-bold text-[var(--ink)]">1. Isto é um apoio, não substitui o SUAP</h3>
-      <p class="mt-1">Este sistema foi feito para <strong>facilitar</strong> o controle do dia a dia em sala de aula. Ele <strong>não substitui</strong> os sistemas institucionais — a chamada oficial continua sendo lançada normalmente no SUAP, sempre depois de você validar os dados. Não confie apenas nos registros deste app como prova definitiva de frequência: vale sempre conferir também por chamada oral/visual em sala.</p>
+      <p class="mt-1">Este sistema foi feito para <strong>facilitar</strong> o controle do dia a dia em sala de aula. Ele <strong>não substitui</strong> os sistemas institucionais: a chamada oficial continua sendo lançada normalmente no SUAP, sempre depois de você validar os dados. Não confie apenas nos registros deste app como prova definitiva de frequência: vale sempre conferir também por chamada oral/visual em sala.</p>
      </div>
 
      <div>
       <h3 class="font-bold text-[var(--ink)]">2. Dados pessoais tratados (LGPD)</h3>
-      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site — não fica no GitHub. As fotos de comprovantes de atraso que você guardar (botão "Atrasos") também ficam lá, visíveis só para você (e para a conta master do sistema), e são apagadas automaticamente após 180 dias. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
+      <p class="mt-1">O sistema trata dados pessoais de alunos: nome, turma, e registros de presença (nome, data, horário e um identificador do aparelho usado para marcar). Isso fica salvo no Firestore do projeto Firebase usado por este site, e não no GitHub. As fotos de comprovantes de atraso que você guardar (botão "Atrasos") também ficam lá, visíveis só para você (e para a conta master do sistema), e são apagadas automaticamente após 180 dias. Cabe a você observar as políticas internas de proteção de dados e a LGPD ao usar esta ferramenta, incluindo avisar os alunos sobre esse tratamento, se for exigido.</p>
      </div>
 
      <div>
-      <h3 class="font-bold text-[var(--ink)]">3. Segurança — o que é garantido e o que não é</h3>
+      <h3 class="font-bold text-[var(--ink)]">3. Segurança: o que é garantido e o que não é</h3>
       <ul class="mt-1 list-disc list-inside space-y-1.5">
        <li>O identificador de aparelho ("um aluno por celular, por dia") pode ser contornado por alguém que limpe os dados do navegador ou use outro aparelho/aba anônima.</li>
-       <li>A presença é marcada pelo próprio aluno, sem verificação de identidade — nada impede, tecnicamente, que uma pessoa marque a presença de outra.</li>
+       <li>A presença é marcada pelo próprio aluno, sem verificação de identidade. Tecnicamente, nada impede que uma pessoa marque a presença de outra (por exemplo, quem tem o código pode marcar um colega ausente).</li>
       </ul>
-      <p class="mt-2">Por isso: <strong>não cadastre alunos com dados sensíveis</strong> além do nome, e trate a chamada deste sistema como um apoio operacional, nunca como prova incontestável.</p>
+      <p class="mt-2">Por isso: <strong>não cadastre alunos com dados sensíveis</strong> além do nome, e trate a chamada deste sistema como um apoio operacional, nunca como prova incontestável. Sempre confira o número de presentes com quem está na sala e, em dia de prova, prefira o <strong>Modo professor</strong> (você marca cada aluno).</p>
      </div>
 
      <div>
@@ -1339,9 +1336,6 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       </div>
      </div>
     </div>
-    <label class="auto-end-option mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-slate-600">
-     <input id="code-display-auto-end" type="checkbox" class="h-4 w-4 accent-[#2B7A40]"> Encerrar o código sozinho quando todos marcarem
-    </label>
     <div class="mt-4 grid gap-2 sm:grid-cols-2">
      <button id="btn-code-display-chamada" class="action-button focus-ring rounded-xl px-4 py-3 bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold" type="button">Ver chamada</button>
      <button id="btn-close-code-display" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
@@ -4163,10 +4157,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-500";
         if (active) {
           const expira = codeExpiresAtMillis(turma);
-          const texto = document.createElement("span");
+          const texto = document.createElement("button");
+          texto.type = "button";
+          texto.className = "focus-ring inline-flex min-h-11 items-center rounded text-left underline decoration-dotted underline-offset-4 hover:decoration-solid sm:min-h-0";
+          texto.title = "Mostrar o código grande, com o QR";
+          texto.setAttribute("aria-label", `Mostrar o código de ${turma.nome || "a turma"} em tamanho grande, com o QR`);
           texto.dataset.expira = String(expira); // atualizado a cada 30s
           texto.dataset.codigo = codigoCartao;
           fillCardCodeText(texto);
+          texto.addEventListener("click", () => abrirCodigoGrande(turma));
           codeLine.appendChild(texto);
         } else {
           codeLine.textContent = `Código: ${codigoCartao} (expirou em ${formatDateTimeOfDay(codeExpiresAtMillis(turma))})`;
@@ -5903,14 +5902,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const active = isCodeActive(selectedTurmaData);
       if (isTeacherAuthenticated) acompanharSala(selectedTurmaData.id);
       const codigoBarra = codigoDe(selectedTurmaData);
-      document.getElementById("bar-auto-end-wrap").classList.toggle("hidden", !active);
-      document.getElementById("bar-auto-end").checked = readAutoEnd();
       const expira = codeExpiresAtMillis(selectedTurmaData);
       const acabando = active && codigoAcabando(expira - Date.now());
       teacherCodeBarText.textContent = active
         ? `${acabando ? "⚠ " : ""}${codigoBarra ? `Código ${codigoBarra}` : "Código ativo"} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
         : "Nenhum código ativo: os alunos não conseguem marcar presença.";
       teacherCodeBarText.classList.toggle("text-amber-700", acabando);
+      // código ativo: tocar abre o código grande (com o QR)
+      teacherCodeBarText.disabled = !active;
+      teacherCodeBarText.classList.toggle("underline", active);
+      teacherCodeBarText.classList.toggle("decoration-dotted", active);
+      teacherCodeBarText.classList.toggle("underline-offset-4", active);
+      teacherCodeBarText.title = active ? "Mostrar o código grande, com o QR" : "";
       // aviso uma vez por código, se ainda faltar gente
       if (acabando && alunos.some((a) => !getTodayRecord(a.nome))) {
         const chave = `${selectedTurmaData.id}|${codeDefinedAtMillis(selectedTurmaData)}`;
@@ -5929,42 +5932,28 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     // ---------------------------------------------------------------------
-    // Encerrar o código sozinho quando todos marcarem (opção do aparelho,
-    // vale para todas as turmas). Funciona enquanto o professor está com a
-    // Chamada ou a janela do código aberta.
+    // O código encerra sozinho quando todos marcarem (sempre). Funciona
+    // enquanto o professor está com a Chamada ou a janela do código aberta.
     // ---------------------------------------------------------------------
-    // (chave "chamada:encerrarQuandoTodos"; funções declaradas, pois a lista
-    // pode ser desenhada antes desta parte do script rodar)
-    function readAutoEnd() {
-      try { return localStorage.getItem("chamada:encerrarQuandoTodos") === "1"; } catch (error) { return false; }
-    }
-    function writeAutoEnd(value) {
-      try {
-        if (value) localStorage.setItem("chamada:encerrarQuandoTodos", "1");
-        else localStorage.removeItem("chamada:encerrarQuandoTodos");
-      } catch (error) { /* só conveniência */ }
-    }
     const autoEndedCodes = new Set(); // não encerra o mesmo código duas vezes
     async function autoEndCodeIfAllMarked(turma, total) {
-      if (!readAutoEnd() || !turma || !isCodeActive(turma)) return;
+      if (!turma || !isCodeActive(turma)) return;
       const chave = `${turma.id}|${codeDefinedAtMillis(turma)}`;
       if (autoEndedCodes.has(chave)) return;
       autoEndedCodes.add(chave);
       try {
         await fecharCodigoDaTurma(turma.id);
-        showToast("success", `Todos os ${total} alunos marcaram: código de "${turma.nome || "a turma"}" encerrado.`);
+        // (não cobre um aviso com "Desfazer", ex.: depois de "Marcar todos presentes")
+        if (!toastActionHandler) showToast("success", `Todos os ${total} alunos marcaram: código de "${turma.nome || "a turma"}" encerrado.`);
         if (codeDisplayTurmaId === turma.id) markCodeDisplayEnded(total);
       } catch (error) {
         autoEndedCodes.delete(chave);
       }
     }
-    document.getElementById("bar-auto-end").addEventListener("change", (event) => {
-      writeAutoEnd(event.target.checked);
-      renderTeacherCodeBar();
-    });
     setInterval(() => { if (!teacherCodeBar.classList.contains("hidden")) renderTeacherCodeBar(); }, 30000);
 
     btnBarEndCode.addEventListener("click", () => { if (selectedTurmaData) endCodeForTurma(selectedTurmaData); });
+    teacherCodeBarText.addEventListener("click", () => { if (selectedTurmaData) abrirCodigoGrande(selectedTurmaData); });
 
     // "Marcar todos presentes": para quando quase todos vieram. Pede um
     // segundo toque para confirmar e oferece "Desfazer" logo em seguida.
@@ -6497,9 +6486,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (!nomesAlunos || !presentesHoje || !nomesAlunos.length) return;
         const conhecidos = new Set(nomesAlunos.map(normalize));
         atualizarContadorCodigo([...presentesHoje].filter((n) => conhecidos.has(n)).length, conhecidos.size);
-        // encerrar sozinho: só com a opção ligada (na Chamada da mesma turma
-        // a própria lista já faz essa conta)
-        if (!readAutoEnd() || selectedTurmaId === turmaId) return;
+        // encerra sozinho quando todos marcarem (na Chamada da mesma turma a
+        // própria lista já faz essa conta)
+        if (selectedTurmaId === turmaId) return;
         const todos = nomesAlunos.every((nome) => presentesHoje.has(normalize(nome)));
         const turma = allTeacherTurmas.find((t) => t.id === turmaId);
         if (todos && turma) autoEndCodeIfAllMarked(turma, nomesAlunos.length);
@@ -6515,20 +6504,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         verificar();
       }, () => {}));
     }
-    document.getElementById("code-display-auto-end").addEventListener("change", (event) => {
-      writeAutoEnd(event.target.checked);
-      startCodeDisplayWatch(); // o contador continua; só muda o "encerrar sozinho"
-    });
 
-    function showCodeDisplay(turma, code, minutes) {
+    // (expiraEm: para reabrir um código já gerado; senão, agora + minutos)
+    function showCodeDisplay(turma, code, minutes, expiraEm = null) {
       hideToast(); // a própria janela já confirma o código gerado
       codeDisplayTurmaId = turma ? turma.id : null;
       codeDisplayEnded = false;
       codeDisplayValue.classList.remove("line-through", "opacity-40");
-      document.getElementById("code-display-auto-end").checked = readAutoEnd();
       codeDisplayTurma.textContent = (turma && turma.nome) || "";
       codeDisplayValue.textContent = code.length === 6 ? `${code.slice(0, 3)} ${code.slice(3)}` : code; // "482 193": mais fácil de ler no quadro
-      codeDisplayExpiresAt = Date.now() + minutes * 60 * 1000;
+      codeDisplayExpiresAt = expiraEm || Date.now() + minutes * 60 * 1000;
       updateCodeDisplayValidity();
       codeDisplayBackdrop.classList.remove("hidden");
       codeDisplayBackdrop.setAttribute("aria-hidden", "false");
@@ -6537,6 +6522,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLinkComCodigo(codeDisplayTurmaId, code), 3);
       document.body.style.overflow = "hidden";
       startCodeDisplayWatch();
+    }
+
+    // Tocar num código já gerado (cartão da turma ou barra da Chamada) abre a
+    // mesma janela de quando ele foi criado: código grande, QR com o código,
+    // validade e contador.
+    function abrirCodigoGrande(turma) {
+      if (!turma || !isCodeActive(turma)) return;
+      const codigo = codigoDe(turma);
+      if (!codigo) {
+        showToast("info", "Carregando o código… tente de novo em instantes.");
+        acompanharSala(turma.id);
+        return;
+      }
+      showCodeDisplay(turma, codigo, null, codeExpiresAtMillis(turma));
     }
 
     function closeCodeDisplay() {

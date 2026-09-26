@@ -51,7 +51,8 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **Ir para outra turma** direto da tela Chamada (seletor "Ir para"), sem voltar ao painel;
   - **marcações ainda não enviadas**: sem internet, a faixa laranja mostra quantas marcações esperam envio; sem "Manter conectado", o navegador pergunta antes de fechar a página enquanto houver alguma pendente;
   - **Chamada enxuta no celular** (só para o professor): sem o título grande, com a barra do código no topo e "Encerrar código" / "Copiar ausentes" lado a lado — no computador, nada muda;
-  - **encerrar o código sozinho quando todos marcarem** (opção na tela Chamada e na janela do código, lembrada no aparelho): funciona enquanto a Chamada ou a janela do código estiver aberta;
+  - **o código encerra sozinho quando todos marcarem** (sempre; não é mais uma opção): funciona enquanto a Chamada ou a janela do código estiver aberta;
+  - **tocar num código já gerado** (no cartão da turma ou na barra da Chamada) reabre a janela do código grande, com o QR (já com o código), a validade e o contador;
   - **Modo professor sem internet**: a presença aparece na hora, marcada "aguardando internet", e é enviada quando a conexão voltar. Com "Manter conectado" (celular pessoal), o banco guarda uma cópia no aparelho, então as marcações sobrevivem mesmo se o navegador fechar; "Sair" apaga essa cópia. Sem "Manter conectado" (aparelho compartilhado), nada fica gravado no aparelho e a página precisa ficar aberta até a internet voltar;
   - **compartilhar o link da turma** (Gerenciar e janela do código): abre o menu de compartilhar do celular (WhatsApp, e-mail…), onde o navegador oferece;
   - **cor da turma** (no Gerenciar): faixa colorida no cartão da turma, para o professor e para os alunos (campo `cor`, validado pelas regras);
