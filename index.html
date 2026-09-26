@@ -4,6 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Chamada</title>
+  <!-- Não abre dentro de página de outro site (proteção contra "clickjacking":
+       o GitHub Pages não deixa mandar o cabeçalho que bloqueia isso). Dentro
+       de uma página do próprio site continua funcionando. -->
+  <style id="anti-clickjack">body { display: none !important; }</style>
+  <script>
+    (function () {
+      var emMoldura = window.top !== window.self;
+      var mesmoSite = false;
+      try { mesmoSite = emMoldura && window.top.location.origin === window.location.origin; } catch (e) { /* outro site */ }
+      if (!emMoldura || mesmoSite) {
+        document.getElementById("anti-clickjack").remove();
+      } else {
+        try { window.top.location = window.location.href; } catch (e) { /* moldura bloqueada: a página fica em branco */ }
+      }
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- integrity: o navegador só roda o arquivo se ele for exatamente o da
        versão publicada (se o servidor do CDN for invadido, o script alterado
@@ -548,11 +564,11 @@
         </div>
         <div>
          <h3 class="font-bold text-base text-amber-950">Código do dia</h3>
-         <p class="mt-1 text-sm text-amber-900 leading-relaxed">Digite o código de 4 dígitos que o professor passou em sala.</p>
+         <p class="mt-1 text-sm text-amber-900 leading-relaxed">Digite o código de 6 dígitos que o professor passou em sala.</p>
         </div>
        </div>
        <div class="flex shrink-0 items-center gap-3">
-        <input id="student-daily-code" class="daily-code-input-field w-32 flex-1 sm:flex-none min-h-11 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" aria-label="Código do dia">
+        <input id="student-daily-code" class="daily-code-input-field w-36 flex-1 sm:flex-none min-h-11 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="off" aria-label="Código do dia">
         <button id="btn-verify-code" class="action-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 font-bold text-white shadow-sm hover:bg-amber-700" type="button"> <span>Validar</span> </button>
        </div>
       </div>
@@ -798,7 +814,7 @@
        <div class="rounded-2xl border border-slate-200 bg-white/70 p-4">
         <label class="mb-2 block text-sm font-semibold text-slate-700">Código do dia</label>
         <div class="flex flex-wrap items-center gap-2">
-         <input id="manage-code-input" class="teacher-code-input w-32" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••">
+         <input id="manage-code-input" class="teacher-code-input w-44" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••••" autocomplete="off">
          <button id="btn-save-code" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700" type="button">Salvar código</button>
         </div>
         <p class="mt-3 mb-1 text-xs font-semibold text-slate-500">Gerar código aleatório válido por:</p>
@@ -1265,7 +1281,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
    <section class="teacher-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="code-display-label">
     <p id="code-display-turma" class="text-sm font-semibold text-slate-500"></p>
     <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Código do dia</p>
-    <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(4rem, 24vw, 7.5rem); line-height: 1; letter-spacing: .12em;">—</p>
+    <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(3rem, 15vw, 6.5rem); line-height: 1; letter-spacing: .08em;">—</p>
     <p id="code-display-validity" class="mt-4 text-base font-semibold text-emerald-700"></p>
     <div class="mt-5 flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left">
      <button id="code-display-qr" class="focus-ring flex h-28 w-28 shrink-0 cursor-zoom-in items-center justify-center rounded-xl bg-white text-xs text-slate-500" type="button" aria-label="Ampliar o QR Code para projetar" title="Toque para ampliar">QR…</button>
@@ -1480,6 +1496,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     const TIME_ZONE = "America/Sao_Paulo";
+    // Código do dia: 6 dígitos (1 milhão de combinações), sorteados com o
+    // gerador criptográfico do navegador — difícil de adivinhar por tentativa.
+    const CODE_LENGTH = 6;
+    function gerarCodigoAleatorio() {
+      const max = 10 ** CODE_LENGTH;
+      const limite = Math.floor(0x100000000 / max) * max; // sem viés
+      const buf = new Uint32Array(1);
+      do { crypto.getRandomValues(buf); } while (buf[0] >= limite);
+      return String(buf[0] % max).padStart(CODE_LENGTH, "0");
+    }
     const DEFAULT_CODE_DURATION_MIN = 180; // turmas antigas, sem codigoDuracaoMin salvo, continuam valendo 3h
     const PRESENCA_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // presenças são apagadas automaticamente após 7 dias
     const ATRASO_RETENTION_MS = 180 * 24 * 60 * 60 * 1000; // fotos de atraso são apagadas automaticamente após 180 dias
@@ -2057,6 +2083,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const dataLimite = getLocalParts(new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)).isoDate;
         for (const turmaDoc of turmasSnap.docs) {
           await cleanupExpiredAtrasos(turmaDoc.id);
+          await cleanupCodigoVencido({ id: turmaDoc.id, ...turmaDoc.data() });
           const presencasCol = collection(db, "turmas", turmaDoc.id, "presencas");
           const [expiredSnap, antigasSnap] = await Promise.all([
             getDocs(query(presencasCol, where("expiraEm", "<=", now))),
@@ -2088,6 +2115,24 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         // limpeza é só uma conveniência de retenção; se falhar (ex: sem
         // permissão numa turma, ou instabilidade de rede), não deve travar
         // o uso normal do professor.
+      }
+    }
+
+    // Código vencido há mais de 12h (e não encerrado): apaga a lista de nomes
+    // que ia junto com ele (não serve mais para nada) e marca a turma como
+    // sem código. Nas últimas 12h ela fica, para o cartão mostrar
+    // "Código X (expirou às ...)".
+    async function cleanupCodigoVencido(turma) {
+      try {
+        if (!codeDefinedAtMillis(turma) || isCodeActive(turma)) return;
+        if (Date.now() - codeExpiresAtMillis(turma) < 12 * 60 * 60 * 1000) return;
+        const salasSnap = await getDocs(collection(db, "turmas", turma.id, "salas"));
+        const batch = writeBatch(db);
+        salasSnap.docs.forEach((d) => batch.delete(d.ref));
+        batch.update(doc(db, "turmas", turma.id), { codigoDefinidoEm: null });
+        await batch.commit();
+      } catch (error) {
+        // conveniência de retenção: uma falha aqui não deve travar o professor
       }
     }
 
@@ -2282,7 +2327,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         updateDailyCodeStatusUI();
         renderAttendance();
         // Código digitado antes de os dados da turma chegarem: confere agora
-        if (primeiraLeitura && !isDailyCodeVerified && !isTeacherModeActive && studentDailyCodeInput.value.length === 4) {
+        if (primeiraLeitura && !isDailyCodeVerified && !isTeacherModeActive && studentDailyCodeInput.value.length === CODE_LENGTH) {
           verifyDailyCode(true);
         }
         primeiraLeitura = false;
@@ -2559,21 +2604,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const lista = nomesParaSala(nomes);
       if (JSON.stringify(lista) === JSON.stringify(entry.nomes)) return;
       entry.nomes = lista;
-      updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { nomes: lista }).catch(() => {});
+      const naLista = new Set(lista);
+      entry.marcados = (entry.marcados || []).filter((nome) => naLista.has(nome));
+      updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { nomes: lista, marcados: entry.marcados }).catch(() => {});
     }
     // Quem já está presente hoje SEM o código atual (ex.: o professor marcou
     // antes de gerar o código): vai na sala, para o aluno ver como marcado.
     // (As presenças com o código atual o aluno já consegue ler.)
-    function marcadosSemCodigo(records, codigo) {
+    function marcadosSemCodigo(records, codigo, nomesDaSala) {
       const hoje = getLocalParts().isoDate;
-      return nomesParaSala(records.filter((r) => r.data === hoje && r.codigoUsado !== codigo).map((r) => r.nome));
+      const naLista = new Set(nomesDaSala); // as regras só aceitam nomes que estão na lista da sala
+      return nomesParaSala(records.filter((r) => r.data === hoje && r.codigoUsado !== codigo).map((r) => r.nome))
+        .filter((nome) => naLista.has(nome));
     }
     function sincronizarMarcadosDaSala(turma, records) {
       if (!turma || !isCodeActive(turma)) return;
       const codigo = codigoDe(turma);
       if (!codigo) return;
       const entry = salasProfessor.get(turma.id);
-      const lista = marcadosSemCodigo(records, codigo);
+      const lista = marcadosSemCodigo(records, codigo, entry.nomes || []);
       if (JSON.stringify(lista) === JSON.stringify(entry.marcados || [])) return;
       entry.marcados = lista;
       updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { marcados: lista }).catch(() => {});
@@ -2618,9 +2667,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         codigoDuracaoMin: minutes
       });
       salasSnap.docs.forEach((d) => { if (d.id !== code) batch.delete(d.ref); });
+      const nomesDaSala = nomesParaSala(alunosSnap.docs.map((d) => d.data().nome));
       batch.set(doc(db, "turmas", turmaId, "salas", code), {
-        nomes: nomesParaSala(alunosSnap.docs.map((d) => d.data().nome)),
-        marcados: marcadosSemCodigo(hojeSnap.docs.map((d) => d.data()), code),
+        nomes: nomesDaSala,
+        marcados: marcadosSemCodigo(hojeSnap.docs.map((d) => d.data()), code, nomesDaSala),
         definidoEm: serverTimestamp()
       });
       await batch.commit();
@@ -2740,7 +2790,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (showMessages) showMessage("error", "Código do Dia incorreto. Peça ao professor o código correto escrito no quadro.");
         return false;
       };
-      if (!/^\d{4}$/.test(code)) return incorreto();
+      // 6 dígitos (códigos de 4, gerados antes desta versão, ainda valem pelo botão "Validar")
+      if (!/^\d{4,6}$/.test(code)) return incorreto();
 
       const turmaId = selectedTurmaId;
       const token = ++verificacaoAtual;
@@ -2812,8 +2863,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     btnVerifyCode.addEventListener("click", () => verifyDailyCode(true));
 
     studentDailyCodeInput.addEventListener("input", () => {
-      studentDailyCodeInput.value = studentDailyCodeInput.value.replace(/\D/g, "").slice(0, 4);
-      if (studentDailyCodeInput.value.length === 4) verifyDailyCode(true);
+      studentDailyCodeInput.value = studentDailyCodeInput.value.replace(/\D/g, "").slice(0, CODE_LENGTH);
+      if (studentDailyCodeInput.value.length === CODE_LENGTH) verifyDailyCode(true);
     });
 
     // ---------------------------------------------------------------------
@@ -5004,20 +5055,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     btnsGenerateCodeDuration.forEach((btn) => {
       btn.addEventListener("click", async () => {
         const minutes = Number(btn.dataset.minutes);
-        const code = String(Math.floor(1000 + Math.random() * 9000));
+        const code = gerarCodigoAleatorio();
         manageCodeInput.value = code;
         await saveTurmaCode(code, minutes);
       });
     });
 
     manageCodeInput.addEventListener("input", () => {
-      manageCodeInput.value = manageCodeInput.value.replace(/\D/g, "").slice(0, 4);
+      manageCodeInput.value = manageCodeInput.value.replace(/\D/g, "").slice(0, CODE_LENGTH);
     });
 
     btnSaveCode.addEventListener("click", async () => {
       const code = manageCodeInput.value.trim();
-      if (!/^\d{4}$/.test(code)) {
-        manageCodeStatus.textContent = "Digite um código de 4 dígitos.";
+      if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code)) {
+        manageCodeStatus.textContent = `Digite um código de ${CODE_LENGTH} dígitos.`;
         manageCodeStatus.className = "mt-1 text-xs text-red-600 font-semibold";
         return;
       }
@@ -5629,7 +5680,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Código do dia: gerar, encerrar e barra do professor na chamada
     // ---------------------------------------------------------------------
     async function generateCodeForTurma(turma, minutes) {
-      const code = String(Math.floor(1000 + Math.random() * 9000));
+      const code = gerarCodigoAleatorio();
       try {
         await abrirCodigoDaTurma(turma.id, code, minutes);
         showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
@@ -5964,7 +6015,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     function turmaIdFromHash() {
       const match = /^#turma=(.+)$/.exec(location.hash);
-      return match ? decodeURIComponent(match[1]) : null;
+      if (!match) return null;
+      try {
+        const id = decodeURIComponent(match[1]);
+        return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null; // IDs de turma: letras, números, - e _
+      } catch (error) {
+        return null; // link malformado (ex.: "%" solto): mostra a lista de turmas
+      }
     }
 
     function setTurmaHash(turmaId) {
@@ -6222,7 +6279,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codeDisplayValue.classList.remove("line-through", "opacity-40");
       document.getElementById("code-display-auto-end").checked = readAutoEnd();
       codeDisplayTurma.textContent = (turma && turma.nome) || "";
-      codeDisplayValue.textContent = code;
+      codeDisplayValue.textContent = code.length === 6 ? `${code.slice(0, 3)} ${code.slice(3)}` : code; // "482 193": mais fácil de ler no quadro
       codeDisplayExpiresAt = Date.now() + minutes * 60 * 1000;
       updateCodeDisplayValidity();
       codeDisplayBackdrop.classList.remove("hidden");

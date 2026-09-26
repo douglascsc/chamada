@@ -12,12 +12,13 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
 2. [Arquitetura e decisões técnicas](#arquitetura-e-decisões-técnicas)
 3. [Segurança e controle de acesso](#segurança-e-controle-de-acesso)
 4. [Privacidade e LGPD](#privacidade-e-lgpd)
-5. [Limitações conhecidas](#limitações-conhecidas)
-6. [Instalação e configuração](#instalação-e-configuração)
-7. [Modelo de dados](#modelo-de-dados)
-8. [Testes recomendados](#testes-recomendados)
-9. [Problemas comuns](#problemas-comuns)
-10. [Créditos](#créditos)
+5. [Riscos aceitos](#riscos-aceitos)
+6. [Limitações conhecidas](#limitações-conhecidas)
+7. [Instalação e configuração](#instalação-e-configuração)
+8. [Modelo de dados](#modelo-de-dados)
+9. [Testes recomendados](#testes-recomendados)
+10. [Problemas comuns](#problemas-comuns)
+11. [Créditos](#créditos)
 
 ## Funcionalidades
 
@@ -117,7 +118,8 @@ O código do dia deve ser entendido como uma **credencial compartilhada da turma
 - **Registro repetido** (ex.: professor e aluno marcaram o mesmo nome): conta uma vez só em todo lugar, e vale o **horário mais cedo** (o atraso fica certo). "Desfazer" apaga todos os registros daquele aluno no dia.
 - **Aluno incluído com o código ativo**: ao incluir/renomear/remover um aluno pelo site (Gerenciar, Chamada ou com a janela do código aberta), a lista de nomes da sala é atualizada na hora. Se isso não acontecer (ex.: alteração feita direto no Firebase Console), é só gerar o código de novo.
 - Turmas antigas, que tinham o código gravado na própria turma (`codigoDoDia`), perdem esse campo quando o dono (ou a conta master) entra na Área do professor, e ficam sem código ativo até um novo ser gerado. As regras não aceitam mais gravar um código na turma.
-- O código continua tendo 4 dígitos: alguém muito insistente poderia tentar adivinhá-lo por tentativa e erro (até 10 mil tentativas) durante o prazo de validade. O App Check (ver instalação) dificulta esse tipo de abuso.
+- O código tem **6 dígitos** (1 milhão de combinações), sorteados com o gerador criptográfico do navegador (`crypto.getRandomValues`), e vale no máximo 4 horas (as regras não aceitam mais que isso, nem um horário de início "adiantado": ele é sempre a hora do servidor). Adivinhar por tentativa e erro dentro do prazo fica muito mais difícil do que com 4 dígitos (10 mil). Códigos de 4 dígitos gerados antes dessa mudança continuam valendo até vencer (o aluno toca em "Validar").
+- Um código vencido há mais de 12 horas (e não encerrado) tem a lista de nomes apagada na limpeza feita ao entrar na Área do professor.
 - **O que isso não garante**: qualquer pessoa que saiba o código — por tê-lo recebido de outro aluno, por exemplo — consegue ler os dados da turma dentro do prazo de validade, mesmo sem estar fisicamente na sala. O código autentica "conhecer o código daquela turma", não "estar presente".
 
 ### Identificador do aparelho
@@ -200,6 +202,18 @@ Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteç
 
 **Este texto não constitui parecer jurídico** nem certificação de conformidade com a LGPD. É uma descrição técnica honesta do que o sistema efetivamente faz com os dados, para que quem for utilizá-lo possa avaliar se atende às próprias obrigações legais e institucionais, e tomar as providências adicionais que considerar necessárias — por exemplo, um termo próprio para os alunos, ou consulta ao setor responsável por proteção de dados da instituição.
 
+## Riscos aceitos
+
+Riscos conhecidos que foram avaliados e **aceitos conscientemente** (a correção completa exigiria login de aluno ou App Check, que foram descartados pelos riscos que trariam ao uso em sala):
+
+- **Quem tem o código pode marcar colegas ausentes.** Sem login de aluno, o servidor não sabe *quem* está marcando: com o código em mãos, um aluno consegue marcar outro nome da lista usando uma aba anônima (cada aba conta como um aparelho novo) ou, com um script, marcar a turma inteira. O servidor garante só que o nome está na lista da turma, que é hoje, que o código é o atual e que a hora é a do servidor.
+- **A cota gratuita de leituras pode ser esgotada de propósito.** A lista de turmas é pública (a tela inicial precisa dela); um script que a lê sem parar pode gastar as 50 mil leituras/dia do plano Spark e deixar o site fora do ar até a cota zerar (por volta das 4h). O App Check reduziria isso, mas foi descartado: nos testes, quando o reCAPTCHA não carregava direito, o site travava para o aluno.
+
+**Recomendações ao professor** (por causa desses riscos):
+- **Em dia de prova** (ou quando a presença tiver peso), use o **Modo professor**: você marca cada aluno, sem código.
+- **Sempre confira o número de presentes** ("Presentes N/M" na Chamada) com o número de alunos que você vê na sala. Se houver mais presenças do que pessoas, alguém marcou por outro.
+- A chamada oficial continua sendo a do SUAP, validada pelo professor.
+
 ## Limitações conhecidas
 
 Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma delas é escondida ou "compensada" pela interface:
@@ -210,7 +224,8 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 - A retenção de 7 dias das presenças e a de 180 dias das fotos de atrasos dependem de algum professor acessar a Área do professor — não é um processo contínuo em segundo plano — ver **[Retenção de dados](#retenção-de-dados)**.
 - As fotos de atrasos ocupam a mesma cota de armazenamento gratuita do Firestore usada pelo restante do sistema — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - Não há backend próprio: a criação de contas de professor é feita direto do navegador, e a remoção de contas ainda depende do Firebase Console — ver **[Criação de novos professores](#criação-de-novos-professores)**.
-- A conta master é identificada por e-mail, não por UID ou Custom Claims — ver **[Conta master](#conta-master)**.
+- A conta master é identificada pelo UID nas regras (a tela usa o e-mail só para decidir o que mostrar) — ver **[Conta master](#conta-master)**.
+- O site não abre dentro de página de outro endereço (fica em branco, proteção contra "clickjacking"); dentro de página do próprio site continua funcionando.
 - O `firebaseConfig` é público por design do Firebase, mas isso não implica que o projeto esteja automaticamente seguro — a segurança depende das regras do Firestore e da Authentication.
 - O canal de contato para o aluno pedir acesso/correção/exclusão dos dados é um link de e-mail para o professor — não é um processo institucional automatizado, nem garante prazo de resposta; depende do professor ler e agir manualmente.
 - Este README não constitui parecer jurídico de conformidade com a LGPD.
@@ -306,7 +321,8 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                 // o código do dia não pode mais ficar na turma (só vazio/removido)
                 && (!('codigoDoDia' in d) || d.codigoDoDia == '' || d.codigoDoDia == codigoAntes)
                 && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
-                && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
+                // código vale no máximo 4 horas
+                && (!('codigoDuracaoMin' in d) || (d.codigoDuracaoMin is int && d.codigoDuracaoMin > 0 && d.codigoDuracaoMin <= 240))
                 && (!('arquivada' in d) || d.arquivada is bool)
                 && (!('cor' in d) || corValida(d.cor));
        }
@@ -319,6 +335,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                        && request.resource.data.professorUid == request.auth.uid
                        && professorAutorizado()
+                       && (request.resource.data.get('codigoDefinidoEm', null) == null || request.resource.data.codigoDefinidoEm == request.time)
                        && turmaValida(request.resource.data, '');
          allow update: if request.auth != null
                        && (isMaster() || resource.data.professorUid == request.auth.uid)
@@ -328,6 +345,10 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
                        // e-mail do professor (turmas antigas): só pode ser removido
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
+                       // gerar código: o horário é o do servidor (não dá para "adiantar" o prazo)
+                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDefinidoEm'])
+                           || request.resource.data.codigoDefinidoEm == null
+                           || request.resource.data.codigoDefinidoEm == request.time)
                        && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
          allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
@@ -342,9 +363,13 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                                  && request.resource.data.keys().hasOnly(['nomes', 'definidoEm', 'marcados'])
                                  && request.resource.data.nomes is list
                                  && request.resource.data.nomes.size() <= 500
-                                 // quem o professor já marcou hoje sem o código (o aluno vê como marcado)
+                                 // nomes com até ~120 caracteres cada (tamanho total limitado)
+                                 && request.resource.data.nomes.join('|').size() <= 500 * 121
+                                 // quem o professor já marcou hoje sem o código (o aluno vê como
+                                 // marcado): só nomes que estão na lista da sala
                                  && (!('marcados' in request.resource.data)
-                                     || (request.resource.data.marcados is list && request.resource.data.marcados.size() <= 500))
+                                     || (request.resource.data.marcados is list
+                                         && request.resource.data.nomes.hasAll(request.resource.data.marcados)))
                                  && request.resource.data.definidoEm is timestamp;
          }
 
@@ -418,7 +443,16 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 
        match /acordosProfessor/{uid} {
          allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
-         allow write: if request.auth != null && request.auth.uid == uid;
+         // só os campos usados pelo site, com tamanho limitado
+         allow create: if request.auth != null && request.auth.uid == uid
+                       && request.resource.data.keys().hasOnly(['avisosAceitosEm', 'email', 'nome', 'ultimoAcesso'])
+                       && textoAte(request.resource.data.get('email', ''), 200)
+                       && textoAte(request.resource.data.get('nome', ''), 120);
+         allow update: if request.auth != null && request.auth.uid == uid
+                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avisosAceitosEm', 'email', 'nome', 'ultimoAcesso'])
+                       && textoAte(request.resource.data.get('email', ''), 200)
+                       && textoAte(request.resource.data.get('nome', ''), 120);
+         allow delete: if request.auth != null && request.auth.uid == uid;
          // a conta master apaga o registro ao remover um professor do sistema
          allow delete: if isMaster();
        }
