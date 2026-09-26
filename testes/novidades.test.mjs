@@ -182,8 +182,8 @@ check("Nenhum erro de JavaScript (professora)", page.errs.length === 0, page.err
 await page.click("#btn-sign-out"); await page.waitForTimeout(600);
 page = await open(ctx, APP + "#professor");
 await page.waitForSelector("#teacher-gate-modal-backdrop:not(.hidden)");
-check("Login seguinte no mesmo aparelho: vem o último e-mail usado", (await page.inputValue("#teacher-gate-email")) === "prof.ana@ifsul.edu.br");
-check("… e o cursor já vai para a senha", await page.evaluate(() => document.activeElement && document.activeElement.id === "teacher-gate-password"));
+check("Login seguinte no mesmo aparelho: e-mail NÃO vem preenchido (não fica guardado)", (await page.inputValue("#teacher-gate-email")) === "");
+check("… e o cursor vai para o e-mail", await page.evaluate(() => document.activeElement && document.activeElement.id === "teacher-gate-email"));
 await ctx.close();
 
 // ===== Professor com poucas turmas: sem busca/estrela =====
