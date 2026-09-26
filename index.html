@@ -660,7 +660,7 @@
        <div id="teacher-code-bar-buttons" class="flex flex-wrap gap-2">
         <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código</button>
         <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button" aria-label="Gerar código 30 min">Gerar cód. 30 min</button>
-        <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
+        <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ocorrências</button>
         <button id="btn-bar-all-present" class="hidden action-button focus-ring col-span-2 rounded-lg px-3 py-2 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32] border border-[#CFE6C8]" type="button">Marcar todos presentes</button>
        </div>
       </div>
@@ -798,7 +798,7 @@
          <div class="flex flex-wrap items-center justify-between gap-2">
           <h5 id="history-day-title" class="font-bold text-[var(--ink)]"></h5>
           <div class="flex flex-wrap gap-2">
-           <button id="btn-copy-history-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar ausentes</button>
+           <button id="btn-copy-history-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar ocorrências</button>
            <button id="btn-export-history-csv" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Exportar Excel</button>
           </div>
          </div>
@@ -1171,7 +1171,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <div class="row-actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
      <button class="mark-button action-button focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2.5 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold sm:px-4" type="button"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span class="max-sm:hidden">Marcar presença</span><span class="sm:hidden">Marcar</span> </button>
      <div class="present-actions hidden items-center gap-2">
-      <span class="present-pill inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 bg-lime-100 text-lime-900 max-sm:hidden"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Presente</span> </span> <button class="undo-button action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button"> <i data-lucide="undo-2" aria-hidden="true" class="h-4 w-4"></i> <span>Desfazer</span> </button>
+      <span class="present-pill inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 bg-lime-100 text-lime-900 max-sm:hidden"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Presente</span> </span> <button class="exit-button hidden action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-amber-50 text-amber-800 border border-amber-200" type="button"> <i data-lucide="log-out" aria-hidden="true" class="h-4 w-4"></i> <span class="exit-label">Saiu antes</span> </button> <button class="undo-button action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button"> <i data-lucide="undo-2" aria-hidden="true" class="h-4 w-4"></i> <span>Desfazer</span> </button>
      </div>
      <div class="identity-actions hidden flex-wrap items-center gap-2">
       <span class="text-sm text-slate-600">Confirmar presença de</span> <strong class="identity-name text-sm"></strong> <button class="confirm-attendance action-button focus-ring rounded-lg px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm" type="button">Sim, sou eu</button> <button class="cancel-attendance action-button focus-ring rounded-lg px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm" type="button">Cancelar</button>
@@ -3015,6 +3015,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       return span;
     }
 
+    // Saída antecipada (só o professor marca, com a hora da saída). Fica em
+    // todos os registros do aluno no dia; vale a mais cedo.
+    function saidaDoAluno(records, nome) {
+      const alvo = normalize(nome);
+      let menor = null;
+      records.forEach((r) => {
+        const ts = r.saidaEm;
+        if (normalize(r.nome) === alvo && ts && typeof ts.toMillis === "function") {
+          menor = menor === null ? ts.toMillis() : Math.min(menor, ts.toMillis());
+        }
+      });
+      return menor === null ? "" : formatTimeOfDay(menor);
+    }
+
     function getTodayRecord(name) {
       const today = getLocalParts().isoDate;
       const alvo = normalize(name);
@@ -3070,10 +3084,20 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const canUndo = isTeacherModeActive || isTeacherAuthenticated;
       const statusLabel = row.querySelector(".present-status-label");
       const atrasado = isTeacherModeActive && isAtrasado(record, chamadaInicio);
+      const visaoProfessor = isTeacherModeActive || attendanceMode === "professor";
+      const saida = visaoProfessor && record ? saidaDoAluno(presencas.filter((r) => r.data === getLocalParts().isoDate), name) : "";
       statusLabel.textContent = (record && horarioDe(record) ? `Presente · ${horarioDe(record)}` : "Presente")
         + (atrasado ? " · atrasado" : "")
+        + (saida ? ` · saiu às ${saida}` : "")
         + (record && record.pendente && navigator.onLine === false ? " · aguardando internet" : "");
-      statusLabel.classList.toggle("is-late", atrasado);
+      statusLabel.classList.toggle("is-late", atrasado || Boolean(saida));
+      // professor: "Saiu antes" (ou desfazer a saída)
+      const exitButton = row.querySelector(".exit-button");
+      exitButton.classList.toggle("hidden", !(isPresent && visaoProfessor && record && !record.jaMarcadoPeloProfessor));
+      exitButton.classList.toggle("inline-flex", isPresent && visaoProfessor);
+      row.querySelector(".exit-label").textContent = saida ? "Desfazer saída" : "Saiu antes";
+      exitButton.setAttribute("aria-label", saida ? `Desfazer a saída antecipada de ${name}` : `Registrar saída antecipada de ${name}`);
+      exitButton.disabled = Boolean(busyName);
       // professor: ícone de quem marcou (celular do aluno ou professor)
       const statusBox = statusLabel.parentElement;
       statusBox.querySelectorAll(".origem-presenca").forEach((el) => el.remove());
@@ -3166,8 +3190,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       studentCount.textContent = String(rows.length);
       const atrasados = isTeacherModeActive ? rows.filter((row) => isAtrasado(getTodayRecord(row.dataset.studentName), chamadaInicio)).length : 0;
       const lateCount = document.getElementById("late-count");
-      lateCount.textContent = atrasados ? `· ${atrasados} ${atrasados === 1 ? "atrasado" : "atrasados"}` : "";
-      lateCount.classList.toggle("hidden", !atrasados);
+      const saidas = isTeacherModeActive ? rows.filter((row) => getTodayRecord(row.dataset.studentName) && saidaDoAluno(presencas.filter((r) => r.data === hojeIso), row.dataset.studentName)).length : 0;
+      lateCount.textContent = [
+        atrasados ? `${atrasados} ${atrasados === 1 ? "atrasado" : "atrasados"}` : "",
+        saidas ? `${saidas} ${saidas === 1 ? "saída antecipada" : "saídas antecipadas"}` : ""
+      ].filter(Boolean).map((t) => `· ${t}`).join(" ");
+      lateCount.classList.toggle("hidden", !atrasados && !saidas);
       renderTeacherCodeBar();
       renderStudentDone();
       progressFill.style.width = `${rows.length ? (totalPresent / rows.length) * 100 : 0}%`;
@@ -3431,6 +3459,22 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       showToast("info", `Presença de ${name} desfeita.`);
     }
 
+    // "Saiu antes": grava a hora da saída em todos os registros do aluno
+    // hoje (ou desfaz). Não pede senha: é do Modo professor, como marcar.
+    function toggleSaidaAntecipada(row) {
+      const name = row.dataset.studentName;
+      if (!selectedTurmaId || !(isTeacherModeActive || attendanceMode === "professor")) return;
+      const hoje = getLocalParts().isoDate;
+      const registros = presencas.filter((r) => r.id && r.data === hoje && normalize(r.nome) === normalize(name));
+      if (!registros.length) return;
+      const jaSaiu = Boolean(saidaDoAluno(registros, name));
+      const agora = Timestamp.now(); // hora do toque (funciona sem internet)
+      const batch = writeBatch(db);
+      registros.forEach((r) => batch.update(doc(db, "turmas", selectedTurmaId, "presencas", r.id), { saidaEm: jaSaiu ? deleteField() : agora }));
+      trackWrite(batch.commit(), registros.length).catch(() => showToast("error", "Não foi possível registrar a saída. Tente novamente."));
+      showToast("info", jaSaiu ? `Saída antecipada de ${name} desfeita.` : `${name}: saída antecipada às ${formatTimeOfDay(agora.toMillis())}.`);
+    }
+
     async function undoAttendance(row) {
       const name = row.dataset.studentName;
       const record = getTodayRecord(name);
@@ -3468,6 +3512,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         row.querySelector(".mark-button").addEventListener("click", () => (isTeacherModeActive ? markAttendance(row) : openIdentityConfirmation(row)));
         row.querySelector(".cancel-attendance").addEventListener("click", () => closeIdentityConfirmation(row));
         row.querySelector(".confirm-attendance").addEventListener("click", () => markAttendance(row));
+        row.querySelector(".exit-button").addEventListener("click", () => toggleSaidaAntecipada(row));
         row.querySelector(".undo-button").addEventListener("click", async () => {
           // Sempre exige a senha do professor de novo para desfazer, mesmo
           // com o Modo professor ativo — evita que outro aluno no mesmo
@@ -4737,8 +4782,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       const inicio = inicioDaChamada(dayRecords);
       const atrasadosDia = dayRecords.filter((r) => isAtrasado(r, inicio)).length;
+      const saidasDia = [...recordByAluno.keys()].filter((k) => saidaDoAluno(dayRecords, recordByAluno.get(k).nome)).length;
+      const extras = [
+        atrasadosDia ? `${atrasadosDia} ${atrasadosDia === 1 ? "atrasado" : "atrasados"}` : "",
+        saidasDia ? `${saidasDia} ${saidasDia === 1 ? "saída antecipada" : "saídas antecipadas"}` : ""
+      ].filter(Boolean).join(", ");
       historyDayTitle.textContent = `${formatDisplayDate(isoDate)} — ${dayRecords.length} presente(s) de ${roster.length}`
-        + (atrasadosDia ? ` (${atrasadosDia} ${atrasadosDia === 1 ? "atrasado" : "atrasados"})` : "");
+        + (extras ? ` (${extras})` : "");
       // Quando esse dia será apagado (retenção de 7 dias das presenças)
       const expiraMillis = Math.max(0, ...dayRecords.map((r) => (r.expiraEm && r.expiraEm.toMillis ? r.expiraEm.toMillis() : 0)));
       if (expiraMillis) {
@@ -4757,8 +4807,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         name.textContent = aluno.nome;
         const status = document.createElement("span");
         const atrasado = isAtrasado(record, inicio);
-        status.className = `shrink-0 font-semibold ${record ? (atrasado ? "text-amber-700" : "text-slate-500") : "text-red-600"}`;
-        status.textContent = record ? `${horarioDe(record)}${atrasado ? " · atrasado" : ""}` : "Ausente";
+        const saida = record ? saidaDoAluno(dayRecords, aluno.nome) : "";
+        status.className = `shrink-0 font-semibold ${record ? (atrasado || saida ? "text-amber-700" : "text-slate-500") : "text-red-600"}`;
+        status.textContent = record ? `${horarioDe(record)}${atrasado ? " · atrasado" : ""}${saida ? ` · saiu às ${saida}` : ""}` : "Ausente";
         const right = document.createElement("div");
         right.className = "flex shrink-0 items-center gap-2";
         right.appendChild(status);
@@ -4791,7 +4842,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const displayDate = formatDisplayDate(historySelectedDate);
       const inicio = inicioDaChamada(dayRecords);
 
-      const header = ["Turma", "Aluno", "Status", "Horário", "Data"];
+      const header = ["Turma", "Aluno", "Status", "Horário", "Saída antecipada", "Data"];
       const rows = teacherManagingAlunos
         .slice()
         .sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"))
@@ -4802,11 +4853,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
             aluno.nome,
             record ? (isAtrasado(record, inicio) ? "Atrasado" : "Presente") : "Ausente",
             record ? horarioDe(record) : "",
+            record ? saidaDoAluno(dayRecords, aluno.nome) : "",
             displayDate
           ];
         });
       const safeName = normalize(teacherManagingTurmaData.nome || "turma").replace(/\s+/g, "-");
-      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 14], `chamada-${safeName}-${historySelectedDate}.xlsx`);
+      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 16, 14], `chamada-${safeName}-${historySelectedDate}.xlsx`);
     });
 
     btnManageBack.addEventListener("click", goBackTeacher);
@@ -5361,8 +5413,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
 
       const today = getLocalParts();
-      const header = ["Turma", "Aluno", "Status", "Horário", "Data"];
-      const inicio = inicioDaChamada(presencas.filter((r) => r.data === today.isoDate));
+      const header = ["Turma", "Aluno", "Status", "Horário", "Saída antecipada", "Data"];
+      const hojeRegs = presencas.filter((r) => r.data === today.isoDate);
+      const inicio = inicioDaChamada(hojeRegs);
       const rows = alunos.map((aluno) => {
         const record = getTodayRecord(aluno.nome);
         return [
@@ -5370,12 +5423,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           aluno.nome,
           record ? (isAtrasado(record, inicio) ? "Atrasado" : "Presente") : "Ausente",
           record ? horarioDe(record) : "",
+          record ? saidaDoAluno(hojeRegs, aluno.nome) : "",
           today.displayDate
         ];
       });
 
       const safeName = normalize(selectedTurmaData.nome || "turma").replace(/\s+/g, "-");
-      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 14], `chamada-${safeName}-${today.isoDate}.xlsx`);
+      await downloadAttendanceXlsx(header, rows, [30, 30, 12, 12, 16, 14], `chamada-${safeName}-${today.isoDate}.xlsx`);
     }
 
     btnExportCsv.addEventListener("click", exportAttendanceCsv);
@@ -5926,7 +5980,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnBarEndCode.classList.toggle("hidden", !active);
       btnBarNewCode.classList.toggle("hidden", active);
       const ausentes = alunos.filter((a) => !getTodayRecord(a.nome)).length;
-      btnBarCopyAbsent.textContent = `Copiar ausentes (${ausentes})`;
+      btnBarCopyAbsent.textContent = `Copiar ocorrências (${ocorrenciasDoDia(alunos.map((a) => a.nome), presencas.filter((r) => r.data === getLocalParts().isoDate)).length})`;
       btnBarAllPresent.classList.toggle("hidden", ausentes === 0);
       if (!allPresentArmed) btnBarAllPresent.textContent = `Marcar todos presentes (${ausentes})`;
       if (active && alunos.length && ausentes === 0) autoEndCodeIfAllMarked(selectedTurmaData, alunos.length);
@@ -6004,7 +6058,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     btnBarNewCode.addEventListener("click", () => { if (selectedTurmaData) generateCodeForTurma(selectedTurmaData, 30); });
 
     // ---------------------------------------------------------------------
-    // Copiar ausentes (para lançar no SUAP)
+    // Copiar ocorrências: ausentes, atrasados e saídas antecipadas (SUAP)
     // ---------------------------------------------------------------------
     async function copyText(text) {
       try {
@@ -6024,27 +6078,43 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
-    async function copyAbsentList(turmaNome, displayDate, nomesAusentes, total) {
-      if (!nomesAusentes.length) {
-        showToast("info", "Ninguém ausente: todos marcaram presença.");
+    // Ocorrências do dia (para lançar no SUAP), em ordem alfabética:
+    // "Arthur - Ausente", "Bernardo - Atrasado 09:30",
+    // "Carlos - Saída antecipada 10:15" (ou as duas coisas juntas).
+    function ocorrenciasDoDia(nomes, registrosDoDia) {
+      const porAluno = presencaPorAluno(registrosDoDia);
+      const inicio = inicioDaChamada(registrosDoDia);
+      return nomes.slice().sort((a, b) => a.localeCompare(b, "pt-BR")).map((nome) => {
+        const r = porAluno.get(normalize(nome));
+        if (!r) return `${nome} - Ausente`;
+        const partes = [];
+        if (isAtrasado(r, inicio)) partes.push(`Atrasado ${horarioDe(r)}`);
+        const saida = saidaDoAluno(registrosDoDia, nome);
+        if (saida) partes.push(`Saída antecipada ${saida}`);
+        return partes.length ? `${nome} - ${partes.join(", ")}` : null;
+      }).filter(Boolean);
+    }
+
+    async function copiarOcorrencias(turmaNome, displayDate, nomes, registrosDoDia) {
+      const linhas = ocorrenciasDoDia(nomes, registrosDoDia);
+      if (!linhas.length) {
+        showToast("info", "Nenhuma ocorrência: todos presentes, sem atrasos nem saídas antecipadas.");
         return;
       }
-      const text = [`Ausentes — ${turmaNome} — ${displayDate} (${nomesAusentes.length} de ${total})`, ...nomesAusentes].join("\n");
+      const text = [`Ocorrências - ${turmaNome} - ${displayDate}`, ...linhas].join("\n");
       const ok = await copyText(text);
-      showToast(ok ? "success" : "error", ok ? `${nomesAusentes.length} ausente(s) copiado(s). É só colar.` : "Não foi possível copiar. Tente de novo.");
+      showToast(ok ? "success" : "error", ok ? `${linhas.length} ${linhas.length === 1 ? "ocorrência copiada" : "ocorrências copiadas"}. É só colar.` : "Não foi possível copiar. Tente de novo.");
     }
 
     btnBarCopyAbsent.addEventListener("click", () => {
       if (!selectedTurmaData) return;
-      const nomes = alunos.map((a) => a.nome).filter((nome) => !getTodayRecord(nome)).sort((a, b) => a.localeCompare(b, "pt-BR"));
-      copyAbsentList(selectedTurmaData.nome || "Turma", getLocalParts().displayDate, nomes, alunos.length);
+      const hoje = getLocalParts();
+      copiarOcorrencias(selectedTurmaData.nome || "Turma", hoje.displayDate, alunos.map((a) => a.nome), presencas.filter((r) => r.data === hoje.isoDate));
     });
 
     document.getElementById("btn-copy-history-absent").addEventListener("click", () => {
       if (!historySelectedDate || !teacherManagingTurmaData) return;
-      const presentes = new Set(historyPresencas.filter((r) => r.data === historySelectedDate).map((r) => normalize(r.nome)));
-      const nomes = teacherManagingAlunos.map((a) => a.nome).filter((nome) => !presentes.has(normalize(nome))).sort((a, b) => a.localeCompare(b, "pt-BR"));
-      copyAbsentList(teacherManagingTurmaData.nome || "Turma", formatDisplayDate(historySelectedDate), nomes, teacherManagingAlunos.length);
+      copiarOcorrencias(teacherManagingTurmaData.nome || "Turma", formatDisplayDate(historySelectedDate), teacherManagingAlunos.map((a) => a.nome), historyPresencas.filter((r) => r.data === historySelectedDate));
     });
 
     // ---------------------------------------------------------------------
@@ -6061,30 +6131,38 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!(await prepararExcel())) return;
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Chamadas");
-      sheet.columns = [{ width: 34 }, ...dates.map(() => ({ width: 17 })), { width: 11 }, { width: 9 }, { width: 9 }];
+      sheet.columns = [{ width: 34 }, ...dates.map(() => ({ width: 24 })), { width: 11 }, { width: 9 }, { width: 9 }, { width: 18 }];
       const title = sheet.addRow([`Turma: ${teacherManagingTurmaData.nome || ""}`]);
       title.font = { bold: true, size: 13 };
       sheet.addRow([]);
-      const header = sheet.addRow(["Aluno", ...dates.map(formatDisplayDate), "Presenças", "Faltas", "Atrasos"]);
+      const header = sheet.addRow(["Aluno", ...dates.map(formatDisplayDate), "Presenças", "Faltas", "Atrasos", "Saídas antecipadas"]);
       header.font = { bold: true };
       const inicioPorDia = new Map(dates.map((d) => [d, inicioDaChamada([...byDate.get(d).values()])]));
       nomes.forEach((nome) => {
         let atrasos = 0;
-        const cells = dates.map((d) => {
+        let saidas = 0;
+        const destaque = new Set();
+        const cells = dates.map((d, i) => {
           const r = byDate.get(d).get(normalize(nome));
           if (!r) return "Falta";
-          if (isAtrasado(r, inicioPorDia.get(d))) { atrasos += 1; return `${horarioDe(r)} (atrasado)`; }
-          return horarioDe(r) || "P";
+          const partes = [];
+          if (isAtrasado(r, inicioPorDia.get(d))) { atrasos += 1; partes.push("atrasado"); }
+          const saida = saidaDoAluno(historyPresencas.filter((x) => x.data === d), nome);
+          if (saida) { saidas += 1; partes.push(`saiu às ${saida}`); }
+          if (partes.length) destaque.add(i);
+          const base = horarioDe(r) || "P";
+          return partes.length ? `${base} (${partes.join(", ")})` : base;
         });
         const faltas = cells.filter((c) => c === "Falta").length;
-        const row = sheet.addRow([nome, ...cells, cells.length - faltas, faltas, atrasos]);
+        const row = sheet.addRow([nome, ...cells, cells.length - faltas, faltas, atrasos, saidas]);
         cells.forEach((c, i) => {
           if (c === "Falta") row.getCell(i + 2).font = { color: { argb: "FFDC2626" }, bold: true };
-          else if (c.endsWith("(atrasado)")) row.getCell(i + 2).font = { color: { argb: "FFB45309" }, bold: true };
+          else if (destaque.has(i)) row.getCell(i + 2).font = { color: { argb: "FFB45309" }, bold: true };
         });
       });
       sheet.addRow([]);
       sheet.addRow([`Atrasado: marcou mais de ${ATRASO_MIN} minutos depois da primeira marcação da turma no dia.`]).font = { italic: true, color: { argb: "FF64748B" } };
+      sheet.addRow(["Saiu às: saída antecipada registrada pelo professor (com o horário)."]).font = { italic: true, color: { argb: "FF64748B" } };
       const buffer = await workbook.xlsx.writeBuffer();
       const safeName = normalize(teacherManagingTurmaData.nome || "turma").replace(/\s+/g, "-");
       saveBlobAs(new Blob([buffer], { type: "application/octet-stream" }), `chamada-${safeName}-${dates[0]}_a_${dates[dates.length - 1]}.xlsx`);

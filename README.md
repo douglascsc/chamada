@@ -50,7 +50,7 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **Marcar todos presentes** (tela Chamada): marca de uma vez quem ainda falta — pede um segundo toque para confirmar e oferece "Desfazer" por 8 segundos (só desfaz os que ele marcou);
   - **Ir para outra turma** direto da tela Chamada (seletor "Ir para"), sem voltar ao painel;
   - **marcações ainda não enviadas**: sem internet, a faixa laranja mostra quantas marcações esperam envio; sem "Manter conectado", o navegador pergunta antes de fechar a página enquanto houver alguma pendente;
-  - **Chamada enxuta no celular** (só para o professor): sem o título grande, com a barra do código no topo e "Encerrar código" / "Copiar ausentes" lado a lado — no computador, nada muda;
+  - **Chamada enxuta no celular** (só para o professor): sem o título grande, com a barra do código no topo e "Encerrar código" / "Copiar ocorrências" lado a lado — no computador, nada muda;
   - **o código encerra sozinho quando todos marcarem** (sempre; não é mais uma opção): funciona enquanto a Chamada ou a janela do código estiver aberta;
   - **tocar num código já gerado** (no cartão da turma ou na barra da Chamada) reabre a janela do código grande, com o QR (já com o código), a validade e o contador;
   - **Modo professor sem internet**: a presença aparece na hora, marcada "aguardando internet", e é enviada quando a conexão voltar. Com "Manter conectado" (celular pessoal), o banco guarda uma cópia no aparelho, então as marcações sobrevivem mesmo se o navegador fechar; "Sair" apaga essa cópia. Sem "Manter conectado" (aparelho compartilhado), nada fica gravado no aparelho e a página precisa ficar aberta até a internet voltar;
@@ -58,7 +58,9 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **cor da turma** (no Gerenciar): faixa colorida no cartão da turma, para o professor e para os alunos (campo `cor`, validado pelas regras);
   - **arquivar turma** (no Gerenciar): esconde a turma da lista do professor e da tela dos alunos **sem apagar nada**; fica em "Turmas arquivadas", no fim da lista, com "Reativar";
   - **encerrar o código antes do prazo** (botão "Encerrar" no cartão da turma e na tela Chamada): ninguém mais consegue marcar presença com ele;
-  - **copiar ausentes** (na tela Chamada e no histórico) para colar no SUAP, e **exportar os 7 dias** do histórico num único Excel (uma coluna por dia, com total de presenças e faltas);
+  - **copiar ocorrências** (na tela Chamada e no histórico) para colar no SUAP: uma linha por aluno com ocorrência, em ordem alfabética: "Arthur - Ausente", "Bernardo - Atrasado 09:30", "Carlos - Saída antecipada 10:15" (quem chegou atrasado e saiu antes aparece com as duas);
+  - **saída antecipada** (só o professor): na Chamada, cada aluno presente tem o botão **"Saiu antes"**, que grava o horário da saída (campo `saidaEm` da presença, hora do momento do toque). Aparece como "Presente · 08:00 · saiu às 10:15" em laranja, igual ao atraso, no resumo ("1 saída antecipada"), no Histórico, no Excel do dia (coluna "Saída antecipada") e no Excel dos 7 dias ("08:00 (saiu às 10:15)" e a coluna "Saídas antecipadas"). O mesmo botão vira **"Desfazer saída"**. O aluno não vê. As regras só deixam o professor dono da turma (ou a master) mudar esse único campo da presença, e com horário que não esteja no futuro (tolerância de 5 minutos);
+  - e **exportar os 7 dias** do histórico num único Excel (uma coluna por dia, com total de presenças e faltas);
   - **(só a conta master)** administrar professores em ⚙️ Opções → **Painel admin — professores**: ver a lista, **enviar e-mail de redefinição de senha**, **remover** um professor (transferindo as turmas dele para outro professor ou excluindo-as) e, no **Gerenciar** de qualquer turma, **transferir a turma** para outro professor — ver **[Administrar professores](#administrar-professores-conta-master)**.
 - **Painel do professor pensado para o celular**: as turmas aparecem logo no topo (cerca de 4 na primeira tela, com 6 turmas). Cada cartão tem as ações do dia a dia numa linha — **Gerar código 30 min · Chamada · 📷 Atrasos** — e o **⋯** com "Gerar código 1h" e "Gerenciar" (no computador, todas ficam visíveis; outras durações — 15 min, 2h, 3h — ficam no Gerenciar). O código ativo aparece como "Código 4821 · até 15:30", com "Encerrar" ao lado. O que é usado raramente fica em **⚙️ Opções** (botão ao lado de "Sair"): conta conectada, aviso "não substitui o SUAP", Avisos importantes, Atalho no celular, Nova turma, Minha conta e Painel admin. Todas as telas voltam com "Voltar às turmas", e o botão Voltar do celular também volta para as turmas. Ao gerar ou salvar um código do dia, ele aparece **em tamanho grande** com a validade, para mostrar aos alunos ou projetar.
 - **Atalho direto para a Área do professor**: o endereço do site com `#professor` no fim (ex.: `https://<usuário>.github.io/chamada/#professor`) abre direto nas turmas (ou no login, se ninguém estiver conectado). Dá para salvar como ícone na tela inicial do celular — o passo a passo está em ⚙️ Opções → 📱 Atalho no celular. Com "Manter conectado neste aparelho", o atalho abre direto nas turmas, sem senha.
@@ -422,7 +424,13 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                                    && request.resource.data.get('criadoEm', null) == request.time
                                  )
                             );
-           allow update: if false;
+           // Saída antecipada: só o professor da turma, só esse campo (a hora da
+           // saída, no máximo 5 min à frente do servidor; ou apagar = desfazer)
+           allow update: if ehProfessorDaTurma(turmaId)
+                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saidaEm'])
+                         && (!('saidaEm' in request.resource.data)
+                             || (request.resource.data.saidaEm is timestamp
+                                 && request.resource.data.saidaEm <= request.time + duration.value(5, 'm')));
            allow delete: if ehProfessorDaTurma(turmaId);
          }
 
@@ -618,7 +626,7 @@ turmas/{turmaId}
   alunos/{alunoId}
     nome
   presencas/{presencaId}
-    nome, data, horario, maquina, codigoUsado, expiraEm, criadoEm, aparelho   (criadoEm: hora do servidor; aparelho: celular/computador — na presença do aluno)
+    nome, data, horario, maquina, codigoUsado, expiraEm, criadoEm, aparelho, saidaEm   (criadoEm: hora do servidor; aparelho: celular/computador — na presença do aluno; saidaEm: saída antecipada, só o professor grava)
   atrasos/{atrasoId}
     criadoEm, thumb
   atrasosImg/{atrasoId}
