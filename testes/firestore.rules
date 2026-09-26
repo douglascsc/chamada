@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  function isMaster() {
+    return request.auth != null && request.auth.token.email == 'douglascamargo@ifsul.edu.br';
+  }
+
+  match /databases/{database}/documents {
+    function turmaAtual(turmaId) {
+      return get(/databases/$(database)/documents/turmas/$(turmaId)).data;
+    }
+
+    function ehProfessorDaTurma(turmaId) {
+      return request.auth != null
+             && (isMaster() || turmaAtual(turmaId).professorUid == request.auth.uid);
+    }
+
+    function codigoAtivo(turmaId) {
+      let t = turmaAtual(turmaId);
+      return t.codigoDoDia is string && t.codigoDoDia != ''
+             && t.get('codigoDefinidoEm', null) != null
+             && request.time < t.codigoDefinidoEm + duration.value(t.get('codigoDuracaoMin', 180), 'm');
+    }
+
+    match /turmas/{turmaId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['nome', 'professorUid'])
+                    && request.resource.data.nome is string
+                    && request.resource.data.professorUid == request.auth.uid;
+      allow update: if request.auth != null
+                    && (
+                         isMaster()
+                         || resource.data.professorUid == request.auth.uid
+                         || (!('professorUid' in resource.data) && request.resource.data.professorUid == request.auth.uid)
+                       )
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'nome', 'professorUid', 'professorEmail', 'professorNome', 'arquivada', 'cor'])
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nome'])
+                        || request.resource.data.nome is string)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDuracaoMin'])
+                        || request.resource.data.codigoDuracaoMin is int)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['arquivada'])
+                        || request.resource.data.arquivada is bool)
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cor'])
+                        || request.resource.data.cor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza']);
+      allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
+
+      match /alunos/{alunoId} {
+        allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+        allow create: if ehProfessorDaTurma(turmaId)
+                      && request.resource.data.keys().hasAll(['nome'])
+                      && request.resource.data.nome is string;
+        allow update: if ehProfessorDaTurma(turmaId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome'])
+                      && request.resource.data.nome is string;
+        allow delete: if ehProfessorDaTurma(turmaId);
+      }
+
+      match /presencas/{presencaId} {
+        allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+        allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina'])
+                      && request.resource.data.nome is string
+                      && request.resource.data.data is string
+                      && request.resource.data.horario is string
+                      && request.resource.data.maquina is string
+                      && (
+                           ehProfessorDaTurma(turmaId)
+                           || (
+                                request.resource.data.keys().hasAll(['codigoUsado'])
+                                && request.resource.data.codigoUsado is string
+                                && codigoAtivo(turmaId)
+                                && request.resource.data.codigoUsado == turmaAtual(turmaId).codigoDoDia
+                              )
+                         );
+        allow update: if false;
+        allow delete: if ehProfessorDaTurma(turmaId);
+      }
+
+      // Fotos de comprovantes de atraso: só o dono da turma (ou a conta
+      // master). O código do dia NÃO libera leitura aqui.
+      match /atrasos/{atrasoId} {
+        allow read, delete: if ehProfessorDaTurma(turmaId);
+        allow create: if ehProfessorDaTurma(turmaId)
+                      && request.resource.data.keys().hasOnly(['criadoEm', 'thumb'])
+                      && request.resource.data.criadoEm == request.time
+                      && request.resource.data.thumb is bytes
+                      && request.resource.data.thumb.size() <= 64 * 1024;
+        allow update: if false;
+      }
+
+      match /atrasosImg/{atrasoId} {
+        allow read, delete: if ehProfessorDaTurma(turmaId);
+        allow create: if ehProfessorDaTurma(turmaId)
+                      && request.resource.data.keys().hasOnly(['img'])
+                      && request.resource.data.img is bytes
+                      && request.resource.data.img.size() <= 900 * 1024
+                      && existsAfter(/databases/$(database)/documents/turmas/$(turmaId)/atrasos/$(atrasoId));
+        allow update: if false;
+      }
+    }
+
+    match /acordosProfessor/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isMaster());
+      allow write: if request.auth != null && request.auth.uid == uid;
+      // a conta master apaga o registro ao remover um professor do sistema
+      allow delete: if isMaster();
+    }
+
+    // Professores criados pelo Painel admin que ainda não entraram no
+    // sistema (lista "aguardando 1º acesso"): só a conta master.
+    match /professoresPendentes/{pendenteId} {
+      allow read, write: if isMaster();
+    }
+  }
+}

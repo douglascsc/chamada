@@ -1,0 +1,24 @@
+{
+  "name": "emu",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "exceljs": "^4.4.0",
+    "firebase": "^10.13.2",
+    "firebase-tools": "^15.31.0",
+    "jsqr": "^1.4.0",
+    "lucide": "^0.577.0",
+    "playwright-core": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "qrcode-generator": "^1.4.4",
+    "tailwindcss": "^3.4.17"
+  }
+}
