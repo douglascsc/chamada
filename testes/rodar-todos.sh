@@ -11,7 +11,7 @@ if ! curl -s -m2 http://127.0.0.1:9099/ >/dev/null; then
   for i in $(seq 1 60); do curl -s -m2 http://127.0.0.1:9099/ >/dev/null && curl -s -m2 http://127.0.0.1:8080/ >/dev/null && break; sleep 2; done
 fi
 falhou=0
-for t in rules e2e admin topo ux novidades lote2 lote3 lote4 lote5 lote6 lote7 lote8 lote9 lote10 lote11 lote12 lote13 lote14 lote15 lote16; do
+for t in rules e2e admin topo ux novidades lote2 lote3 lote4 lote5 lote6 lote7 lote8 lote9 lote10 lote11 lote12 lote13 lote14 lote15 lote16 lote17; do
   curl -s -X DELETE "http://127.0.0.1:8080/emulator/v1/projects/demo-chamada/databases/(default)/documents" >/dev/null
   curl -s -X DELETE "http://127.0.0.1:9099/emulator/v1/projects/demo-chamada/accounts" >/dev/null
   printf "%-10s " "$t"

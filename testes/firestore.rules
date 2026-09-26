@@ -99,16 +99,20 @@ service cloud.firestore {
                     && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
       allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
-      // Lista de nomes para os alunos, com o código como ID. Aluno só lê
+      // Lista de nomes para os alunos (e de quem já está marcado), com o
+      // código como ID. Aluno só lê
       // (um documento, pelo código exato); listar é só do professor.
       match /salas/{codigo} {
         allow get: if ehProfessorDaTurma(turmaId) || salaValida(turmaId, codigo);
         allow list, delete: if ehProfessorDaTurma(turmaId);
         allow create, update: if ehProfessorDaTurma(turmaId)
                               && codigo.matches('^[0-9]{4,10}$')
-                              && request.resource.data.keys().hasOnly(['nomes', 'definidoEm'])
+                              && request.resource.data.keys().hasOnly(['nomes', 'definidoEm', 'marcados'])
                               && request.resource.data.nomes is list
                               && request.resource.data.nomes.size() <= 500
+                              // quem o professor já marcou hoje sem o código (o aluno vê como marcado)
+                              && (!('marcados' in request.resource.data)
+                                  || (request.resource.data.marcados is list && request.resource.data.marcados.size() <= 500))
                               && request.resource.data.definidoEm is timestamp;
       }
 

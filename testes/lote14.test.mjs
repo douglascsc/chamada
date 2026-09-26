@@ -88,8 +88,9 @@ await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
   await setDoc(doc(f, "turmas/T1"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza", codigoDefinidoEm: Timestamp.now(), codigoDuracaoMin: 60 });
   await setDoc(doc(f, "turmas/T1/alunos/a1"), { nome: "Aluno Um" });
   await setDoc(doc(f, "turmas/T1/alunos/a2"), { nome: "Aluno Dois" });
+  await setDoc(doc(f, "turmas/T1/alunos/a3"), { nome: "Aluno Três" });
 });
-await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const t = (await getDoc(doc(f, "turmas/T1"))).data(); await setDoc(doc(f, "turmas/T1/salas/4821"), { nomes: ["Aluno Dois", "Aluno Um"], definidoEm: t.codigoDefinidoEm }); });
+await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const t = (await getDoc(doc(f, "turmas/T1"))).data(); await setDoc(doc(f, "turmas/T1/salas/4821"), { nomes: ["Aluno Dois", "Aluno Três", "Aluno Um"], definidoEm: t.codigoDefinidoEm }); });
 await liberarProfessoresDoEmulador(env); // Ana (e a master) já liberadas
 // conta criada depois, sem liberação (como alguém que criou um login direto no Firebase)
 const rX = await fetch(`${AUTH}/accounts:signUp?key=fake`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "estranho@gmail.com", password: PASS, returnSecureToken: true }) }).then((x) => x.json());
@@ -134,7 +135,7 @@ check("Último e-mail antigo é apagado do aparelho", (await page.evaluate(() =>
 check("Nada novo guardado com o e-mail de login", !(await page.evaluate(() => Object.keys(localStorage).some((k) => (localStorage.getItem(k) || "").includes("prof.ana@")))));
 // horário vem do servidor (aluno marcou "07:00" no celular, mas a hora é a do servidor)
 await row(page, "INF2M 2026").getByRole("button", { name: "Chamada" }).click();
-await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 2, null, { timeout: 10000 });
+await page.waitForFunction(() => document.querySelectorAll(".student-row").length === 3, null, { timeout: 10000 });
 await page.waitForTimeout(800);
 const horaAluno = await page.locator(".student-row", { hasText: "Aluno Um" }).locator(".present-status-label").textContent();
 const agoraSP = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
@@ -185,10 +186,12 @@ ctx = await newCtx(true); page = await open(ctx, APP + "#turma=T1");
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(600);
 await page.fill("#student-daily-code", "4821");
 await page.waitForFunction(() => document.querySelectorAll(".student-row").length >= 1, null, { timeout: 10000 });
-await page.locator(".student-row", { hasText: "Aluno Dois" }).locator(".mark-button").click();
-await page.locator(".student-row", { hasText: "Aluno Dois" }).locator(".confirm-attendance").click();
+await page.waitForTimeout(500);
+check("Aluno: \"Aluno Dois\" (marcado pela professora sem o código) aparece como já marcado", await page.locator(".student-row", { hasText: "Aluno Dois" }).locator(".mark-button").isHidden());
+await page.locator(".student-row", { hasText: "Aluno Três" }).locator(".mark-button").click();
+await page.locator(".student-row", { hasText: "Aluno Três" }).locator(".confirm-attendance").click();
 let minha = null;
-for (let i = 0; i < 30 && !minha; i++) { await page.waitForTimeout(500); minha = (await list("turmas/T1/presencas")).find((p) => p.nome === "Aluno Dois" && p.maquina !== "professor"); }
+for (let i = 0; i < 30 && !minha; i++) { await page.waitForTimeout(500); minha = (await list("turmas/T1/presencas")).find((p) => p.nome === "Aluno Três" && p.maquina !== "professor"); }
 check("Aluno pelo site: presença com a hora do servidor (criadoEm)", minha && minha.criadoEm && Math.abs(minha.criadoEm.toMillis() - Date.now()) < 120000, JSON.stringify(minha));
 check("Nenhum erro de JavaScript (aluno)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
