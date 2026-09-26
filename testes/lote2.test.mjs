@@ -232,7 +232,7 @@ const pngQr = await page.locator("#turma-qr-image img").screenshot();
 const { PNG } = await import("pngjs"); const jsQR = (await import("jsqr")).default;
 const imgQr = PNG.sync.read(pngQr);
 const lido = jsQR(new Uint8ClampedArray(imgQr.data), imgQr.width, imgQr.height);
-check("QR grande é legível e aponta para o link da turma", lido && lido.data === APP + "#turma=t0", lido ? lido.data : "não leu");
+check("QR grande é legível e aponta para o link da turma já com o código", lido && /^http:\/\/localhost:\d+\/#turma=t0&c=\d{6}$/.test(lido.data) && lido.data.startsWith(APP + "#turma=t0&c="), lido ? lido.data : "não leu");
 await page.screenshot({ path: `${OUT}/l2-08-qr-grande-computador.png` });
 await page.click("#btn-close-turma-qr");
 await page.click("#btn-close-code-display");

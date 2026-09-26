@@ -87,26 +87,17 @@ await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore();
   await setDoc(doc(f, "turmas/T1"), { nome: "INF2M 2026 - Banco de Dados", professorUid: uidA, professorNome: "Ana Souza" });
 });
 
-// --- SRI: arquivos originais carregam; arquivo alterado é bloqueado
+// --- Scripts externos: ícones embutidos (sem CDN) e Excel só quando exportar (lote19)
 let ctx = await newCtx(true);
+const pedidosCdn = [];
+ctx.on("request", (q) => { if (/cdn\.jsdelivr\.net/.test(q.url())) pedidosCdn.push(q.url()); });
 let page = await open(ctx, APP);
 await page.waitForSelector(".turma-card"); await page.waitForTimeout(500);
-check("SRI: Lucide (ícones) carrega com a assinatura", await page.evaluate(() => Boolean(window.lucide)));
-check("SRI: ExcelJS carrega com a assinatura", await page.evaluate(() => Boolean(window.ExcelJS)));
-const tags = await page.$$eval("script[src^='https://cdn.jsdelivr.net']", (els) => els.map((e) => ({ src: e.src, integrity: e.integrity, co: e.crossOrigin })));
-check("SRI: scripts externos com integrity e crossorigin", tags.length === 2 && tags.every((t) => t.integrity.startsWith("sha384-") && t.co === "anonymous"), JSON.stringify(tags));
-await ctx.close();
-ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-await ctx.route("https://www.gstatic.com/firebasejs/10.13.2/**", (q) => q.fulfill({ body: readFileSync(`node_modules/firebase/${path.basename(new URL(q.request().url()).pathname)}`), contentType: "text/javascript" }));
-await ctx.route("https://cdn.tailwindcss.com/**", (q) => q.fulfill({ contentType: "text/javascript", body: "" }));
-await ctx.route("https://cdn.jsdelivr.net/npm/lucide**", (q) => q.fulfill({ headers: { "access-control-allow-origin": "*" }, contentType: "text/javascript", body: readFileSync("node_modules/lucide/dist/umd/lucide.min.js", "utf8") + "\nwindow.__adulterado = true;" }));
-await ctx.route("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/**", (q) => q.fulfill({ headers: { "access-control-allow-origin": "*" }, contentType: "text/javascript", body: "window.__excelFalso = true;" }));
-await ctx.route("https://fonts.googleapis.com/**", (q) => q.fulfill({ contentType: "text/css", body: "" }));
-page = await open(ctx, APP);
-await page.waitForSelector(".turma-card"); await page.waitForTimeout(500);
-check("SRI: Lucide ALTERADO no CDN é bloqueado (não roda)", await page.evaluate(() => !window.__adulterado && !window.lucide));
-check("SRI: ExcelJS falso é bloqueado", await page.evaluate(() => !window.__excelFalso && !window.ExcelJS));
-check("Site continua abrindo mesmo com o script bloqueado", (await page.locator(".turma-card").count()) >= 1 && page.errs.length === 0, page.errs.join(";"));
+check("Ícones embutidos: desenhados sem baixar o pacote de ícones", (await page.locator("svg.lucide").count()) > 0 && !pedidosCdn.some((u) => /lucide/.test(u)), pedidosCdn.join(","));
+check("Excel NÃO é baixado ao abrir o site (aluno)", !pedidosCdn.some((u) => /exceljs/.test(u)) && (await page.evaluate(() => !window.ExcelJS)));
+const tags = await page.$$eval("script[src]", (els) => els.map((e) => e.src));
+check("Único script externo na abertura é o Tailwind", tags.length === 1 && /cdn\.tailwindcss\.com/.test(tags[0]), JSON.stringify(tags));
+check("Nenhum erro de JavaScript (abertura)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
 
 // --- Conta criada no Console (simulada: criada direto no Authentication) e liberada pelo UID
