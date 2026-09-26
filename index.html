@@ -5356,7 +5356,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         link.rel = "noopener";
         link.className = "mt-2 inline-block font-semibold text-[#2B7A40] underline";
         link.textContent = "Abrir o Firebase Console (usuários)";
-        done.append(title, next, link);
+        // "Concluir": fecha a confirmação e tira a pessoa da lista
+        const btnDone = document.createElement("button");
+        btnDone.type = "button";
+        btnDone.className = "action-button focus-ring mt-3 block rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700";
+        btnDone.textContent = "Concluir";
+        btnDone.addEventListener("click", () => refreshAdminProfessores());
+        done.append(title, next, link, btnDone);
         if (!registryRemoved) {
           const warn = document.createElement("p");
           warn.className = "mt-2 text-xs text-amber-700";
