@@ -392,7 +392,6 @@
     }
     /* Chamada do professor no celular: sem o título grande, com a barra do
        código no topo e os botões lado a lado (no computador, nada muda) */
-    .bar-label-short { display: none; }
     @media (max-width: 639px) {
       #attendance-list-panel.teacher-compact:not(.hidden) { display: flex; flex-direction: column; }
       .teacher-compact #list-heading-block { display: none; }
@@ -400,9 +399,11 @@
       .teacher-compact #teacher-code-bar { order: -1; margin-top: 0; margin-bottom: 1rem; }
       .teacher-compact #teacher-code-bar-buttons { display: grid; grid-template-columns: 1fr 1fr; }
       .teacher-compact #teacher-code-bar-buttons > .hidden { display: none; }
-      .teacher-compact .bar-label-long { display: none; }
-      .teacher-compact .bar-label-short { display: inline; }
     }
+    /* Confirmação "Sim, sou eu": ocupa a linha inteira, abaixo do nome */
+    .student-row.is-confirming .row-actions { flex-basis: 100%; }
+    /* Aluno: quem já marcou fica recolhido */
+    .student-row.is-collapsed { display: none; }
     /* Presença marcada sem internet, ainda não enviada */
     .present-status-label.is-pending { color: #b45309; }
 
@@ -518,7 +519,7 @@
          <i data-lucide="info" class="h-3.5 w-3.5" aria-hidden="true"></i> Sobre seus dados
         </button>
         <div class="flex flex-wrap items-center gap-2">
-         <button id="btn-teacher-mode" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 bg-white/85 text-slate-600 font-semibold text-xs" type="button" title="Marcar presença com a senha do professor, sem precisar do código do dia">
+         <button id="btn-teacher-mode" class="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded px-0.5 text-xs font-semibold text-slate-500 hover:text-[#2B7A40] hover:underline sm:min-h-0" type="button" title="Marcar presença com a senha do professor, sem precisar do código do dia">
           <i data-lucide="user-check" class="h-3.5 w-3.5" aria-hidden="true"></i> <span id="teacher-mode-label">Modo professor</span>
          </button>
          <button id="btn-export-csv" class="hidden action-button focus-ring inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 bg-white/85 text-slate-600 font-semibold text-xs" type="button" title="Baixar a lista de presença de hoje em Excel (só professor)">
@@ -587,7 +588,7 @@
       <div id="teacher-code-bar" class="hidden mt-5 flex flex-col gap-3 rounded-2xl border border-[#CFE6C8] bg-[#F7FBF6] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
        <p id="teacher-code-bar-text" class="text-sm font-semibold text-[var(--ink)]"></p>
        <div id="teacher-code-bar-buttons" class="flex flex-wrap gap-2">
-        <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button"><span class="bar-label-long">Encerrar código agora</span><span class="bar-label-short">Encerrar código</span></button>
+        <button id="btn-bar-end-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700" type="button">Encerrar código</button>
         <button id="btn-bar-new-code" class="hidden action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-[#E6F3F2] hover:bg-[#D3EBE9] text-[#118A85]" type="button">Gerar código 1h</button>
         <button id="btn-bar-copy-absent" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar ausentes</button>
        </div>
@@ -598,7 +599,7 @@
       <div id="global-message" class="notice notice-info mt-5 hidden" role="status" aria-live="polite">
        <i id="global-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="global-message-text"></span>
       </div>
-      <div id="student-list" class="mt-3 divide-y divide-slate-200/90 pr-2" aria-live="polite"></div>
+      <div id="student-list" class="mt-3 divide-y divide-slate-200/90 pr-2" role="list" aria-label="Alunos da turma"></div>
       <div id="no-results" class="hidden py-12 text-center">
        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
         <i data-lucide="search-x" aria-hidden="true" class="h-7 w-7"></i>
@@ -613,7 +614,7 @@
     <section id="view-teacher-dashboard" class="hidden">
      <div class="flex flex-wrap items-center justify-between gap-2">
       <button id="btn-teacher-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
-       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar
+       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Tela dos alunos
       </button>
       <div class="flex items-center gap-2">
        <button id="btn-open-more-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" aria-label="Opções">
@@ -624,14 +625,9 @@
        </button>
       </div>
      </div>
-     <h2 class="mt-4 text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)]">Área do professor</h2>
-     <p class="mt-1 text-sm text-slate-500">Conectado como <strong id="teacher-account-email">—</strong></p>
-
-     <p class="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
-      <i data-lucide="info" aria-hidden="true" class="h-3.5 w-3.5 shrink-0 text-[#2B7A40]"></i>
-      <span>Apoio ao professor — não substitui o SUAP.</span>
-      <button id="btn-open-terms" type="button" class="focus-ring inline-flex items-center gap-1 rounded font-semibold text-[#2B7A40] underline hover:text-[#235f32]"><i data-lucide="book-open" class="h-3.5 w-3.5" aria-hidden="true"></i> Avisos importantes</button>
-     </p>
+     <!-- Celular: o título fica só para leitores de tela (economiza espaço);
+          conta, aviso do SUAP e "Avisos importantes" ficam em Opções. -->
+     <h2 class="mt-4 text-2xl sm:text-3xl font-extrabold leading-tight text-[var(--ink)] max-sm:sr-only">Área do professor</h2>
 
      <div id="teacher-dashboard-message" class="notice mt-4 hidden" role="status" aria-live="polite">
       <i id="teacher-dashboard-message-icon" data-lucide="info" aria-hidden="true" class="mt-0.5 h-5 w-5 shrink-0"></i> <span id="teacher-dashboard-message-text"></span>
@@ -651,7 +647,7 @@
      <section id="teacher-turmas-section" class="glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <div class="flex flex-wrap items-center justify-between gap-2">
        <h3 id="teacher-turmas-heading" class="text-lg font-bold text-[var(--ink)]">Turmas cadastradas</h3>
-       <button id="btn-open-all-atrasos" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button"><i data-lucide="camera" class="h-3.5 w-3.5" aria-hidden="true"></i> Ver todos os atrasos</button>
+       <button id="btn-open-all-atrasos" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 max-sm:hidden" type="button"><i data-lucide="camera" class="h-3.5 w-3.5" aria-hidden="true"></i> Ver todos os atrasos</button>
       </div>
       <div id="teacher-turmas-search-wrap" class="hidden mt-3">
        <label class="sr-only" for="teacher-turmas-search">Buscar turma</label>
@@ -664,6 +660,8 @@
       </div>
       <div id="teacher-turmas-list" class="mt-3 flex flex-col gap-2"></div>
       <p id="teacher-turmas-search-empty" class="hidden mt-2 text-sm text-slate-500">Nenhuma turma encontrada com esse nome.</p>
+      <!-- Celular: "todos os atrasos" no fim da lista, para as turmas aparecerem logo -->
+      <button id="btn-open-all-atrasos-bottom" class="action-button focus-ring mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 sm:hidden" type="button"><i data-lucide="camera" class="h-3.5 w-3.5" aria-hidden="true"></i> Ver todos os atrasos</button>
       <details id="archived-turmas" class="hidden group/arch mt-4 rounded-xl border border-dashed border-slate-300">
        <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-slate-600 focus-ring rounded-xl">
         <span>Turmas arquivadas (<span id="archived-count">0</span>)</span>
@@ -679,7 +677,7 @@
 
      <section id="teacher-manage-panel" class="hidden glass-surface reveal delay-1 rounded-2xl p-5 sm:p-6 mt-5">
       <button id="btn-manage-back" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
-       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para as turmas
+       <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar às turmas
       </button>
       <div id="manage-turma-title-row" class="mt-3 flex flex-wrap items-center gap-2">
        <h3 id="manage-turma-title" class="text-xl font-extrabold text-[var(--ink)]">Turma</h3>
@@ -710,74 +708,13 @@
        </div>
       </div>
 
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white/70 p-4">
-       <label class="mb-2 block text-sm font-semibold text-slate-700">Código do dia</label>
-       <div class="flex flex-wrap items-center gap-2">
-        <input id="manage-code-input" class="teacher-code-input w-32" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••">
-        <button id="btn-save-code" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700" type="button">Salvar código</button>
-       </div>
-       <p class="mt-3 mb-1 text-xs font-semibold text-slate-500">Gerar código aleatório válido por:</p>
-       <div class="flex flex-wrap gap-2">
-        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="15">15 min</button>
-        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="60">1h</button>
-        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="120">2h</button>
-        <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="180">3h</button>
-       </div>
-       <p id="manage-code-hint" class="mt-2 text-xs text-slate-500"></p>
-       <p id="manage-code-status" class="mt-1 text-xs"></p>
-      </div>
-
-      <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
-       <label class="mb-1 block text-sm font-semibold text-slate-700">Link da turma</label>
-       <p class="text-xs text-slate-500">Abre direto esta turma (o código do dia continua sendo pedido). Dá para colocar no Moodle, no grupo da turma ou num cartaz com o QR.</p>
-       <code id="manage-turma-link" class="mt-2 block break-all rounded-lg bg-slate-100 px-2 py-1.5 text-xs text-slate-700"></code>
-       <div class="mt-2 flex flex-wrap gap-2">
-        <button id="btn-copy-turma-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar link</button>
-        <button id="btn-share-turma-link" class="hidden share-button action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button"><i data-lucide="share-2" class="h-3.5 w-3.5" aria-hidden="true"></i> Compartilhar</button>
-        <button id="btn-show-turma-qr" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Mostrar QR Code</button>
-        <button id="btn-print-turma-poster" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha A4 com o QR grande para colar na sala ou no mural">
-         <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir cartaz
-        </button>
-       </div>
-      </div>
-
-      <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
-       <p class="text-sm font-semibold text-slate-700" id="manage-color-label">Cor da turma</p>
-       <p class="text-xs text-slate-500">Uma faixa colorida no cartão, para achar a turma de relance.</p>
-       <div id="manage-color-options" class="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="manage-color-label"></div>
-      </div>
-
-      <div class="mt-6">
-       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Alunos (<span id="manage-aluno-count">0</span>)</h4>
-        <button id="btn-print-sign-sheet" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha com os nomes e espaço para assinatura — plano B se a internet cair">
-         <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir lista para assinatura
-        </button>
-       </div>
-       <div id="manage-alunos-list" class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 sm:max-h-72 sm:overflow-y-auto"></div>
-       <p id="manage-alunos-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum aluno cadastrado nesta turma ainda.</p>
-
-       <div class="mt-4 flex flex-wrap gap-2">
-        <input id="manage-add-aluno-nome" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Nome do aluno">
-        <button id="btn-add-aluno" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Adicionar</button>
-       </div>
-
-       <div class="mt-4">
-        <label class="mb-1 block text-sm font-semibold text-slate-700" for="manage-import-alunos">Importar vários alunos de uma vez</label>
-        <textarea id="manage-import-alunos" class="text-field" rows="3" placeholder="Cole os nomes, um por linha"></textarea>
-        <button id="btn-import-alunos" class="action-button focus-ring mt-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Importar lista</button>
-        <div id="import-preview" class="hidden mt-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700" role="status">
-         <p id="import-preview-text"></p>
-         <div class="mt-2 flex flex-wrap gap-2">
-          <button id="btn-import-confirm" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Importar</button>
-          <button id="btn-import-cancel" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Cancelar</button>
-         </div>
-        </div>
-       </div>
-
-       <div class="mt-6 border-t border-slate-200 pt-5">
+      <!-- Ordem pelo uso: histórico (toda semana) primeiro; alunos e
+           configurações (raros) recolhidos. No computador, histórico e
+           alunos lado a lado. -->
+      <div class="mt-5 grid gap-4 lg:grid-cols-2 lg:items-start">
+       <div id="manage-history-section" class="min-w-0 rounded-2xl border border-slate-200 bg-white/70 p-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
-         <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Histórico de chamadas</h4>
+         <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Histórico</h4>
          <button id="btn-load-history" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Atualizar</button>
         </div>
         <p class="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -805,6 +742,85 @@
         </div>
        </div>
 
+       <details id="manage-alunos-details" class="group min-w-0 rounded-2xl border border-slate-200 bg-white/70">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 py-3 focus-ring">
+         <span class="text-sm font-bold uppercase tracking-wider text-slate-500">Alunos (<span id="manage-aluno-count">0</span>)</span>
+         <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="px-4 pb-4">
+         <div class="flex flex-wrap items-center justify-between gap-2">
+          <button id="btn-print-sign-sheet" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha com os nomes e espaço para assinatura — plano B se a internet cair">
+           <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir lista para assinatura
+          </button>
+         </div>
+         <div id="manage-alunos-list" class="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100 sm:max-h-72 sm:overflow-y-auto"></div>
+         <p id="manage-alunos-empty" class="hidden mt-2 text-sm text-slate-500">Nenhum aluno cadastrado nesta turma ainda.</p>
+
+         <div class="mt-4 flex flex-wrap gap-2">
+          <input id="manage-add-aluno-nome" class="text-field flex-1 min-w-[200px]" type="text" placeholder="Nome do aluno">
+          <button id="btn-add-aluno" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Adicionar</button>
+         </div>
+
+         <div class="mt-4">
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="manage-import-alunos">Importar vários alunos de uma vez</label>
+          <textarea id="manage-import-alunos" class="text-field" rows="3" placeholder="Cole os nomes, um por linha"></textarea>
+          <button id="btn-import-alunos" class="action-button focus-ring mt-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Importar lista</button>
+          <div id="import-preview" class="hidden mt-2 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700" role="status">
+           <p id="import-preview-text"></p>
+           <div class="mt-2 flex flex-wrap gap-2">
+            <button id="btn-import-confirm" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Importar</button>
+            <button id="btn-import-cancel" class="action-button focus-ring rounded-lg px-4 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Cancelar</button>
+           </div>
+          </div>
+         </div>
+
+        </div>
+       </details>
+      </div>
+
+      <details id="manage-config-details" class="group mt-4 rounded-2xl border border-slate-200 bg-white/70">
+       <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 py-3 focus-ring">
+        <span><span class="block text-sm font-bold uppercase tracking-wider text-slate-500">Configurações da turma</span><span class="block text-xs text-slate-500">Código manual, link e QR, cor, arquivar, excluir</span></span>
+        <i data-lucide="chevron-down" aria-hidden="true" class="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-180"></i>
+       </summary>
+       <div class="px-4 pb-4">
+       <div class="rounded-2xl border border-slate-200 bg-white/70 p-4">
+        <label class="mb-2 block text-sm font-semibold text-slate-700">Código do dia</label>
+        <div class="flex flex-wrap items-center gap-2">
+         <input id="manage-code-input" class="teacher-code-input w-32" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••">
+         <button id="btn-save-code" class="action-button focus-ring rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700" type="button">Salvar código</button>
+        </div>
+        <p class="mt-3 mb-1 text-xs font-semibold text-slate-500">Gerar código aleatório válido por:</p>
+        <div class="flex flex-wrap gap-2">
+         <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="15">15 min</button>
+         <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="60">1h</button>
+         <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="120">2h</button>
+         <button class="btn-generate-code-duration action-button focus-ring rounded-lg px-3 py-2 text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" data-minutes="180">3h</button>
+        </div>
+        <p id="manage-code-hint" class="mt-2 text-xs text-slate-500"></p>
+        <p id="manage-code-status" class="mt-1 text-xs"></p>
+       </div>
+
+       <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+        <label class="mb-1 block text-sm font-semibold text-slate-700">Link da turma</label>
+        <p class="text-xs text-slate-500">Abre direto esta turma (o código do dia continua sendo pedido). Dá para colocar no Moodle, no grupo da turma ou num cartaz com o QR.</p>
+        <code id="manage-turma-link" class="mt-2 block break-all rounded-lg bg-slate-100 px-2 py-1.5 text-xs text-slate-700"></code>
+        <div class="mt-2 flex flex-wrap gap-2">
+         <button id="btn-copy-turma-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Copiar link</button>
+         <button id="btn-share-turma-link" class="hidden share-button action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button"><i data-lucide="share-2" class="h-3.5 w-3.5" aria-hidden="true"></i> Compartilhar</button>
+         <button id="btn-show-turma-qr" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">Mostrar QR Code</button>
+         <button id="btn-print-turma-poster" class="action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button" title="Folha A4 com o QR grande para colar na sala ou no mural">
+          <i data-lucide="printer" class="h-3.5 w-3.5" aria-hidden="true"></i> Imprimir cartaz
+         </button>
+        </div>
+       </div>
+
+       <div class="mt-4 rounded-2xl border border-slate-200 bg-white/70 p-4">
+        <p class="text-sm font-semibold text-slate-700" id="manage-color-label">Cor da turma</p>
+        <p class="text-xs text-slate-500">Uma faixa colorida no cartão, para achar a turma de relance.</p>
+        <div id="manage-color-options" class="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="manage-color-label"></div>
+       </div>
+
        <div id="manage-archive-section" class="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
         <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Arquivar turma</h4>
         <p id="manage-archive-text" class="mt-1 text-sm text-slate-600">Fim do semestre? Arquivar esconde a turma da sua lista e da tela dos alunos, <strong>sem apagar nada</strong> (alunos, histórico e fotos continuam). Dá para reativar depois.</p>
@@ -829,17 +845,24 @@
         <p class="mt-1 text-sm text-red-800">Excluir a turma apaga também todos os alunos, todo o histórico de presenças e todas as fotos de atrasos dela. Essa ação não pode ser desfeita.</p>
         <button id="btn-delete-turma" class="action-button focus-ring mt-3 rounded-lg px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700" type="button">Excluir turma</button>
        </div>
-      </div>
+       </div>
+      </details>
      </section>
 
      <!-- Tela "Opções": substitui a lista de turmas enquanto está aberta -->
      <section id="teacher-options-view" class="hidden mt-5">
       <div class="flex flex-wrap items-center gap-3">
        <button id="btn-close-teacher-options" class="action-button focus-ring flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700" type="button">
-        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar para as turmas
+        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i> Voltar às turmas
        </button>
       </div>
       <h3 class="mt-4 flex items-center gap-2 text-xl font-extrabold text-[var(--ink)]"><i data-lucide="settings" class="h-5 w-5" aria-hidden="true"></i> Opções</h3>
+      <p class="mt-2 text-sm text-slate-500">Conectado como <strong id="teacher-account-email">—</strong></p>
+      <p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-slate-500">
+       <i data-lucide="info" aria-hidden="true" class="h-3.5 w-3.5 shrink-0 text-[#2B7A40]"></i>
+       <span>Apoio ao professor — não substitui o SUAP.</span>
+       <button id="btn-open-terms" type="button" class="focus-ring inline-flex min-h-11 items-center gap-1 rounded font-semibold text-[#2B7A40] underline hover:text-[#235f32] sm:min-h-0"><i data-lucide="book-open" class="h-3.5 w-3.5" aria-hidden="true"></i> Avisos importantes</button>
+      </p>
       <div>
      <details id="shortcut-details" class="group glass-surface rounded-2xl mt-5">
       <summary class="flex cursor-pointer list-none items-center justify-between gap-2 p-5 sm:p-6 focus-ring rounded-2xl">
@@ -1040,18 +1063,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
   </div>
 
   <template id="student-row-template">
-   <article class="student-row flex flex-col gap-4 py-4 sm:flex-row sm:items-center">
+   <article class="student-row flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4" role="listitem">
     <div class="flex min-w-0 flex-1 items-center gap-3">
      <div class="student-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-extrabold" aria-hidden="true"></div>
      <div class="min-w-0">
-      <h3 class="student-name truncate font-bold"></h3>
+      <p class="student-name truncate font-bold"></p>
       <span class="waiting-status text-xs text-slate-500">Aguardando registro</span> <span class="present-status hidden items-center gap-1.5 text-xs font-semibold text-emerald-700"> <i data-lucide="circle-check" aria-hidden="true" class="h-4 w-4"></i> <span class="present-status-label">Presente</span> </span>
      </div>
     </div>
-    <div class="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-     <button class="mark-button action-button focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Marcar presença</span> </button>
+    <div class="row-actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+     <button class="mark-button action-button focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2.5 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold sm:px-4" type="button"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span class="max-sm:hidden">Marcar presença</span><span class="sm:hidden">Marcar</span> </button>
      <div class="present-actions hidden items-center gap-2">
-      <span class="present-pill inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 bg-lime-100 text-lime-900"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Presente</span> </span> <button class="undo-button action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button"> <i data-lucide="undo-2" aria-hidden="true" class="h-4 w-4"></i> <span>Desfazer</span> </button>
+      <span class="present-pill inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 bg-lime-100 text-lime-900 max-sm:hidden"> <i data-lucide="check" aria-hidden="true" class="h-4 w-4"></i> <span>Presente</span> </span> <button class="undo-button action-button focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200" type="button"> <i data-lucide="undo-2" aria-hidden="true" class="h-4 w-4"></i> <span>Desfazer</span> </button>
      </div>
      <div class="identity-actions hidden flex-wrap items-center gap-2">
       <span class="text-sm text-slate-600">Confirmar presença de</span> <strong class="identity-name text-sm"></strong> <button class="confirm-attendance action-button focus-ring rounded-lg px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm" type="button">Sim, sou eu</button> <button class="cancel-attendance action-button focus-ring rounded-lg px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm" type="button">Cancelar</button>
@@ -1181,7 +1204,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <span id="toast-icon" aria-hidden="true"></span>
     <span id="toast-text" class="min-w-0 flex-1"></span>
     <button id="btn-toast-action" class="hidden shrink-0 rounded-lg bg-white/15 px-3 py-1 text-sm font-bold underline-offset-2 hover:bg-white/25 focus-ring" type="button"></button>
-    <button id="btn-close-toast" class="shrink-0 rounded-lg px-1 text-lg leading-none opacity-70 hover:opacity-100 focus-ring" type="button" aria-label="Fechar aviso">×</button>
+    <button id="btn-close-toast" class="-my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl leading-none opacity-70 hover:opacity-100 focus-ring" type="button" aria-label="Fechar aviso">×</button>
    </div>
   </div>
 
@@ -1232,19 +1255,24 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       <h2 id="atrasos-modal-title" class="text-xl font-extrabold text-[var(--ink)]">Atrasos</h2>
       <p class="mt-1 text-xs text-slate-500">Cada foto é apagada automaticamente 180 dias depois de enviada.</p>
      </div>
-     <button id="btn-close-atrasos" class="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
+     <button id="btn-close-atrasos" class="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
       <i data-lucide="x" class="h-5 w-5"></i>
      </button>
     </div>
 
-    <div class="mt-4 flex items-center gap-2">
-     <button id="btn-add-atraso" class="action-button focus-ring flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold sm:flex-none sm:px-4" type="button">
-      <i data-lucide="camera" aria-hidden="true" class="h-4 w-4"></i> <span>Adicionar foto</span>
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+     <!-- Celular: "Tirar foto" abre a câmera direto (sem o menu Câmera/Galeria) -->
+     <button id="btn-take-atraso" class="action-button focus-ring flex basis-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold sm:hidden" type="button">
+      <i data-lucide="camera" aria-hidden="true" class="h-4 w-4"></i> <span>Tirar foto</span>
+     </button>
+     <button id="btn-add-atraso" class="action-button focus-ring flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm bg-[#2B7A40] hover:bg-[#235f32] text-white font-semibold max-sm:bg-slate-100 max-sm:text-slate-700 max-sm:hover:bg-slate-200 sm:flex-none sm:px-4" type="button">
+      <i data-lucide="camera" aria-hidden="true" class="h-4 w-4 max-sm:hidden"></i><i data-lucide="image" aria-hidden="true" class="h-4 w-4 sm:hidden"></i> <span class="max-sm:hidden">Adicionar foto</span><span class="sm:hidden">Da galeria</span>
      </button>
      <button id="btn-download-all-atrasos" class="action-button focus-ring flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold sm:flex-none sm:px-4" type="button" disabled>
       <i data-lucide="download" aria-hidden="true" class="hidden h-4 w-4 sm:block"></i> <span id="btn-download-all-atrasos-label" class="whitespace-nowrap">Baixar todas</span>
      </button>
      <input id="atraso-file-input" class="hidden" type="file" accept="image/*" multiple>
+     <input id="atraso-camera-input" class="hidden" type="file" accept="image/*" capture="environment">
     </div>
 
     <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1275,7 +1303,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       <h2 id="atraso-viewer-title" class="text-lg font-extrabold text-[var(--ink)]">—</h2>
       <p id="atraso-viewer-subtitle" class="mt-0.5 text-xs text-slate-500"></p>
      </div>
-     <button id="btn-close-atraso-viewer" class="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
+     <button id="btn-close-atraso-viewer" class="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-ring" type="button" aria-label="Fechar">
       <i data-lucide="x" class="h-5 w-5"></i>
      </button>
     </div>
@@ -2175,6 +2203,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       studentDailyCodeInput.value = "";
       studentList.innerHTML = "";
       studentDoneDismissed = false;
+      presentesExpanded = false;
+      scrollToListPending = false;
       document.getElementById("student-done-panel").classList.add("hidden");
       setTeacherModeActive(false);
       attendanceFromDashboard = false;
@@ -2302,7 +2332,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         teacherModeLabel.textContent = "Modo professor (ativo)";
         startAttendanceSubscriptionsIfNeeded();
       } else {
-        btnTeacherMode.className = "action-button focus-ring inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 bg-white/85 text-slate-600 font-semibold text-xs";
+        btnTeacherMode.className = "focus-ring inline-flex min-h-11 items-center gap-1.5 rounded px-0.5 text-xs font-semibold text-slate-500 hover:text-[#2B7A40] hover:underline sm:min-h-0";
         teacherModeLabel.textContent = "Modo professor";
       }
       updateDailyCodeStatusUI();
@@ -2337,11 +2367,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         isDailyCodeVerified = true;
         updateDailyCodeStatusUI();
         startAttendanceSubscriptionsIfNeeded();
-        if (showMessages) {
-          showMessage("success", "Código do Dia validado com sucesso! Você já pode registrar sua presença.");
-          setTimeout(hideMessage, 4000);
-        }
         renderAttendance();
+        // O selo "Código validado" já confirma; em vez de mais um aviso, a
+        // tela desce até a lista (e fecha o teclado do celular).
+        if (showMessages) {
+          hideMessage();
+          studentDailyCodeInput.blur();
+          scrollToListPending = true; // desce quando a lista de alunos aparecer
+          scrollToListIfReady();
+        }
         return true;
       }
 
@@ -2417,6 +2451,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       presentActions.classList.toggle("flex", isPresent && canUndo);
       identityActions.classList.add("hidden");
       identityActions.classList.remove("flex");
+      row.classList.remove("is-confirming");
       waitingStatus.classList.toggle("hidden", isPresent);
       presentStatus.classList.toggle("hidden", !isPresent);
       presentStatus.classList.toggle("inline-flex", isPresent);
@@ -2449,6 +2484,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       updateDailyCodeStatusUI();
     });
 
+    // Depois de validar o código, a tela desce até a lista (uma vez só,
+    // quando os nomes já tiverem chegado do banco)
+    let scrollToListPending = false;
+    function scrollToListIfReady() {
+      if (!scrollToListPending || !getRows().length || attendanceListPanel.classList.contains("hidden")) return;
+      scrollToListPending = false;
+      requestAnimationFrame(() => attendanceListPanel.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+
     function renderAttendance() {
       const rows = getRows();
       let totalPresent = 0;
@@ -2458,14 +2502,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         renderRow(row);
       });
 
-      // Professor: quem ainda NÃO marcou fica no topo. Aluno: presentes no topo.
-      const absentFirst = isTeacherModeActive;
+      // Quem ainda NÃO marcou fica no topo (professor e aluno). Para o
+      // aluno, quem já marcou fica recolhido em "Já marcaram (N)".
       rows.sort((a, b) => {
         const recordA = getTodayRecord(a.dataset.studentName);
         const recordB = getTodayRecord(b.dataset.studentName);
 
-        if (recordA && !recordB) return absentFirst ? 1 : -1;
-        if (!recordA && recordB) return absentFirst ? -1 : 1;
+        if (recordA && !recordB) return 1;
+        if (!recordA && recordB) return -1;
 
         if (recordA && recordB) {
           const dateTimeA = `${recordA.data}T${recordA.horario}`;
@@ -2477,6 +2521,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       });
 
       rows.forEach((row) => studentList.appendChild(row));
+      applyPresentCollapse();
+      scrollToListIfReady();
 
       presentCount.textContent = String(totalPresent);
       studentCount.textContent = String(rows.length);
@@ -2485,6 +2531,42 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       progressFill.style.width = `${rows.length ? (totalPresent / rows.length) * 100 : 0}%`;
       progressTrack.setAttribute("aria-valuemax", String(rows.length));
       progressTrack.setAttribute("aria-valuenow", String(totalPresent));
+    }
+
+    // Aluno: quem já marcou fica recolhido num botão "Já marcaram (N)", para
+    // o próprio nome aparecer logo. Na busca, todos aparecem.
+    let presentesExpanded = false;
+    function applyPresentCollapse() {
+      const presentRows = getRows().filter((row) => getTodayRecord(row.dataset.studentName));
+      const collapse = !isTeacherModeActive && !normalize(searchInput.value) && presentRows.length > 0;
+      let toggle = document.getElementById("present-toggle");
+      if (!toggle) {
+        toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.id = "present-toggle";
+        toggle.className = "focus-ring flex min-h-11 w-full items-center justify-between gap-2 py-3 text-left text-sm font-semibold text-[#2B7A40] hover:underline";
+        toggle.addEventListener("click", () => {
+          presentesExpanded = !presentesExpanded;
+          applyPresentCollapse();
+        });
+      }
+      toggle.classList.toggle("hidden", !collapse);
+      if (collapse) {
+        studentList.insertBefore(toggle, presentRows[0]);
+        toggle.setAttribute("aria-expanded", String(presentesExpanded));
+        toggle.innerHTML = "";
+        const texto = document.createElement("span");
+        texto.textContent = presentesExpanded
+          ? `Esconder quem já marcou (${presentRows.length})`
+          : `Já marcaram (${presentRows.length}) — toque para ver`;
+        const seta = document.createElement("span");
+        seta.setAttribute("aria-hidden", "true");
+        seta.textContent = presentesExpanded ? "▴" : "▾";
+        toggle.append(texto, seta);
+      }
+      getRows().forEach((row) => {
+        row.classList.toggle("is-collapsed", collapse && !presentesExpanded && presentRows.includes(row));
+      });
     }
 
     function filterRows() {
@@ -2499,6 +2581,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       noResults.classList.toggle("hidden", visibleCount > 0);
       clearSearchButton.classList.toggle("hidden", !searchInput.value);
+      applyPresentCollapse();
     }
 
     searchInput.addEventListener("input", filterRows);
@@ -2509,6 +2592,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     function openIdentityConfirmation(row) {
+      row.classList.add("is-confirming");
       row.querySelector(".mark-button").classList.add("hidden");
       const actions = row.querySelector(".identity-actions");
       actions.classList.remove("hidden");
@@ -2517,6 +2601,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     function closeIdentityConfirmation(row) {
+      row.classList.remove("is-confirming");
       row.querySelector(".identity-actions").classList.add("hidden");
       row.querySelector(".identity-actions").classList.remove("flex");
       row.querySelector(".mark-button").classList.remove("hidden");
@@ -3329,7 +3414,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           const texto = document.createElement("span");
           texto.dataset.expira = String(expira); // atualizado a cada 30s
           texto.dataset.codigo = turma.codigoDoDia;
-          texto.textContent = `Código ${turma.codigoDoDia} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
+          fillCardCodeText(texto);
           codeLine.appendChild(texto);
         } else {
           codeLine.textContent = `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeExpiresAtMillis(turma))})`;
@@ -3340,7 +3425,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           const endBtn = document.createElement("button");
           endBtn.type = "button";
           endBtn.className = "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700";
-          endBtn.textContent = "Encerrar";
+          endBtn.innerHTML = '<span class="sm:hidden">Encerrar</span><span class="max-sm:hidden">Encerrar código</span>';
           endBtn.setAttribute("aria-label", `Encerrar o código de ${turma.nome}`);
           endBtn.addEventListener("click", () => endCodeForTurma(turma));
           codeLine.appendChild(endBtn);
@@ -3354,7 +3439,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const actions = document.createElement("div");
       // Celular: grade ocupando a largura toda (nomes completos, botões
       // largos para o dedo). A partir de 640px: uma linha, como antes.
-      actions.className = "grid w-full grid-cols-6 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center";
+      actions.className = "grid w-full grid-cols-[1.3fr_1fr_1fr] gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center";
 
       function makeQuickCodeButton(minutes, label) {
         const quickBtn = document.createElement("button");
@@ -3397,18 +3482,54 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       btnAtrasos.innerHTML = '<i data-lucide="camera" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i><span>Atrasos</span>';
       btnAtrasos.addEventListener("click", () => openAtrasosModal(turma));
 
-      // Celular: "Gerar código" 1h e 3h em cima; Chamada, Atrasos e Gerenciar embaixo
-      btnCode1h.classList.add("col-span-3");
-      btnCode3h.classList.add("col-span-3");
-      [btnChamada, btnAtrasos, btn].forEach((b) => b.classList.add("col-span-2"));
-      actions.appendChild(btnCode1h);
-      actions.appendChild(btnCode3h);
-      actions.appendChild(btnChamada);
-      actions.appendChild(btnAtrasos);
-      actions.appendChild(btn);
-      row.appendChild(info);
-      row.appendChild(actions);
+      // Celular: uma linha com as ações do dia a dia (Gerar código 1h,
+      // Chamada, Atrasos); "Gerar código 3h" e "Gerenciar" ficam no "⋯".
+      // No computador, todas numa linha, como antes.
+      [btnCode3h, btn].forEach((b) => b.classList.add("max-sm:hidden"));
+      [btnCode1h, btnChamada, btnAtrasos].forEach((b) => b.classList.add("max-sm:px-1.5", "max-sm:leading-tight"));
+      actions.append(btnCode1h, btnCode3h, btnChamada, btnAtrasos, btn);
+
+      const moreRow = document.createElement("div");
+      moreRow.className = "hidden w-full grid-cols-2 gap-2 sm:!hidden";
+      moreRow.id = `turma-more-${turma.id}`;
+      const btnCode3hMobile = makeQuickCodeButton(180, "Gerar código 3h");
+      const btnManageMobile = document.createElement("button");
+      btnManageMobile.type = "button";
+      btnManageMobile.className = btn.className.replace("max-sm:hidden", "");
+      btnManageMobile.textContent = "Gerenciar";
+      btnManageMobile.addEventListener("click", () => manageTurma(turma.id));
+      moreRow.append(btnCode3hMobile, btnManageMobile);
+
+      const btnMore = document.createElement("button");
+      btnMore.type = "button";
+      btnMore.className = "focus-ring absolute right-1.5 top-1.5 flex h-11 w-11 items-center justify-center rounded-lg text-xl font-bold leading-none text-slate-500 hover:bg-slate-100 sm:hidden";
+      btnMore.textContent = "⋯";
+      btnMore.setAttribute("aria-label", `Mais opções de ${turma.nome || "turma"}: gerar código 3h e gerenciar`);
+      btnMore.setAttribute("aria-expanded", "false");
+      btnMore.setAttribute("aria-controls", moreRow.id);
+      btnMore.addEventListener("click", () => {
+        const abrir = moreRow.classList.contains("hidden");
+        moreRow.classList.toggle("hidden", !abrir);
+        moreRow.classList.toggle("grid", abrir);
+        btnMore.setAttribute("aria-expanded", String(abrir));
+      });
+
+      row.classList.add("relative");
+      info.classList.add("max-sm:pr-10");
+      row.append(btnMore, info, actions, moreRow);
       return row;
+    }
+
+    // Linha do código no cartão: completa no computador, curta no celular
+    function fillCardCodeText(el) {
+      const expira = Number(el.dataset.expira);
+      const longo = document.createElement("span");
+      longo.className = "max-sm:hidden";
+      longo.textContent = `Código ${el.dataset.codigo} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
+      const curto = document.createElement("span");
+      curto.className = "sm:hidden";
+      curto.textContent = `Código ${el.dataset.codigo} · até ${formatTimeOfDay(expira)}`;
+      el.replaceChildren(longo, curto);
     }
 
     btnFillExample.addEventListener("click", () => {
@@ -3579,6 +3700,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function manageTurma(turmaId) {
       stopManagingTurma();
       teacherManagingTurmaId = turmaId;
+      // Alunos: aberto no computador (fica ao lado do histórico); no
+      // celular, recolhido. Configurações sempre começam recolhidas.
+      document.getElementById("manage-alunos-details").open = window.matchMedia("(min-width: 1024px)").matches;
+      document.getElementById("manage-config-details").open = false;
       setTeacherScreen("manage");
       pushTeacherHistory();
       manageCodeStatus.textContent = "";
@@ -3828,7 +3953,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         fix.className = record
           ? "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600"
           : "action-button focus-ring rounded-lg px-2.5 py-1 text-xs font-semibold bg-[#EEF6EC] hover:bg-[#DDEFD9] text-[#235f32]";
-        fix.textContent = record ? "Desfazer" : "Marcar presente";
+        // no celular, "Presente" (mais curto), para o nome do aluno caber
+        fix.innerHTML = record ? "Desfazer" : '<span class="sm:hidden">Presente</span><span class="max-sm:hidden">Marcar presente</span>';
         fix.setAttribute("aria-label", record ? `Desfazer a presença de ${aluno.nome} em ${formatDisplayDate(isoDate)}` : `Marcar ${aluno.nome} como presente em ${formatDisplayDate(isoDate)}`);
         fix.addEventListener("click", () => (record ? undoHistoryPresence(aluno.nome, isoDate, record) : markHistoryPresence(aluno.nome, isoDate, fix)));
         right.appendChild(fix);
@@ -4109,6 +4235,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     function renderManageAlunosList() {
       manageAlunoCount.textContent = String(teacherManagingAlunos.length);
+      // turma sem alunos (ex.: recém-criada): abre a parte de alunos para cadastrar
+      if (!teacherManagingAlunos.length) document.getElementById("manage-alunos-details").open = true;
       manageAlunosEmpty.classList.toggle("hidden", teacherManagingAlunos.length > 0);
       manageAlunosList.innerHTML = "";
       teacherManagingAlunos.forEach((aluno) => {
@@ -4854,7 +4982,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const btnBarCopyAbsent = document.getElementById("btn-bar-copy-absent");
 
     function renderTeacherCodeBar() {
-      document.getElementById("list-student-hint").classList.toggle("hidden", isTeacherModeActive); // instrução é para o aluno
+      btnOpenStudentInfo.classList.toggle("hidden", isTeacherModeActive); // "Sobre seus dados" é para o aluno
+      // instrução é para o aluno, e só até ele validar o código
+      document.getElementById("list-student-hint").classList.toggle("hidden", isTeacherModeActive || isDailyCodeVerified);
       const show = Boolean(selectedTurmaData) && (attendanceFromDashboard || (isTeacherModeActive && isTeacherAuthenticated));
       teacherCodeBar.classList.toggle("hidden", !show);
       attendanceListPanel.classList.toggle("teacher-compact", show); // layout enxuto no celular (ver CSS)
@@ -5062,6 +5192,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     const turmaQrBackdrop = document.getElementById("turma-qr-backdrop");
     function showTurmaQr(turma) {
+      hideToast();
       document.getElementById("turma-qr-title").textContent = turma.nome || "Turma";
       document.getElementById("turma-qr-link").textContent = turmaLink(turma.id);
       turmaQrBackdrop.classList.remove("hidden");
@@ -5169,7 +5300,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (name !== "manage") teacherManagePanel.classList.add("hidden");
       else teacherManagePanel.classList.remove("hidden");
       btnOpenTeacherOptions.classList.toggle("hidden", name !== "turmas");
-      btnTeacherBack.classList.toggle("invisible", name !== "turmas"); // nas outras telas, só "Voltar para as turmas"
+      btnTeacherBack.classList.toggle("invisible", name !== "turmas"); // nas outras telas, só "Voltar às turmas"
       if (name === "turmas" && previous !== "turmas") {
         requestAnimationFrame(() => window.scrollTo({ top: turmasScrollY }));
       } else if (name !== "turmas") {
@@ -5314,6 +5445,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     function showCodeDisplay(turma, code, minutes) {
+      hideToast(); // a própria janela já confirma o código gerado
       codeDisplayTurmaId = turma ? turma.id : null;
       codeDisplayEnded = false;
       codeDisplayValue.classList.remove("line-through", "opacity-40");
@@ -5345,7 +5477,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       document.querySelectorAll("#teacher-turmas-list [data-expira]").forEach((el) => {
         const restante = Number(el.dataset.expira) - Date.now();
         if (restante <= 0) algumExpirou = true;
-        el.textContent = `Código ${el.dataset.codigo} · expira em ${formatRemaining(restante)} (${formatTimeOfDay(Number(el.dataset.expira))})`;
+        fillCardCodeText(el);
       });
       if (algumExpirou) renderFilteredTeacherTurmasRows();
     }, 30000);
@@ -5377,6 +5509,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const atrasosModalTitle = document.getElementById("atrasos-modal-title");
     const btnCloseAtrasos = document.getElementById("btn-close-atrasos");
     const btnAddAtraso = document.getElementById("btn-add-atraso");
+    const btnTakeAtraso = document.getElementById("btn-take-atraso");
+    const atrasoCameraInput = document.getElementById("atraso-camera-input");
     const atrasoFileInput = document.getElementById("atraso-file-input");
     const atrasosTurmaFilter = document.getElementById("atrasos-turma-filter");
     const atrasosTurmaFilterWrap = document.getElementById("atrasos-turma-filter-wrap");
@@ -5617,6 +5751,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     async function openAtrasosModal(turma, isoDate) {
       if (!auth.currentUser) return;
+      hideToast(); // um aviso anterior não fica por cima da janela
       const token = ++atrasosLoadToken;
       atrasosTurma = turma || null;
       atrasosItems = [];
@@ -5624,6 +5759,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       atrasosEmpty.classList.add("hidden");
       atrasosModalTitle.textContent = atrasosTurma ? `Atrasos — ${atrasosTurma.nome || "Turma"}` : "Todos os atrasos";
       btnAddAtraso.classList.toggle("hidden", !atrasosTurma);
+      btnTakeAtraso.classList.toggle("hidden", !atrasosTurma); // "todos os atrasos": só ver/baixar
       atrasosTurmaFilterWrap.classList.toggle("hidden", Boolean(atrasosTurma));
       atrasosDateFilter.value = isoDate || "";
       if (!atrasosTurma) {
@@ -5684,15 +5820,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!atrasosTurma || atrasosUploading) return;
       atrasoFileInput.click();
     });
+    btnTakeAtraso.addEventListener("click", () => {
+      if (!atrasosTurma || atrasosUploading) return;
+      atrasoCameraInput.click();
+    });
 
-    atrasoFileInput.addEventListener("change", async () => {
-      const files = [...atrasoFileInput.files];
-      atrasoFileInput.value = "";
+    atrasoFileInput.addEventListener("change", () => sendAtrasoFiles(atrasoFileInput));
+    atrasoCameraInput.addEventListener("change", () => sendAtrasoFiles(atrasoCameraInput));
+
+    async function sendAtrasoFiles(input) {
+      const files = [...input.files];
+      input.value = "";
       const turma = atrasosTurma;
       if (!turma || !files.length) return;
 
       atrasosUploading = true;
       btnAddAtraso.disabled = true;
+      btnTakeAtraso.disabled = true;
       let sent = 0;
       const errors = [];
       for (let i = 0; i < files.length; i++) {
@@ -5720,12 +5864,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
       atrasosUploading = false;
       btnAddAtraso.disabled = false;
+      btnTakeAtraso.disabled = false;
       if (errors.length) {
         setAtrasosStatus("error", `${sent ? `${sent} foto(s) guardada(s). ` : ""}${errors.join(" ")}`);
       } else {
         setAtrasosStatus("success", sent > 1 ? `${sent} fotos guardadas.` : "Foto guardada.");
       }
-    });
+    }
 
     // --- Visualização, download e exclusão --------------------------------
     async function openAtrasoViewer(item) {
@@ -5939,6 +6084,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     });
 
     btnOpenAllAtrasos.addEventListener("click", () => openAtrasosModal(null));
+    document.getElementById("btn-open-all-atrasos-bottom").addEventListener("click", () => openAtrasosModal(null));
     btnCloseAtrasos.addEventListener("click", closeAtrasosModal);
     atrasosModalBackdrop.addEventListener("click", (event) => {
       if (event.target === atrasosModalBackdrop) closeAtrasosModal();
