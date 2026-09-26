@@ -159,6 +159,11 @@ Se a conta master for recriada, o UID muda: é preciso atualizar as regras.
 
 O botão "Criar professor" usa `createUserWithEmailAndPassword` do Firebase Authentication, chamado direto do navegador — consequência direta de não haver backend nesta arquitetura (ver **[Arquitetura e decisões técnicas](#arquitetura-e-decisões-técnicas)**). Isso só é possível porque o provedor "E-mail/senha" está ativado no projeto; essa mesma possibilidade já existe de forma independente do painel admin, já que qualquer requisição com o `apiKey` público do projeto pode pedir a criação de conta enquanto esse provedor estiver ativo — o painel admin apenas torna essa operação mais conveniente para a conta master, sem ser o que a habilita.
 
+**Cadastro público desligado (recomendado).** Em Firebase Console → Authentication → Configurações → Ações do usuário, desmarque **"Ativar criação (inscrição)"**. Assim ninguém cria login com o `apiKey` público. O "Criar professor" do Painel admin deixa de funcionar (ele usa esse mesmo cadastro) e avisa isso; para um professor novo:
+1. Firebase Console → Authentication → Users → **Adicionar usuário** (e-mail do professor e uma senha qualquer, que ninguém precisa saber);
+2. copie o **User UID**;
+3. no Painel admin → **"Conta criada no Firebase Console"**: cole o UID, nome e e-mail e toque em **Liberar conta**. A pessoa recebe um e-mail para definir a própria senha.
+
 **Professores liberados.** Como qualquer pessoa pode criar um login com o `apiKey` público (enquanto o cadastro estiver ativo), ter um login **não basta** para ser professor: as regras só deixam criar turma quem está em `professoresAutorizados/{uid}` — lista que **só a conta master** escreve (e a própria master, que não precisa estar nela). Assim, ninguém consegue pôr uma turma falsa na tela dos alunos.
 - "Criar professor" no Painel admin já libera o professor novo.
 - Conta que já existia (adicionada pelo Painel admin com o mesmo e-mail) é liberada sozinha quando a master abre o Painel admin depois do 1º acesso dela.
@@ -539,6 +544,16 @@ Em ⚙️ Opções → **Painel admin — professores** (só a conta master vê)
 - **Transferir turma**: no **Gerenciar** de qualquer turma, a conta master escolhe o novo professor. Alunos, histórico de presenças, código do dia e fotos de atrasos vão junto (as regras de acesso seguem o dono atual da turma), e o professor anterior deixa de ver a turma na hora.
 - **Remover professor**: pede a senha da conta master; transfere as turmas dele para outro professor **ou** as exclui por completo (alunos, presenças e fotos); e apaga o registro dele em `acordosProfessor` (sai da lista). **O login em si continua existindo** até ser apagado no Firebase Console (Authentication → Users → ⋮ → Excluir conta) — o site mostra o link no final. Enquanto o login existir, a pessoa ainda consegue entrar (vê o painel vazio e poderia criar turmas novas).
 - **Não é possível pelo site** (exigiria backend/Cloud Functions, que exigem o plano pago Blaze): trocar o e-mail de login de outro professor, apagar o login, ou editar o nome de outro professor (o nome é do próprio professor, em Minha conta).
+
+### Bibliotecas externas (integridade)
+
+Lucide (ícones), ExcelJS (planilhas) e qrcode-generator (QR Code) vêm do jsDelivr com **`integrity`** (SRI): o navegador só executa o arquivo se ele for exatamente o da versão publicada no npm — se o CDN for invadido e o arquivo alterado, ele é bloqueado (o site continua abrindo, só sem aquela função). Ao trocar a versão de uma dessas bibliotecas, gere o hash novo do arquivo exato:
+
+```
+curl -s <URL do arquivo> | openssl dgst -sha384 -binary | openssl base64 -A
+```
+
+e use `sha384-<resultado>` no `integrity`. O Tailwind (CDN "Play", que gera o CSS no navegador) e o Firebase (módulos importados pelo próprio script) ficam sem SRI.
 
 ## Modelo de dados
 

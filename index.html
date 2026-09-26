@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Chamada</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <!-- integrity: o navegador só roda o arquivo se ele for exatamente o da
+       versão publicada (se o servidor do CDN for invadido, o script alterado
+       é bloqueado). Ao trocar de versão, gere o hash novo (veja o README). -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" integrity="sha384-orgVf2eX2+m1zKAOIi09hD0W6GtVhoOUmqDK+sysYB2JTZ4vS86j4jm+X7a4Nnei" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" integrity="sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz" crossorigin="anonymous"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <!-- Ícone de aplicativo ao "Adicionar à tela inicial" (sem start_url no
        manifesto: o atalho abre a página em que foi criado, ex. #professor) -->
@@ -1041,6 +1044,33 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
          <button id="btn-create-professor" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[var(--ink)] hover:bg-slate-800" type="button">Criar professor</button>
         </div>
         <p id="create-professor-status" class="text-xs"></p>
+       </div>
+
+       <div class="mt-6 border-t border-slate-200 pt-5">
+        <h4 class="font-bold text-[var(--ink)]">Conta criada no Firebase Console</h4>
+        <p class="mt-1 text-sm text-slate-500">Com o cadastro público desligado no Firebase (mais seguro), o "Criar professor" acima não funciona. Então: crie a conta em <a id="link-console-add-user" target="_blank" rel="noopener" class="font-semibold text-[#2B7A40] underline">Firebase Console → Authentication → Adicionar usuário</a> (com uma senha qualquer), copie o <strong>User UID</strong> e libere aqui. A pessoa recebe um e-mail para definir a própria senha.</p>
+        <div class="mt-3 grid max-w-sm gap-3">
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-liberar-uid">User UID</label>
+          <input id="admin-liberar-uid" class="text-field font-mono" type="text" autocomplete="off" spellcheck="false" placeholder="Ex: E8QEzPvrppe9DF2NgtwpAyUahlz2">
+         </div>
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-liberar-nome">Nome</label>
+          <input id="admin-liberar-nome" class="text-field" type="text" placeholder="Ex: Juliane Moura">
+         </div>
+         <div>
+          <label class="mb-1 block text-sm font-semibold text-slate-700" for="admin-liberar-email">E-mail</label>
+          <input id="admin-liberar-email" class="text-field" type="email" placeholder="professor@ifsul.edu.br">
+         </div>
+         <label class="flex items-start gap-2 text-sm text-slate-700">
+          <input id="admin-liberar-enviar-senha" type="checkbox" class="mt-1 accent-[#2B7A40]" checked>
+          <span>Enviar e-mail para a pessoa definir a própria senha</span>
+         </label>
+         <div>
+          <button id="btn-liberar-uid" class="action-button focus-ring rounded-xl px-5 py-3 font-bold text-white bg-[#2B7A40] hover:bg-[#235f32]" type="button">Liberar conta</button>
+         </div>
+         <p id="liberar-uid-status" class="text-xs"></p>
+        </div>
        </div>
 
        <div class="mt-6 border-t border-slate-200 pt-5">
@@ -3569,6 +3599,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
             : messages[error.code];
           createProfessorStatus.className = naLista ? "text-xs text-emerald-600 font-semibold" : "text-xs text-red-600 font-semibold";
           if (naLista) refreshAdminProfessores();
+        } else if (error.code === "auth/admin-restricted-operation" || error.code === "auth/operation-not-allowed") {
+          // cadastro público desligado no Firebase: a conta é criada no Console
+          createProfessorStatus.textContent = "O cadastro de contas pelo site está desligado no Firebase (mais seguro). Crie a conta no Firebase Console e libere abaixo, em \"Conta criada no Firebase Console\".";
+          createProfessorStatus.className = "text-xs text-amber-700 font-semibold";
+          document.getElementById("admin-liberar-nome").value = nome;
+          document.getElementById("admin-liberar-email").value = email;
         } else {
           createProfessorStatus.textContent = messages[error.code] || "Não foi possível criar o professor. Tente novamente.";
           createProfessorStatus.className = "text-xs text-red-600 font-semibold";
@@ -3578,6 +3614,49 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           await deleteApp(secondaryApp);
         } catch (_) {}
         btnCreateProfessor.disabled = false;
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Liberar uma conta criada no Firebase Console (pelo UID). Com o
+    // cadastro público desligado, é assim que entra um professor novo.
+    // ---------------------------------------------------------------------
+    document.getElementById("link-console-add-user").href = `https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/users`;
+    document.getElementById("btn-liberar-uid").addEventListener("click", async (event) => {
+      if (!isMasterAccount) return;
+      const btn = event.currentTarget;
+      const status = document.getElementById("liberar-uid-status");
+      const uid = document.getElementById("admin-liberar-uid").value.trim();
+      const nome = document.getElementById("admin-liberar-nome").value.trim();
+      const email = document.getElementById("admin-liberar-email").value.trim().toLowerCase();
+      const enviarSenha = document.getElementById("admin-liberar-enviar-senha").checked;
+      const erro = (texto) => { status.textContent = texto; status.className = "text-xs text-red-600 font-semibold"; };
+      if (!/^[A-Za-z0-9]{10,128}$/.test(uid)) return erro("Cole o User UID (Firebase Console → Authentication → Users, coluna \"User UID\").");
+      if (!nome) return erro("Digite o nome do professor.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erro("Digite um e-mail válido (o mesmo da conta no Firebase).");
+      btn.disabled = true;
+      status.textContent = "Liberando...";
+      status.className = "text-xs text-slate-500";
+      try {
+        await liberarProfessor({ uid, email, nome });
+        await addPendingProfessor(nome, email, uid);
+        let aviso = "";
+        if (enviarSenha) {
+          try {
+            await sendPasswordResetEmail(auth, email);
+            aviso = ` Um e-mail foi enviado para ${email} definir a senha.`;
+          } catch (error) {
+            aviso = ` Não foi possível enviar o e-mail de senha (confira se o e-mail é o mesmo da conta); use "Redefinir senha" na lista.`;
+          }
+        }
+        status.textContent = `${nome} liberado(a) para criar turmas.${aviso}`;
+        status.className = "text-xs text-emerald-600 font-semibold";
+        ["admin-liberar-uid", "admin-liberar-nome", "admin-liberar-email"].forEach((id) => { document.getElementById(id).value = ""; });
+        refreshAdminProfessores();
+      } catch (error) {
+        erro("Não foi possível liberar. Confira se as regras do Firestore estão atualizadas (README).");
+      } finally {
+        btn.disabled = false;
       }
     });
 
@@ -5682,6 +5761,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // baixada quando um QR é mostrado.
     // ---------------------------------------------------------------------
     const QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js";
+    const QR_LIB_INTEGRITY = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k";
     let qrLibPromise = null;
 
     function loadQrLib() {
@@ -5690,6 +5770,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         qrLibPromise = new Promise((resolve, reject) => {
           const script = document.createElement("script");
           script.src = QR_LIB_URL;
+          script.integrity = QR_LIB_INTEGRITY; // só roda se for o arquivo original
+          script.crossOrigin = "anonymous";
           script.async = true;
           script.onload = () => resolve();
           script.onerror = () => { qrLibPromise = null; reject(new Error("qr-lib")); };
