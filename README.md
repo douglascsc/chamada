@@ -606,7 +606,8 @@ O mecanismo "nativo" para apagar isso automaticamente em segundo plano seria uma
 - consequentemente, a exclusão **não ocorre necessariamente exatamente 7 dias** depois da criação — pode levar mais tempo, dependendo de quando alguém acessa a Área do professor;
 - não exige Cloud Functions nem faturamento, e usa apenas operações normais de leitura/escrita do Firestore, dentro da mesma regra `allow delete: if ehProfessorDaTurma(turmaId)` já publicada;
 - não apaga `alunos` nem `turmas` — só o histórico de presença;
-- presenças marcadas **antes** desta atualização não têm o campo `expiraEm` e por isso não são apagadas por essa limpeza.
+- presenças antigas, sem o campo `expiraEm`, também são apagadas: a limpeza apaga ainda as presenças cuja `data` é de mais de 8 dias atrás;
+- **a conta master limpa as turmas de todos os professores** ao entrar e, se encontrar presenças que já tinham passado do prazo há mais de 2 dias (ou sem prazo), **avisa** quantas eram e o maior atraso. Entrando pelo menos 1 vez por semana, nada fica muito além dos 7 dias.
 
 Para reter por mais ou menos tempo, a constante `PRESENCA_RETENTION_MS` no `index.html` controla o valor gravado em `expiraEm`. Se o projeto migrar para o plano Blaze por outro motivo no futuro, a política de TTL nativa do Firestore (grupo de coleções `presencas`, campo `expiraEm`) passa a ser uma alternativa mais robusta a essa limpeza dependente de login.
 

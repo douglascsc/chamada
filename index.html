@@ -2040,22 +2040,48 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // Área do professor: para cada turma dele (ou de todos, se for a conta
     // master), apaga as presenças cujo expiraEm já passou. Não é automático
     // 24h por dia como o TTL nativo seria, mas não depende de faturamento.
+    // A conta master vê todas as turmas, então ao entrar ela limpa as de
+    // todos os professores — e avisa se encontrou presenças que já tinham
+    // passado bastante do prazo (sinal de que ninguém entrou por dias).
+    // Também apaga presenças antigas sem expiraEm (de versões antigas), pela
+    // data da chamada (mais de 8 dias atrás).
+    const ATRASO_LIMPEZA_AVISO_MS = 2 * 24 * 60 * 60 * 1000;
     async function cleanupExpiredPresencas() {
       if (!auth.currentUser) return;
+      let atrasadas = 0;
+      let maiorAtrasoMs = 0;
       try {
         const turmasSnap = await getDocs(myTurmasQuery());
         const now = Timestamp.now();
+        const dataLimite = getLocalParts(new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)).isoDate;
         for (const turmaDoc of turmasSnap.docs) {
           await cleanupExpiredAtrasos(turmaDoc.id);
-          const expiredQuery = query(
-            collection(db, "turmas", turmaDoc.id, "presencas"),
-            where("expiraEm", "<=", now)
-          );
-          const expiredSnap = await getDocs(expiredQuery);
-          if (expiredSnap.empty) continue;
-          const batch = writeBatch(db);
-          expiredSnap.docs.forEach((d) => batch.delete(d.ref));
-          await batch.commit();
+          const presencasCol = collection(db, "turmas", turmaDoc.id, "presencas");
+          const [expiredSnap, antigasSnap] = await Promise.all([
+            getDocs(query(presencasCol, where("expiraEm", "<=", now))),
+            getDocs(query(presencasCol, where("data", "<", dataLimite)))
+          ]);
+          const apagar = new Map();
+          [...expiredSnap.docs, ...antigasSnap.docs].forEach((d) => apagar.set(d.id, d));
+          if (!apagar.size) continue;
+          apagar.forEach((d) => {
+            const expira = d.data().expiraEm;
+            const atrasoMs = expira && typeof expira.toMillis === "function" ? now.toMillis() - expira.toMillis() : Infinity;
+            if (atrasoMs > ATRASO_LIMPEZA_AVISO_MS) {
+              atrasadas += 1;
+              if (Number.isFinite(atrasoMs)) maiorAtrasoMs = Math.max(maiorAtrasoMs, atrasoMs);
+            }
+          });
+          const docs = [...apagar.values()];
+          for (let i = 0; i < docs.length; i += 400) {
+            const batch = writeBatch(db);
+            docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+          }
+        }
+        if (isMasterAccount && atrasadas > 0) {
+          const dias = Math.floor(maiorAtrasoMs / (24 * 60 * 60 * 1000));
+          showTeacherMessage("info", `Limpeza: ${atrasadas} ${atrasadas === 1 ? "presença já tinha passado" : "presenças já tinham passado"} do prazo de 7 dias${dias ? ` (até ${dias} dias a mais)` : ""} e ${atrasadas === 1 ? "foi apagada" : "foram apagadas"} agora. Para não acontecer, entre na Área do professor pelo menos 1 vez por semana.`);
         }
       } catch (error) {
         // limpeza é só uma conveniência de retenção; se falhar (ex: sem
