@@ -115,7 +115,8 @@ check("Gerar código 1h: abre o código em tamanho grande (6 dígitos, \"482 193
 check("Código grande: turma e validade", (await page.textContent("#code-display-turma")) === "INF2M 2026 - Banco de Dados" && /^Válido até \d{2}:\d{2} · expira em (1h|59 min)$/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
 const fontPx = await page.$eval("#code-display-value", (e) => parseFloat(getComputedStyle(e).fontSize));
 const cabe = await page.$eval("#code-display-value", (e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= innerWidth);
-check("Código grande: fonte de pelo menos 48px e cabe na tela do celular", fontPx >= 48 && cabe, `${fontPx}px`);
+const umaLinha = await page.$eval("#code-display-value", (e) => e.getBoundingClientRect().height < parseFloat(getComputedStyle(e).fontSize) * 1.5);
+check("Código grande: fonte de pelo menos 48px, numa linha só e cabe na tela do celular", fontPx >= 48 && cabe && umaLinha, `${fontPx}px`);
 await page.screenshot({ path: `${OUT}/ux-03-codigo-grande-celular.png` });
 await page.click("#btn-close-code-display");
 check("Código grande: fecha pelo botão", await page.isHidden("#code-display-backdrop"));

@@ -148,6 +148,8 @@ await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTime
 await page.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026" }).getByRole("button", { name: "Gerar código 30 min" }).click();
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 const codigo = (await page.textContent("#code-display-value")).replace(/\s/g, "");
+const linha = await page.$eval("#code-display-value", (e) => ({ umaLinha: e.getBoundingClientRect().height < parseFloat(getComputedStyle(e).fontSize) * 1.5, cabe: e.scrollWidth <= e.clientWidth + 1 }));
+check("Computador: código grande numa linha só (\"123 456\")", linha.umaLinha && linha.cabe, JSON.stringify(linha));
 await page.waitForFunction(() => /de 3 já marcaram/.test(document.getElementById("code-display-count").textContent), null, { timeout: 10000 })
   .then(() => check("Contador na janela do código: \"2 de 3 já marcaram\"", true), () => check("Contador na janela do código: \"2 de 3 já marcaram\"", false));
 check("Contador conta os marcados de hoje", /^2 de 3 já marcaram$/.test(await page.textContent("#code-display-count")), await page.textContent("#code-display-count"));
