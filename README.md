@@ -80,7 +80,7 @@ Essa simplicidade tem um custo, em comparação com uma arquitetura instituciona
 
 - toda a autorização depende inteiramente da lógica escrita nas regras do Firestore — não há uma camada de validação de negócio adicional rodando em servidor;
 - tarefas que normalmente ficariam a cargo de um backend administrativo — como remover a conta de um professor, ou apagar dados vencidos de forma contínua em segundo plano — dependem de recursos client-side ou de configuração manual no Firebase Console (ver **[Limitações conhecidas](#limitações-conhecidas)**);
-- a conta com privilégios administrativos amplos (a "conta master") é identificada hoje por comparação de e-mail, e não por um mecanismo mais robusto como UID ou Custom Claims (ver **[Conta master](#conta-master)**).
+- a conta com privilégios administrativos amplos (a "conta master") é identificada nas regras pelo **UID** (ver **[Conta master](#conta-master)**); na interface, pelo e-mail.
 
 **Simplicidade não é o mesmo que segurança.** As duas coisas são avaliadas separadamente ao longo deste documento, em especial em **[Segurança e controle de acesso](#segurança-e-controle-de-acesso)**.
 
@@ -133,8 +133,9 @@ Sem estar logado, alguém só consegue criar uma presença informando `nome`, `d
 - **Não é verificado** se `nome` corresponde a um aluno de fato cadastrado na turma — é possível registrar presença com um nome inventado, desde que se conheça o código ativo.
 - **Não é verificado** se `data`/`horario` correspondem ao momento real — quem conhece o código ativo pode, em tese, enviar uma presença com uma data diferente (retroativa ou futura), dentro da janela em que aquele código é válido.
 - **É verificado e bloqueado**: reescrever a mesma presença de um mesmo aparelho no mesmo dia, e criar uma presença sem um código correto e ativo (a menos que quem estiver criando seja o professor dono da turma, autenticado).
+- **É verificado e bloqueado** (desde a revisão de segurança): campos além de `nome`, `data`, `horario`, `maquina`, `expiraEm` e `codigoUsado`; `nome` vazio ou com mais de 120 caracteres; `data` fora do formato `AAAA-MM-DD`; `horario` e `maquina` longos demais; e presença **sem `expiraEm`** ou com `expiraEm` mais de 8 dias à frente (antes era possível criar presenças que nunca seriam apagadas pela retenção, ou documentos enormes que enchiam o banco).
 
-O risco prático dessas lacunas de `nome`/`data`/`horario` é limitado, já que depende de conhecer o código ativo da turma — mas estão documentadas aqui deliberadamente, para não sugerir uma proteção maior do que a implementação atual entrega.
+Atenção: como o código do dia fica no documento público da turma (ver **[Código do dia](#código-do-dia)**), "conhecer o código ativo" não exige estar na sala. O risco prático dessas lacunas de `nome`/`data`/`horario` depende disso — mas estão documentadas aqui deliberadamente, para não sugerir uma proteção maior do que a implementação atual entrega.
 
 ### Isolamento entre professores
 
@@ -145,16 +146,12 @@ O risco prático dessas lacunas de `nome`/`data`/`horario` é limitado, já que 
 
 ### Conta master
 
-`TEACHER_EMAIL` (em `index.html`) e o e-mail definido dentro de `isMaster()` (nas regras do Firestore) são **duas configurações independentes**, em lugares diferentes, e precisam ser editadas juntas para o mesmo e-mail:
+A conta master aparece em dois lugares, com papéis diferentes:
 
-- `TEACHER_EMAIL` roda no navegador e controla apenas comportamento de **interface**: preenche o campo de e-mail do formulário de login por padrão, e decide se a interface mostra os painéis de conta master (ex.: "Painel admin — criar professor").
-- `isMaster()` roda no servidor do Firestore e é quem de fato **concede** a permissão de acessar/alterar turmas de qualquer professor.
+- `isMaster()`, nas **regras do Firestore**, é quem de fato **concede** a permissão de acessar e alterar turmas de qualquer professor. Ela compara o **UID** de quem está logado com o UID da conta master, escrito nas regras no lugar de `COLE_AQUI_O_UID_DA_CONTA_MASTER` (o UID aparece no Firebase Console → Authentication → Users → coluna "User UID"). Antes a comparação era pelo e-mail, que o Firebase não garante estar verificado — pelo UID, ninguém consegue se passar pela master mesmo criando uma conta com o mesmo e-mail (caso a original seja apagada, por exemplo).
+- `TEACHER_EMAIL`, no `index.html`, controla apenas a **interface** (mostrar os painéis da master, preencher o e-mail no login). Se não bater com a conta do UID acima, a interface mostra os painéis, mas o Firestore nega as ações.
 
-Se só uma das duas for trocada, o resultado é inconsistente:
-- trocar `TEACHER_EMAIL` sem trocar `isMaster()` faz a interface mostrar os painéis de master para uma conta que não tem a permissão real — qualquer ação de master de fato é negada pelo Firestore;
-- trocar `isMaster()` sem trocar `TEACHER_EMAIL` dá a permissão real a uma conta que a interface continua tratando como comum, e a conta antiga continua vendo os painéis sem ter mais a permissão.
-
-**Nota de arquitetura**: nesta versão, a conta master é identificada por comparação direta de e-mail. É uma simplificação adequada para uma instalação de escala pequena e individual, mas tem limitações: comparação de string é sensível a erro de digitação, e o mecanismo muda pouco mesmo se o e-mail da conta for trocado no Firebase sem atualizar as duas configurações. Uma arquitetura institucional de maior escala tende a identificar contas privilegiadas por **UID fixo** ou por **Custom Claims** do Firebase Authentication, que não dependem de comparar e-mails em dois lugares do código. Isso não está implementado nesta versão — é registrado aqui como um ponto de evolução, não como algo pendente de correção.
+Se a conta master for recriada, o UID muda: é preciso atualizar as regras.
 
 ### Criação de novos professores
 
@@ -183,7 +180,7 @@ Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteç
 - **Retenção**: presenças são apagadas automaticamente cerca de 7 dias após serem criadas (as marcadas antes dessa mudança, com 72h), na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
 - **Transparência com o professor**: no primeiro acesso à Área do professor, o sistema exibe um aviso obrigatório resumindo esses pontos, que só é dispensado depois de o professor clicar em "Concordo"; essa confirmação é registrada em `acordosProfessor/{uid}` (ver **[Modelo de dados](#modelo-de-dados)**).
 - **Link da turma**: o link/QR de cada turma só leva à tela da turma; não dá acesso a alunos, presenças nem fotos sem o código do dia (a lista de turmas já é pública hoje, para a tela inicial).
-- **Transparência com o aluno**: na tela de chamada, o link "ℹ️ Sobre seus dados" abre um aviso curto explicando o que é salvo e que o sistema não substitui o SUAP, com um canal para pedir acesso, correção ou exclusão dos próprios dados — um link de e-mail pré-preenchido para o professor daquela turma (`professorEmail`). Diferente do aviso do professor, este não é obrigatório: o aluno precisa clicar para ver.
+- **Transparência com o aluno**: na tela de chamada, o link "ℹ️ Sobre seus dados" abre um aviso curto explicando o que é salvo e que o sistema não substitui o SUAP, com um canal para pedir acesso, correção ou exclusão dos próprios dados — um link de e-mail pré-preenchido para o responsável pelo sistema (`TEACHER_EMAIL`) — o e-mail do professor não fica mais público na turma. Diferente do aviso do professor, este não é obrigatório: o aluno precisa clicar para ver.
 - **Responsabilidade institucional**: cabe ao professor e/ou à instituição que utiliza este sistema observar as próprias políticas de proteção de dados e a legislação aplicável, incluindo, quando pertinente, informar os alunos sobre esse tratamento complementar de dados.
 
 **Este texto não constitui parecer jurídico** nem certificação de conformidade com a LGPD. É uma descrição técnica honesta do que o sistema efetivamente faz com os dados, para que quem for utilizá-lo possa avaliar se atende às próprias obrigações legais e institucionais, e tomar as providências adicionais que considerar necessárias — por exemplo, um termo próprio para os alunos, ou consulta ao setor responsável por proteção de dados da instituição.
@@ -220,8 +217,11 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
    ```
    rules_version = '2';
    service cloud.firestore {
+     // Conta master: identificada pelo UID (não pelo e-mail, que não é
+     // verificado). Troque o texto abaixo pelo UID da sua conta:
+     // Firebase Console → Authentication → Users → coluna "User UID".
      function isMaster() {
-       return request.auth != null && request.auth.token.email == 'douglascamargo@ifsul.edu.br';
+       return request.auth != null && request.auth.uid == 'COLE_AQUI_O_UID_DA_CONTA_MASTER';
      }
 
      match /databases/{database}/documents {
@@ -241,28 +241,43 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                 && request.time < t.codigoDefinidoEm + duration.value(t.get('codigoDuracaoMin', 180), 'm');
        }
 
+       // Texto com tamanho máximo (evita documentos enormes)
+       function textoAte(valor, max) {
+         return valor is string && valor.size() <= max;
+       }
+
+       function corValida(valor) {
+         return valor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza'];
+       }
+
+       // Campos da turma com tipo e tamanho corretos (vale para criar e alterar)
+       function turmaValida(d) {
+         return textoAte(d.nome, 120) && d.nome.size() > 0
+                && (!('professorNome' in d) || textoAte(d.professorNome, 120))
+                && (!('codigoDoDia' in d) || textoAte(d.codigoDoDia, 10))
+                && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
+                && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
+                && (!('arquivada' in d) || d.arquivada is bool)
+                && (!('cor' in d) || corValida(d.cor));
+       }
+
        match /turmas/{turmaId} {
          allow read: if true;
+         // O e-mail do professor NÃO fica na turma (que é pública).
          allow create: if request.auth != null
                        && request.resource.data.keys().hasAll(['nome', 'professorUid'])
-                       && request.resource.data.nome is string
-                       && request.resource.data.professorUid == request.auth.uid;
+                       && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
+                       && request.resource.data.professorUid == request.auth.uid
+                       && turmaValida(request.resource.data);
          allow update: if request.auth != null
-                       && (
-                            isMaster()
-                            || resource.data.professorUid == request.auth.uid
-                            || (!('professorUid' in resource.data) && request.resource.data.professorUid == request.auth.uid)
-                          )
+                       && (isMaster() || resource.data.professorUid == request.auth.uid)
                        && request.resource.data.diff(resource.data).affectedKeys()
                        .hasOnly(['codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'nome', 'professorUid', 'professorEmail', 'professorNome', 'arquivada', 'cor'])
-                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nome'])
-                           || request.resource.data.nome is string)
-                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['codigoDuracaoMin'])
-                           || request.resource.data.codigoDuracaoMin is int)
-                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['arquivada'])
-                           || request.resource.data.arquivada is bool)
-                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['cor'])
-                           || request.resource.data.cor in ['', 'verde', 'azul', 'turquesa', 'roxo', 'rosa', 'vermelho', 'laranja', 'amarelo', 'cinza']);
+                       // só a conta master troca o dono (transferência / turmas antigas sem dono)
+                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
+                       // e-mail do professor (turmas antigas): só pode ser removido
+                       && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
+                       && turmaValida(request.resource.data);
          allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
          match /alunos/{alunoId} {
@@ -278,16 +293,20 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 
          match /presencas/{presencaId} {
            allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
-           allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina'])
-                         && request.resource.data.nome is string
-                         && request.resource.data.data is string
-                         && request.resource.data.horario is string
-                         && request.resource.data.maquina is string
+           // Só os campos esperados, com tamanho limitado, e com prazo de
+           // retenção obrigatório (no máximo 8 dias à frente).
+           allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
+                         && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado'])
+                         && textoAte(request.resource.data.nome, 120) && request.resource.data.nome.size() > 0
+                         && request.resource.data.data is string && request.resource.data.data.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                         && textoAte(request.resource.data.horario, 10)
+                         && textoAte(request.resource.data.maquina, 64)
+                         && request.resource.data.expiraEm is timestamp
+                         && request.resource.data.expiraEm <= request.time + duration.value(8, 'd')
                          && (
                               ehProfessorDaTurma(turmaId)
                               || (
-                                   request.resource.data.keys().hasAll(['codigoUsado'])
-                                   && request.resource.data.codigoUsado is string
+                                   textoAte(request.resource.data.get('codigoUsado', null), 10)
                                    && codigoAtivo(turmaId)
                                    && request.resource.data.codigoUsado == turmaAtual(turmaId).codigoDoDia
                                  )
@@ -448,7 +467,9 @@ Tudo fica no Cloud Firestore, no projeto Firebase de cada instalação, organiza
 
 ```
 turmas/{turmaId}
-  nome, codigoDoDia, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorEmail, professorNome, arquivada, cor
+  nome, codigoDoDia, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorNome, arquivada, cor
+  (o e-mail do professor NÃO fica na turma, que é pública: fica em acordosProfessor;
+   turmas antigas perdem o campo professorEmail quando o dono ou a master entram)
   alunos/{alunoId}
     nome
   presencas/{presencaId}

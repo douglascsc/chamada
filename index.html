@@ -1333,7 +1333,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import {
       getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, terminate, clearIndexedDbPersistence,
-      collection, doc, addDoc, setDoc, deleteDoc, updateDoc,
+      collection, doc, addDoc, setDoc, deleteDoc, updateDoc, deleteField,
       onSnapshot, query, where, orderBy, getDocs, getDoc, getCountFromServer, writeBatch, serverTimestamp, Timestamp, Bytes
     } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
     import {
@@ -1579,7 +1579,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const studentInfoContactLink = document.getElementById("student-info-contact-link");
 
     function openStudentInfoModal() {
-      const contactEmail = (selectedTurmaData && selectedTurmaData.professorEmail) || TEACHER_EMAIL;
+      const contactEmail = TEACHER_EMAIL; // responsável pelo sistema (o e-mail do professor não fica mais público)
       studentInfoContactLink.textContent = contactEmail;
       studentInfoContactLink.href = `mailto:${contactEmail}?subject=${encodeURIComponent("Solicitação LGPD - meus dados no Registro de Chamada")}`;
       studentInfoModalBackdrop.classList.remove("hidden");
@@ -1891,9 +1891,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       );
     }
 
-    // Migra turmas antigas (criadas antes de existir professorUid) para o
-    // professor que estiver logado agora, e mantém professorEmail/professorNome
-    // das turmas dele em dia (ex: depois de trocar o nome de exibição).
+    // Mantém o nome do professor das turmas dele em dia (ex: depois de trocar
+    // o nome de exibição) e tira o e-mail do professor do documento da turma,
+    // que é público (o e-mail fica só em acordosProfessor). Turmas antigas
+    // sem dono (de antes de existir professorUid) só a conta master assume;
+    // a master também limpa o e-mail de todas as turmas.
     // acordosProfessor/{uid} também serve de "lista de professores" para a
     // conta master (nome + e-mail). Só atualiza quem já aceitou os avisos —
     // criar o documento antes disso pularia o aviso obrigatório.
@@ -1919,8 +1921,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     async function syncOwnedTurmasProfessorInfo() {
       if (!auth.currentUser) return;
       const myUid = auth.currentUser.uid;
-      const myEmail = auth.currentUser.email;
-      const myNome = auth.currentUser.displayName || myEmail;
+      const myNome = auth.currentUser.displayName || "Professor";
 
       try {
         const snap = await getDocs(turmasCollection);
@@ -1931,9 +1932,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           const data = d.data();
           const isOrphan = !data.professorUid;
           const isMine = data.professorUid === myUid;
-          if (!isOrphan && !isMine) return;
-          if (data.professorUid === myUid && data.professorEmail === myEmail && data.professorNome === myNome) return;
-          batch.update(d.ref, { professorUid: myUid, professorEmail: myEmail, professorNome: myNome });
+          const assumir = isMine || (isOrphan && isMasterAccount);
+          const mudancas = {};
+          if (assumir && data.professorUid !== myUid) mudancas.professorUid = myUid;
+          if (assumir && data.professorNome !== myNome) mudancas.professorNome = myNome;
+          if ((assumir || isMasterAccount) && "professorEmail" in data) mudancas.professorEmail = deleteField();
+          if (!Object.keys(mudancas).length) return;
+          batch.update(d.ref, mudancas);
           hasWrites = true;
         });
 
@@ -2037,7 +2042,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let turmaSelectFilterUid = null; // null = todos os professores
 
     function professorLabel(turma) {
-      return turma.professorNome || turma.professorEmail || "Professor";
+      return turma.professorNome || "Professor";
     }
 
     function renderTurmaSelectList(turmas) {
@@ -2132,7 +2137,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       title.className = "font-bold text-[var(--ink)] truncate";
       title.textContent = turma.nome || "Turma sem nome";
       info.appendChild(title);
-      if (turma.professorNome || turma.professorEmail) {
+      if (turma.professorNome) {
         const subtitle = document.createElement("div");
         subtitle.className = "text-xs text-slate-500 truncate";
         subtitle.textContent = professorLabel(turma);
@@ -3776,7 +3781,6 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           codigoDoDia: "",
           codigoDefinidoEm: null,
           professorUid: auth.currentUser.uid,
-          professorEmail: auth.currentUser.email,
           professorNome: auth.currentUser.displayName || auth.currentUser.email
         });
 
@@ -4774,8 +4778,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     async function transferTurmaTo(turmaId, professor) {
       await updateDoc(doc(db, "turmas", turmaId), {
         professorUid: professor.uid,
-        professorEmail: professor.email || "",
-        professorNome: professor.nome || professor.email || ""
+        professorEmail: deleteField(), // o e-mail não fica mais na turma (pública)
+        professorNome: professor.nome || "Professor"
       });
     }
 
@@ -5031,7 +5035,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
       manageTransferSection.classList.remove("hidden");
       const turma = teacherManagingTurmaData;
-      manageTransferOwner.textContent = turma.professorNome || turma.professorEmail || "—";
+      manageTransferOwner.textContent = turma.professorNome || "—";
       if (!professoresLoaded) {
         try { await loadProfessores(); } catch (error) { manageTransferStatus.textContent = "Não foi possível carregar a lista de professores."; return; }
       }
