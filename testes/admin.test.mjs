@@ -184,10 +184,10 @@ await pM.waitForSelector("#reauth-backdrop:not(.hidden)");
 await pM.fill("#reauth-input", PASS); await pM.click("#btn-submit-reauth");
 await rowC.getByText("Último passo").waitFor({ timeout: 15000 });
 check("Remover (excluir): turma e tudo dentro dela apagados", !(await read("turmas/tC1")) && (await count("turmas/tC1/alunos")) === 0 && (await count("turmas/tC1/atrasos")) === 0 && (await count("turmas/tC1/atrasosImg")) === 0);
-await pM.click("#btn-refresh-professores");
+await rowC.getByRole("button", { name: "Concluir" }).click(); // fecha a confirmação e atualiza a lista
 await pM.waitForFunction(() => !/Carregando/.test(document.getElementById("admin-professores-status").textContent) && document.querySelectorAll("#admin-professores-list > div").length > 0);
 rows = await adminRows(pM);
-check("Lista atualizada: Ana e Carla não aparecem mais", !rows.some((r) => r.startsWith("Ana") || r.startsWith("Carla")), rows.join(" || "));
+check("\"Concluir\": lista atualizada, Ana e Carla não aparecem mais", !rows.some((r) => r.startsWith("Ana") || r.startsWith("Carla")), rows.join(" || "));
 
 // ===== Senha errada não altera nada =====
 const rowN = pM.locator("#admin-professores-list > div", { hasText: "Nelson Novo" });
