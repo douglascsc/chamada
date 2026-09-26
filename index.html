@@ -1771,6 +1771,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let codigoVerificado = "";       // código que o aluno digitou e o servidor aceitou
     let codigoVerificadoEm = null;   // codigoDefinidoEm da turma quando o código foi aceito
     let nomesDaSalaAluno = [];       // lista de nomes que o aluno recebe junto com o código
+    let marcadosDaSalaAluno = new Set(); // quem o professor já marcou (sem o código), nome normalizado
     let unsubSalaAluno = null;
     let attendanceMode = null;       // "professor" | "aluno" | null (quem está usando a chamada)
     let attendanceKey = null;        // modo + código (aluno): muda → busca de novo
@@ -2366,6 +2367,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         { includeMetadataChanges: true }, // para saber quando uma marcação sem internet foi enviada
         (snap) => {
           presencas = snap.docs.map((d) => ({ id: d.id, ...d.data(), pendente: d.metadata.hasPendingWrites }));
+          if (modoDaEscuta === "professor") sincronizarMarcadosDaSala(selectedTurmaData, presencas);
           renderAttendance();
         },
         (error) => {
@@ -2403,6 +2405,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codigoVerificado = "";
       codigoVerificadoEm = null;
       nomesDaSalaAluno = [];
+      marcadosDaSalaAluno = new Set();
       studentDailyCodeInput.value = "";
       studentList.innerHTML = "";
       studentDoneDismissed = false;
@@ -2515,10 +2518,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // professor da turma lista essa coleção. É acompanhada só nas turmas que
     // precisam mostrar o código (cartões com código recente, Gerenciar,
     // Chamada), para não gastar leituras.
-    const salasProfessor = new Map(); // turmaId -> { codigo, nomes, definidoEm, unsub }
+    const salasProfessor = new Map(); // turmaId -> { codigo, nomes, marcados, definidoEm, unsub }
     function acompanharSala(turmaId) {
       if (!turmaId || !auth.currentUser || salasProfessor.has(turmaId)) return;
-      const entry = { codigo: "", nomes: [], definidoEm: null, unsub: null };
+      const entry = { codigo: "", nomes: [], marcados: [], definidoEm: null, unsub: null };
       salasProfessor.set(turmaId, entry);
       entry.unsub = onSnapshot(collection(db, "turmas", turmaId, "salas"), (snap) => {
         let atual = null;
@@ -2526,10 +2529,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           const data = d.data();
           const millis = data.definidoEm && typeof data.definidoEm.toMillis === "function" ? data.definidoEm.toMillis() : null;
           if (!atual || (millis || 0) > (atual.definidoEm || 0)) {
-            atual = { codigo: d.id, nomes: Array.isArray(data.nomes) ? data.nomes : [], definidoEm: millis };
+            atual = { codigo: d.id, nomes: Array.isArray(data.nomes) ? data.nomes : [], marcados: Array.isArray(data.marcados) ? data.marcados : [], definidoEm: millis };
           }
         });
-        Object.assign(entry, atual || { codigo: "", nomes: [], definidoEm: null });
+        Object.assign(entry, atual || { codigo: "", nomes: [], marcados: [], definidoEm: null });
         aoMudarSala(turmaId);
       }, () => { entry.unsub = null; }); // sem permissão (turma de outro professor)
     }
@@ -2558,10 +2561,38 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       entry.nomes = lista;
       updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { nomes: lista }).catch(() => {});
     }
+    // Quem já está presente hoje SEM o código atual (ex.: o professor marcou
+    // antes de gerar o código): vai na sala, para o aluno ver como marcado.
+    // (As presenças com o código atual o aluno já consegue ler.)
+    function marcadosSemCodigo(records, codigo) {
+      const hoje = getLocalParts().isoDate;
+      return nomesParaSala(records.filter((r) => r.data === hoje && r.codigoUsado !== codigo).map((r) => r.nome));
+    }
+    function sincronizarMarcadosDaSala(turma, records) {
+      if (!turma || !isCodeActive(turma)) return;
+      const codigo = codigoDe(turma);
+      if (!codigo) return;
+      const entry = salasProfessor.get(turma.id);
+      const lista = marcadosSemCodigo(records, codigo);
+      if (JSON.stringify(lista) === JSON.stringify(entry.marcados || [])) return;
+      entry.marcados = lista;
+      updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { marcados: lista }).catch(() => {});
+    }
+    // Depois de mudar uma presença de hoje fora da Chamada (ex.: histórico)
+    async function atualizarMarcadosDaSalaAgora(turma) {
+      if (!turma || !isCodeActive(turma) || !codigoDe(turma)) return;
+      try {
+        const snap = await getDocs(query(collection(db, "turmas", turma.id, "presencas"), where("data", "==", getLocalParts().isoDate)));
+        sincronizarMarcadosDaSala(turma, snap.docs.map((d) => d.data()));
+      } catch (error) { /* só conveniência */ }
+    }
     function aoMudarSala(turmaId) {
       if (selectedTurmaId === turmaId) {
         renderTeacherCodeBar();
-        if (attendanceMode === "professor") sincronizarNomesDaSala(selectedTurmaData, alunos.map((a) => a.nome));
+        if (attendanceMode === "professor") {
+          sincronizarNomesDaSala(selectedTurmaData, alunos.map((a) => a.nome));
+          sincronizarMarcadosDaSala(selectedTurmaData, presencas);
+        }
       }
       if (teacherManagingTurmaId === turmaId) {
         renderManageCode();
@@ -2575,9 +2606,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // o código vira o ID do documento com a lista de nomes. Tudo de uma vez
     // (um código anterior é apagado na mesma gravação).
     async function abrirCodigoDaTurma(turmaId, code, minutes) {
-      const [alunosSnap, salasSnap] = await Promise.all([
+      const [alunosSnap, salasSnap, hojeSnap] = await Promise.all([
         getDocs(collection(db, "turmas", turmaId, "alunos")),
-        getDocs(collection(db, "turmas", turmaId, "salas"))
+        getDocs(collection(db, "turmas", turmaId, "salas")),
+        getDocs(query(collection(db, "turmas", turmaId, "presencas"), where("data", "==", getLocalParts().isoDate)))
       ]);
       const batch = writeBatch(db);
       batch.update(doc(db, "turmas", turmaId), {
@@ -2588,6 +2620,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       salasSnap.docs.forEach((d) => { if (d.id !== code) batch.delete(d.ref); });
       batch.set(doc(db, "turmas", turmaId, "salas", code), {
         nomes: nomesParaSala(alunosSnap.docs.map((d) => d.data().nome)),
+        marcados: marcadosSemCodigo(hojeSnap.docs.map((d) => d.data()), code),
         definidoEm: serverTimestamp()
       });
       await batch.commit();
@@ -2723,17 +2756,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
             return; // (depois de aceito: código encerrado/trocado — a lista fica como estava)
           }
           const nomes = Array.isArray(snap.data().nomes) ? snap.data().nomes.filter((n) => typeof n === "string") : [];
+          const marcados = new Set((Array.isArray(snap.data().marcados) ? snap.data().marcados : []).filter((n) => typeof n === "string").map(normalize));
           if (!respondeu) {
             nomesDaSalaAluno = nomes;
+            marcadosDaSalaAluno = marcados;
             responder("ok");
             return;
           }
-          // o professor incluiu ou mudou alunos com o código ativo
+          // o professor incluiu/mudou alunos ou marcou/desfez presenças com o código ativo
           if (token !== verificacaoAtual) return;
+          const mudouNomes = JSON.stringify(nomes) !== JSON.stringify(nomesDaSalaAluno);
           nomesDaSalaAluno = nomes;
+          marcadosDaSalaAluno = marcados;
           if (attendanceMode === "aluno") {
-            alunos = nomes.map((nome) => ({ id: nome, nome }));
-            syncStudentRows();
+            if (mudouNomes) {
+              alunos = nomes.map((nome) => ({ id: nome, nome }));
+              syncStudentRows();
+            }
             renderAttendance();
           }
         }, (error) => {
@@ -2780,11 +2819,36 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     // ---------------------------------------------------------------------
     // Lista de alunos / presença
     // ---------------------------------------------------------------------
+    // Mais de um registro do mesmo aluno no mesmo dia (ex.: o professor marcou
+    // e o aluno marcou de novo): vale o horário mais cedo (o atraso fica certo).
+    function registroMaisCedo(a, b) {
+      const ma = horarioEmMinutos(horarioDe(a));
+      const mb = horarioEmMinutos(horarioDe(b));
+      if (ma === null) return mb === null ? a : b;
+      if (mb === null) return a;
+      return mb < ma ? b : a;
+    }
+    function presencaPorAluno(records) {
+      const map = new Map();
+      records.forEach((r) => {
+        const k = normalize(r.nome);
+        map.set(k, map.has(k) ? registroMaisCedo(map.get(k), r) : r);
+      });
+      return map;
+    }
+
     function getTodayRecord(name) {
       const today = getLocalParts().isoDate;
-      return presencas.find((record) =>
-        record.data === today && normalize(record.nome) === normalize(name)
-      );
+      const alvo = normalize(name);
+      let achado = null;
+      presencas.forEach((record) => {
+        if (record.data === today && normalize(record.nome) === alvo) achado = achado ? registroMaisCedo(achado, record) : record;
+      });
+      // Aluno: quem o professor já marcou sem o código (vem junto com o código)
+      if (!achado && attendanceMode === "aluno" && marcadosDaSalaAluno.has(alvo)) {
+        return { id: null, nome: name, data: today, horario: "", jaMarcadoPeloProfessor: true };
+      }
+      return achado;
     }
 
     function syncStudentRows() {
@@ -3197,7 +3261,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       setRowBusy(row, true);
 
       try {
-        await deleteDoc(doc(db, "turmas", selectedTurmaId, "presencas", record.id));
+        // apaga todos os registros do aluno hoje (pode haver repetidos)
+        const today = getLocalParts().isoDate;
+        const registros = presencas.filter((r) => r.id && r.data === today && normalize(r.nome) === normalize(name));
+        const batch = writeBatch(db);
+        registros.forEach((r) => batch.delete(doc(db, "turmas", selectedTurmaId, "presencas", r.id)));
+        await batch.commit();
         showMessage("info", `A presença de ${name} foi desfeita pelo professor.`);
       } catch (error) {
         console.error("[undoAttendance] erro ao desfazer presença:", error.code, error.message);
@@ -4363,6 +4432,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           expiraEm: Timestamp.fromMillis(meioDia + PRESENCA_RETENTION_MS)
         });
         showToast("success", `${nome} marcado(a) como presente em ${formatDisplayDate(isoDate)}.`);
+        if (isoDate === getLocalParts().isoDate) atualizarMarcadosDaSalaAgora(teacherManagingTurmaData);
         await loadHistory(isoDate);
       } catch (error) {
         showToast("error", "Não foi possível marcar a presença. Tente novamente.");
@@ -4378,8 +4448,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       });
       if (!ok) return;
       try {
-        await deleteDoc(doc(db, "turmas", teacherManagingTurmaId, "presencas", record.id));
+        // apaga todos os registros do aluno naquele dia (pode haver repetidos)
+        const registros = historyPresencas.filter((r) => r.id && r.data === isoDate && normalize(r.nome) === normalize(nome));
+        const batch = writeBatch(db);
+        (registros.length ? registros : [record]).forEach((r) => batch.delete(doc(db, "turmas", teacherManagingTurmaId, "presencas", r.id)));
+        await batch.commit();
         showToast("success", `Presença de ${nome} em ${formatDisplayDate(isoDate)} desfeita.`);
+        if (isoDate === getLocalParts().isoDate) atualizarMarcadosDaSalaAgora(teacherManagingTurmaData);
         await loadHistory(isoDate);
       } catch (error) {
         showToast("error", "Não foi possível desfazer. Tente novamente.");
@@ -4423,7 +4498,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       historySelectedDate = isoDate;
       updateHistoryDayAtrasos(isoDate);
       const dayRecords = historyPresencas.filter((r) => r.data === isoDate);
-      const recordByAluno = new Map(dayRecords.map((r) => [normalize(r.nome), r]));
+      const recordByAluno = presencaPorAluno(dayRecords);
 
       const roster = teacherManagingAlunos
         .slice()
@@ -4479,7 +4554,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     btnExportHistoryCsv.addEventListener("click", async () => {
       if (!historySelectedDate || !teacherManagingTurmaData) return;
       const dayRecords = historyPresencas.filter((r) => r.data === historySelectedDate);
-      const recordByAluno = new Map(dayRecords.map((r) => [normalize(r.nome), r]));
+      const recordByAluno = presencaPorAluno(dayRecords);
       const displayDate = formatDisplayDate(historySelectedDate);
       const inicio = inicioDaChamada(dayRecords);
 
@@ -5744,7 +5819,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     document.getElementById("btn-export-week").addEventListener("click", async () => {
       if (!teacherManagingTurmaData || !historyPresencas.length) return;
       const dates = [...new Set(historyPresencas.map((r) => r.data))].sort();
-      const byDate = new Map(dates.map((d) => [d, new Map(historyPresencas.filter((r) => r.data === d).map((r) => [normalize(r.nome), r]))]));
+      const byDate = new Map(dates.map((d) => [d, presencaPorAluno(historyPresencas.filter((r) => r.data === d))]));
       const nomes = teacherManagingAlunos.map((a) => a.nome).sort((a, b) => a.localeCompare(b, "pt-BR"));
       const conhecidos = new Set(nomes.map(normalize));
       historyPresencas.forEach((r) => { if (!conhecidos.has(normalize(r.nome))) { conhecidos.add(normalize(r.nome)); nomes.push(r.nome); } });
@@ -6130,6 +6205,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }, () => {}));
       codeDisplayWatch.push(onSnapshot(query(collection(db, "turmas", turmaId, "presencas"), where("data", "==", getLocalParts().isoDate)), (snap) => {
         presentesHoje = new Set(snap.docs.map((d) => normalize(d.data().nome)));
+        sincronizarMarcadosDaSala(allTeacherTurmas.find((t) => t.id === turmaId), snap.docs.map((d) => d.data()));
         verificar();
       }, () => {}));
     }

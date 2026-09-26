@@ -113,7 +113,8 @@ O código do dia deve ser entendido como uma **credencial compartilhada da turma
 
 - **O código não fica na turma.** A coleção `turmas` tem `allow read: if true` (a tela inicial lista as turmas antes de qualquer login), então a turma guarda só **quando** o código foi gerado (`codigoDefinidoEm`) e **por quanto tempo** vale (`codigoDuracaoMin`). O código em si é o **ID** do documento `turmas/{turmaId}/salas/{código}`, que guarda a lista de nomes da turma para os alunos. Ninguém consegue listar essa coleção (só o professor dono / conta master), então só chega nesse documento quem já sabe o código.
 - **Quem confere é o servidor.** O aluno digita o código e o site tenta ler `salas/{código digitado}`: as regras (função `salaValida()`) só liberam se esse documento existir, for do código atual (mesmo horário de `codigoDefinidoEm` da turma) e o prazo não tiver acabado. Código errado, encerrado, trocado ou vencido → acesso negado, e o site mostra "código incorreto" ou "expirou".
-- **O aluno não lê a coleção `alunos`** (só o professor): recebe apenas a lista de nomes da sala. **Presenças**: o aluno só consegue ler as presenças do dia marcadas com o código atual (a consulta precisa filtrar por `codigoUsado`) — por isso uma presença marcada pelo professor **antes** de gerar o código não aparece como marcada na tela dos alunos (para o professor aparece normalmente). As marcadas pelo professor com um código ativo levam o código e aparecem para os alunos.
+- **O aluno não lê a coleção `alunos`** (só o professor): recebe apenas a lista de nomes da sala. **Presenças**: o aluno só consegue ler as presenças do dia marcadas com o código atual (a consulta precisa filtrar por `codigoUsado`) As marcadas pelo professor com um código ativo levam o código e aparecem para os alunos. As que o professor marcou **antes** de gerar o código vão numa lista `marcados` (só os nomes) dentro da sala: o aluno vê esses nomes como já marcados. Essa lista é atualizada quando o professor marca ou desfaz uma presença de hoje (na Chamada, na janela do código ou no histórico).
+- **Registro repetido** (ex.: professor e aluno marcaram o mesmo nome): conta uma vez só em todo lugar, e vale o **horário mais cedo** (o atraso fica certo). "Desfazer" apaga todos os registros daquele aluno no dia.
 - **Aluno incluído com o código ativo**: ao incluir/renomear/remover um aluno pelo site (Gerenciar, Chamada ou com a janela do código aberta), a lista de nomes da sala é atualizada na hora. Se isso não acontecer (ex.: alteração feita direto no Firebase Console), é só gerar o código de novo.
 - Turmas antigas, que tinham o código gravado na própria turma (`codigoDoDia`), perdem esse campo quando o dono (ou a conta master) entra na Área do professor, e ficam sem código ativo até um novo ser gerado. As regras não aceitam mais gravar um código na turma.
 - O código continua tendo 4 dígitos: alguém muito insistente poderia tentar adivinhá-lo por tentativa e erro (até 10 mil tentativas) durante o prazo de validade. O App Check (ver instalação) dificulta esse tipo de abuso.
@@ -330,16 +331,20 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
          allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
-         // Lista de nomes para os alunos, com o código como ID. Aluno só lê
+         // Lista de nomes para os alunos (e de quem já está marcado), com o
+         // código como ID. Aluno só lê
          // (um documento, pelo código exato); listar é só do professor.
          match /salas/{codigo} {
            allow get: if ehProfessorDaTurma(turmaId) || salaValida(turmaId, codigo);
            allow list, delete: if ehProfessorDaTurma(turmaId);
            allow create, update: if ehProfessorDaTurma(turmaId)
                                  && codigo.matches('^[0-9]{4,10}$')
-                                 && request.resource.data.keys().hasOnly(['nomes', 'definidoEm'])
+                                 && request.resource.data.keys().hasOnly(['nomes', 'definidoEm', 'marcados'])
                                  && request.resource.data.nomes is list
                                  && request.resource.data.nomes.size() <= 500
+                                 // quem o professor já marcou hoje sem o código (o aluno vê como marcado)
+                                 && (!('marcados' in request.resource.data)
+                                     || (request.resource.data.marcados is list && request.resource.data.marcados.size() <= 500))
                                  && request.resource.data.definidoEm is timestamp;
          }
 
@@ -566,7 +571,7 @@ turmas/{turmaId}
    turmas antigas perdem o campo professorEmail quando o dono ou a master entram;
    o código do dia também NÃO fica na turma — turmas antigas perdem o campo codigoDoDia)
   salas/{código do dia}
-    nomes, definidoEm      (lista de nomes para os alunos; o ID é o código)
+    nomes, marcados, definidoEm   (nomes da turma e quem já foi marcado sem o código; o ID é o código)
   alunos/{alunoId}
     nome
   presencas/{presencaId}
