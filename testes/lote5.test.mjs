@@ -10,8 +10,12 @@ import path from "node:path";
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
+  // (o site pode abrir "Alunos" sozinho numa turma vazia no mesmo instante; confere e repete)
   for (const id of ["manage-alunos-details", "manage-config-details"]) {
-    if (!(await p.$eval(`#${id}`, (d) => d.open))) await p.click(`#${id} > summary`);
+    for (let i = 0; i < 4 && !(await p.$eval(`#${id}`, (d) => d.open)); i++) {
+      await p.click(`#${id} > summary`);
+      await p.waitForTimeout(250);
+    }
   }
 }
 async function cardClick(card, name) {
