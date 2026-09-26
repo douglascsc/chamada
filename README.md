@@ -34,7 +34,7 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **QR Code da janela do código** (`<site>#turma=<id>&c=<código>`): o aluno que escaneia já entra com o código validado (enquanto ele valer); o código sai do endereço logo em seguida. "Copiar link" e "Compartilhar" continuam sem o código;
   - **na janela do código**, um contador ao vivo "18 de 30 já marcaram" (sem nomes, pode ser projetado);
   - **código perto de vencer** (5 min ou menos): ⚠ em amarelo no cartão, na barra da Chamada e na janela do código, e um aviso na Chamada se ainda faltar gente;
-  - **quem marcou** (só o professor vê): ícone 📱 (celular do aluno) ou 👤 (professor) ao lado do horário, na Chamada e no histórico — ajuda a escolher quais marcações conferir na sala;
+  - **quem marcou** (só o professor vê): ícone 📱 (celular/tablet do aluno), 💻 (computador do aluno) ou 👤 (professor) ao lado do horário, na Chamada e no histórico — ajuda a escolher quais marcações conferir na sala. O tipo de aparelho (campo `aparelho` da presença) é informado pelo próprio navegador: serve de orientação, não de prova; presenças antigas, sem o campo, aparecem como celular;
   - **limite de tentativas**: depois de 5 códigos errados, o aparelho do aluno espera 1 minuto;
   - **link e QR Code de cada turma** (`<site>#turma=<id>`): abre direto a turma para o aluno — o código do dia continua sendo pedido. Aparece na janela do código grande (com o QR) e no Gerenciar ("Copiar link", "Mostrar QR Code");
   - **tempo restante do código** sempre à vista ("expira em 12 min (15:33)") no cartão da turma, na janela do código e na tela Chamada;
@@ -397,7 +397,9 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
            // Só os campos esperados, com tamanho limitado, e com prazo de
            // retenção obrigatório (no máximo 8 dias à frente).
            allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
-                         && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado', 'criadoEm'])
+                         && request.resource.data.keys().hasOnly(['nome', 'data', 'horario', 'maquina', 'expiraEm', 'codigoUsado', 'criadoEm', 'aparelho'])
+                         // tipo do aparelho do aluno (só para o professor ver)
+                         && (!('aparelho' in request.resource.data) || request.resource.data.aparelho in ['celular', 'computador'])
                          // criadoEm: hora do servidor (não dá para "voltar o relógio")
                          && (!('criadoEm' in request.resource.data) || request.resource.data.criadoEm == request.time)
                          && textoAte(request.resource.data.nome, 120) && request.resource.data.nome.size() > 0
@@ -615,7 +617,7 @@ turmas/{turmaId}
   alunos/{alunoId}
     nome
   presencas/{presencaId}
-    nome, data, horario, maquina, codigoUsado, expiraEm, criadoEm   (criadoEm: hora do servidor, na presença do aluno)
+    nome, data, horario, maquina, codigoUsado, expiraEm, criadoEm, aparelho   (criadoEm: hora do servidor; aparelho: celular/computador — na presença do aluno)
   atrasos/{atrasoId}
     criadoEm, thumb
   atrasosImg/{atrasoId}
