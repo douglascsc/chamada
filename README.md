@@ -31,6 +31,11 @@ O sistema roda como uma aplicação web estática — um único arquivo `index.h
   - **📷 Atrasos**: guardar fotos de comprovantes/autorizações de atraso de cada turma — sem formulário, só a foto — ("Tirar foto" abre a câmera direto no celular; "Da galeria" para fotos já tiradas) e consultá-las depois, por turma ou todas juntas ("Ver todos os atrasos", com filtro por turma), filtrando por dia e baixando todas de uma vez em `.zip`. Cada foto é apagada automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**;
   - consultar o **histórico de chamadas** da turma — presentes e ausentes por dia, com exportação em `.xlsx`. Essa tela só é exibida, na interface, ao professor dono da turma ou à conta master; o que as regras do Firestore efetivamente permitem ler sobre esses mesmos dados está descrito em **[Isolamento entre professores](#isolamento-entre-professores)**;
   - **(só a conta master)** criar login de outros professores direto pelo site, sem precisar do Firebase Console — ver **[Adicionar mais professores](#adicionar-mais-professores-no-mesmo-sitebanco-de-dados)**;
+  - **QR Code da janela do código** (`<site>#turma=<id>&c=<código>`): o aluno que escaneia já entra com o código validado (enquanto ele valer); o código sai do endereço logo em seguida. "Copiar link" e "Compartilhar" continuam sem o código;
+  - **na janela do código**, um contador ao vivo "18 de 30 já marcaram" (sem nomes, pode ser projetado);
+  - **código perto de vencer** (5 min ou menos): ⚠ em amarelo no cartão, na barra da Chamada e na janela do código, e um aviso na Chamada se ainda faltar gente;
+  - **quem marcou** (só o professor vê): ícone 📱 (celular do aluno) ou 👤 (professor) ao lado do horário, na Chamada e no histórico — ajuda a escolher quais marcações conferir na sala;
+  - **limite de tentativas**: depois de 5 códigos errados, o aparelho do aluno espera 1 minuto;
   - **link e QR Code de cada turma** (`<site>#turma=<id>`): abre direto a turma para o aluno — o código do dia continua sendo pedido. Aparece na janela do código grande (com o QR) e no Gerenciar ("Copiar link", "Mostrar QR Code");
   - **tempo restante do código** sempre à vista ("expira em 12 min (15:33)") no cartão da turma, na janela do código e na tela Chamada;
   - **marcar com 1 toque** na tela Chamada / Modo professor (o "Sim, sou eu" é só para o aluno);
@@ -586,7 +591,8 @@ Em ⚙️ Opções → **Painel admin — professores** (só a conta master vê)
 
 ### Bibliotecas externas (integridade)
 
-Lucide (ícones), ExcelJS (planilhas) e qrcode-generator (QR Code) vêm do jsDelivr com **`integrity`** (SRI): o navegador só executa o arquivo se ele for exatamente o da versão publicada no npm — se o CDN for invadido e o arquivo alterado, ele é bloqueado (o site continua abrindo, só sem aquela função). Ao trocar a versão de uma dessas bibliotecas, gere o hash novo do arquivo exato:
+- **Ícones:** só os ~30 desenhos usados pelo site ficam **embutidos** no `index.html` (Lucide 0.577.0, licença ISC), em vez de baixar o pacote inteiro (~400 KB) de outro servidor. Para usar um ícone novo, copie o desenho dele (de `lucide.icons` no pacote npm `lucide`) para `ICONES`, no começo do `index.html`.
+- **ExcelJS (planilhas, ~1 MB)** e **qrcode-generator (QR Code)** são baixados do jsDelivr **só quando usados** (ao exportar / mostrar um QR) — o aluno não baixa nenhum dos dois — e com **`integrity`** (SRI): o navegador só executa o arquivo se ele for exatamente o da versão publicada no npm; se o CDN for invadido e o arquivo alterado, ele é bloqueado (o site avisa "Não foi possível preparar o Excel"). Ao trocar a versão de uma dessas bibliotecas, gere o hash novo do arquivo exato:
 
 ```
 curl -s <URL do arquivo> | openssl dgst -sha384 -binary | openssl base64 -A

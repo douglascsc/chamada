@@ -24,8 +24,52 @@
   <!-- integrity: o navegador só roda o arquivo se ele for exatamente o da
        versão publicada (se o servidor do CDN for invadido, o script alterado
        é bloqueado). Ao trocar de versão, gere o hash novo (veja o README). -->
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.577.0/dist/umd/lucide.min.js" integrity="sha384-orgVf2eX2+m1zKAOIi09hD0W6GtVhoOUmqDK+sysYB2JTZ4vS86j4jm+X7a4Nnei" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" integrity="sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz" crossorigin="anonymous"></script>
+  <!-- Ícones: só os usados pelo site, embutidos aqui (desenhos do Lucide
+       0.577.0, licença ISC — lucide.dev). Antes o site baixava o pacote
+       inteiro (~400 KB, quase 2 mil ícones) de outro servidor. Para usar um
+       ícone novo, acrescente o desenho dele em ICONES (veja o README). -->
+  <script>
+    (function () {
+      var ICONES = {"arrow-left":[["path",{"d":"m12 19-7-7 7-7"}],["path",{"d":"M19 12H5"}]],"book-open":[["path",{"d":"M12 7v14"}],["path",{"d":"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"}]],"calendar-days":[["path",{"d":"M8 2v4"}],["path",{"d":"M16 2v4"}],["rect",{"width":"18","height":"18","x":"3","y":"4","rx":"2"}],["path",{"d":"M3 10h18"}],["path",{"d":"M8 14h.01"}],["path",{"d":"M12 14h.01"}],["path",{"d":"M16 14h.01"}],["path",{"d":"M8 18h.01"}],["path",{"d":"M12 18h.01"}],["path",{"d":"M16 18h.01"}]],"camera":[["path",{"d":"M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"}],["circle",{"cx":"12","cy":"13","r":"3"}]],"check":[["path",{"d":"M20 6 9 17l-5-5"}]],"chevron-down":[["path",{"d":"m6 9 6 6 6-6"}]],"chevron-right":[["path",{"d":"m9 18 6-6-6-6"}]],"circle-alert":[["circle",{"cx":"12","cy":"12","r":"10"}],["line",{"x1":"12","x2":"12","y1":"8","y2":"12"}],["line",{"x1":"12","x2":"12.01","y1":"16","y2":"16"}]],"circle-check":[["circle",{"cx":"12","cy":"12","r":"10"}],["path",{"d":"m9 12 2 2 4-4"}]],"clock":[["circle",{"cx":"12","cy":"12","r":"10"}],["path",{"d":"M12 6v6l4 2"}]],"download":[["path",{"d":"M12 15V3"}],["path",{"d":"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"}],["path",{"d":"m7 10 5 5 5-5"}]],"image":[["rect",{"width":"18","height":"18","x":"3","y":"3","rx":"2","ry":"2"}],["circle",{"cx":"9","cy":"9","r":"2"}],["path",{"d":"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"}]],"info":[["circle",{"cx":"12","cy":"12","r":"10"}],["path",{"d":"M12 16v-4"}],["path",{"d":"M12 8h.01"}]],"key-round":[["path",{"d":"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"}],["circle",{"cx":"16.5","cy":"7.5","r":".5","fill":"currentColor"}]],"lock":[["rect",{"width":"18","height":"11","x":"3","y":"11","rx":"2","ry":"2"}],["path",{"d":"M7 11V7a5 5 0 0 1 10 0v4"}]],"log-out":[["path",{"d":"m16 17 5-5-5-5"}],["path",{"d":"M21 12H9"}],["path",{"d":"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"}]],"mail":[["path",{"d":"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"}],["rect",{"x":"2","y":"4","width":"20","height":"16","rx":"2"}]],"pencil":[["path",{"d":"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"}],["path",{"d":"m15 5 4 4"}]],"printer":[["path",{"d":"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"}],["path",{"d":"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"}],["rect",{"x":"6","y":"14","width":"12","height":"8","rx":"1"}]],"search":[["path",{"d":"m21 21-4.34-4.34"}],["circle",{"cx":"11","cy":"11","r":"8"}]],"search-x":[["path",{"d":"m13.5 8.5-5 5"}],["path",{"d":"m8.5 8.5 5 5"}],["circle",{"cx":"11","cy":"11","r":"8"}],["path",{"d":"m21 21-4.3-4.3"}]],"settings":[["path",{"d":"M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"}],["circle",{"cx":"12","cy":"12","r":"3"}]],"share-2":[["circle",{"cx":"18","cy":"5","r":"3"}],["circle",{"cx":"6","cy":"12","r":"3"}],["circle",{"cx":"18","cy":"19","r":"3"}],["line",{"x1":"8.59","x2":"15.42","y1":"13.51","y2":"17.49"}],["line",{"x1":"15.41","x2":"8.59","y1":"6.51","y2":"10.49"}]],"shield-alert":[["path",{"d":"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"}],["path",{"d":"M12 8v4"}],["path",{"d":"M12 16h.01"}]],"shield-check":[["path",{"d":"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"}],["path",{"d":"m9 12 2 2 4-4"}]],"smartphone":[["rect",{"width":"14","height":"20","x":"5","y":"2","rx":"2","ry":"2"}],["path",{"d":"M12 18h.01"}]],"trash-2":[["path",{"d":"M10 11v6"}],["path",{"d":"M14 11v6"}],["path",{"d":"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"}],["path",{"d":"M3 6h18"}],["path",{"d":"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"}]],"undo-2":[["path",{"d":"M9 14 4 9l5-5"}],["path",{"d":"M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"}]],"user-check":[["path",{"d":"m16 11 2 2 4-4"}],["path",{"d":"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"}],["circle",{"cx":"9","cy":"7","r":"4"}]],"x":[["path",{"d":"M18 6 6 18"}],["path",{"d":"m6 6 12 12"}]],"user":[["path",{"d":"M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"}],["circle",{"cx":"12","cy":"7","r":"4"}]]};
+      var NS = "http://www.w3.org/2000/svg";
+      var PADRAO = { xmlns: NS, width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" };
+      function criar(nome, origem) {
+        var desenho = ICONES[nome];
+        if (!desenho) return null;
+        var svg = document.createElementNS(NS, "svg");
+        Object.keys(PADRAO).forEach(function (k) { svg.setAttribute(k, PADRAO[k]); });
+        if (origem) {
+          for (var i = 0; i < origem.attributes.length; i++) {
+            var a = origem.attributes[i];
+            if (a.name !== "class") svg.setAttribute(a.name, a.value);
+          }
+        }
+        svg.setAttribute("data-lucide", nome);
+        svg.setAttribute("class", ("lucide lucide-" + nome + " " + ((origem && origem.getAttribute("class")) || "").replace(/\blucide(-[a-z0-9-]+)?\b/g, "")).replace(/\s+/g, " ").trim());
+        desenho.forEach(function (parte) {
+          var el = document.createElementNS(NS, parte[0]);
+          Object.keys(parte[1]).forEach(function (k) { el.setAttribute(k, parte[1][k]); });
+          svg.appendChild(el);
+        });
+        return svg;
+      }
+      // Mesmo uso do Lucide: troca cada <i data-lucide="nome"> pelo desenho
+      // (e redesenha um ícone se o nome dele mudou).
+      window.lucide = {
+        criar: criar,
+        createIcons: function () {
+          document.querySelectorAll("[data-lucide]").forEach(function (el) {
+            var nome = el.getAttribute("data-lucide");
+            if (el.tagName.toLowerCase() === "svg" && el.getAttribute("data-desenhado") === nome) return;
+            var svg = criar(nome, el);
+            if (!svg) return;
+            svg.setAttribute("data-desenhado", nome);
+            el.replaceWith(svg);
+          });
+        }
+      };
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <!-- Ícone de aplicativo ao "Adicionar à tela inicial" (sem start_url no
        manifesto: o atalho abre a página em que foi criado, ex. #professor) -->
@@ -1269,7 +1313,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
   <div id="turma-qr-backdrop" class="modal-backdrop hidden" aria-hidden="true" style="z-index: 65;">
    <section class="teacher-modal turma-qr-modal bg-white text-center" role="dialog" aria-modal="true" aria-labelledby="turma-qr-title">
     <h2 id="turma-qr-title" class="text-lg font-extrabold text-[var(--ink)]">Turma</h2>
-    <p class="mt-1 text-sm text-slate-500">Aponte a câmera do celular para abrir a turma. O código do dia continua sendo pedido.</p>
+    <p id="turma-qr-hint" class="mt-1 text-sm text-slate-500">Aponte a câmera do celular para abrir a turma. O código do dia continua sendo pedido.</p>
     <div id="turma-qr-image" class="mx-auto mt-4 flex aspect-square w-full max-w-[512px] items-center justify-center rounded-2xl bg-white text-sm text-slate-500">Gerando…</div>
     <p id="turma-qr-link" class="mt-3 break-all text-xs text-slate-500"></p>
     <button id="btn-close-turma-qr" class="action-button focus-ring mt-5 w-full rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
@@ -1283,11 +1327,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     <p id="code-display-label" class="mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">Código do dia</p>
     <p id="code-display-value" class="mt-1 font-extrabold text-[var(--ink)]" style="font-size: clamp(3rem, 15vw, 6.5rem); line-height: 1; letter-spacing: .08em;">—</p>
     <p id="code-display-validity" class="mt-4 text-base font-semibold text-emerald-700"></p>
+    <p id="code-display-count" class="mt-1 text-sm font-semibold text-slate-600" aria-live="polite"></p>
     <div class="mt-5 flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left">
      <button id="code-display-qr" class="focus-ring flex h-28 w-28 shrink-0 cursor-zoom-in items-center justify-center rounded-xl bg-white text-xs text-slate-500" type="button" aria-label="Ampliar o QR Code para projetar" title="Toque para ampliar">QR…</button>
      <div class="min-w-0 text-sm text-slate-600">
       <p class="font-semibold text-[var(--ink)]">Alunos: apontem a câmera</p>
-      <p class="mt-0.5 text-xs">O QR abre direto esta turma. O código acima continua sendo pedido. Toque no QR para ampliar.</p>
+      <p id="code-display-qr-hint" class="mt-0.5 text-xs">O QR já entra na turma com este código (enquanto ele valer). Toque no QR para ampliar.</p>
       <div class="mt-2 flex flex-wrap gap-2">
        <button id="btn-code-display-copy-link" class="action-button focus-ring rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button">Copiar link da turma</button>
        <button id="btn-code-display-share" class="hidden share-button action-button focus-ring inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200" type="button"><i data-lucide="share-2" class="h-3.5 w-3.5" aria-hidden="true"></i> Compartilhar</button>
@@ -1560,7 +1605,6 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const progressTrack = document.querySelector(".progress-track");
     const globalMessage = document.getElementById("global-message");
     const globalMessageText = document.getElementById("global-message-text");
-    const globalMessageIcon = document.getElementById("global-message-icon");
 
     const btnOpenTerms = document.getElementById("btn-open-terms");
     const btnCloseTerms = document.getElementById("btn-close-terms");
@@ -1873,7 +1917,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     function showMessage(type, text) {
       globalMessage.className = `notice mt-5 ${type === "success" ? "notice-success" : type === "error" ? "notice-error" : "notice-info"}`;
       globalMessageText.textContent = text;
-      globalMessageIcon.setAttribute("data-lucide", type === "success" ? "circle-check" : type === "error" ? "circle-alert" : "info");
+      // (busca pelo id: o <i> original é trocado pelo desenho do ícone)
+      document.getElementById("global-message-icon").setAttribute("data-lucide", type === "success" ? "circle-check" : type === "error" ? "circle-alert" : "info");
       if (window.lucide) lucide.createIcons();
     }
 
@@ -2773,9 +2818,39 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (unsubSalaAluno) { unsubSalaAluno(); unsubSalaAluno = null; }
     }
 
+    // Limite de tentativas no aparelho: depois de 5 códigos errados, espera
+    // 1 minuto. Não impede um programa (o código de 6 dígitos cuida disso),
+    // mas corta o "chute" à mão.
+    const TENTATIVAS_CODIGO_MAX = 5;
+    const ESPERA_TENTATIVAS_MS = 60 * 1000;
+    const TENTATIVAS_CODIGO_KEY = "chamada:tentativasCodigo";
+    function lerTentativasCodigo() {
+      try {
+        const v = JSON.parse(localStorage.getItem(TENTATIVAS_CODIGO_KEY) || "null");
+        return v && typeof v.n === "number" && typeof v.ate === "number" ? v : { n: 0, ate: 0 };
+      } catch (error) { return { n: 0, ate: 0 }; }
+    }
+    function gravarTentativasCodigo(v) {
+      try { localStorage.setItem(TENTATIVAS_CODIGO_KEY, JSON.stringify(v)); } catch (error) { /* sem armazenamento: só nesta página */ }
+      tentativasNaMemoria = v;
+    }
+    let tentativasNaMemoria = null;
+    function tentativasCodigo() {
+      const salvo = lerTentativasCodigo();
+      // sem localStorage (aba restrita), vale o que está na memória
+      return tentativasNaMemoria && tentativasNaMemoria.ate > salvo.ate ? tentativasNaMemoria : salvo;
+    }
+
     let verificacaoAtual = 0;
     async function verifyDailyCode(showMessages = true) {
       if (!selectedTurmaData) return false;
+
+      const tentativas = tentativasCodigo();
+      if (tentativas.ate > Date.now()) {
+        const seg = Math.ceil((tentativas.ate - Date.now()) / 1000);
+        if (showMessages) showMessage("error", `Muitas tentativas com código errado. Aguarde ${seg} s e tente de novo (confira o código com o professor).`);
+        return false;
+      }
 
       if (!isCodeActive(selectedTurmaData)) {
         if (showMessages) {
@@ -2840,9 +2915,19 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           if (showMessages) showMessage("error", "Sem conexão com a internet para conferir o código. Verifique a internet e tente de novo.");
           return false;
         }
+        // código errado confirmado pelo servidor: conta tentativa
+        const t = tentativasCodigo();
+        const n = (t.ate > 0 && t.ate <= Date.now() ? 0 : t.n) + 1;
+        if (n >= TENTATIVAS_CODIGO_MAX) {
+          gravarTentativasCodigo({ n: 0, ate: Date.now() + ESPERA_TENTATIVAS_MS });
+          if (showMessages) showMessage("error", "Código incorreto 5 vezes. Aguarde 1 minuto e confira o código com o professor.");
+          return false;
+        }
+        gravarTentativasCodigo({ n, ate: 0 });
         return incorreto();
       }
 
+      gravarTentativasCodigo({ n: 0, ate: 0 }); // acertou: zera as tentativas
       codigoVerificado = code;
       codigoVerificadoEm = codeDefinedAtMillis(selectedTurmaData);
       isDailyCodeVerified = true;
@@ -2886,6 +2971,33 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         map.set(k, map.has(k) ? registroMaisCedo(map.get(k), r) : r);
       });
       return map;
+    }
+
+    // De onde veio a presença (só o professor vê): 📱 celular do aluno ou
+    // 👤 professor. Ajuda a saber quais marcações conferir na sala.
+    function origemDaPresenca(record) {
+      if (!record || record.jaMarcadoPeloProfessor) return null;
+      return record.maquina === "professor" ? "professor" : "celular";
+    }
+    function iconeOrigem(record) {
+      const origem = origemDaPresenca(record);
+      if (!origem) return null;
+      const titulo = origem === "celular" ? "Marcado pelo celular do aluno" : "Marcado pelo professor";
+      const span = document.createElement("span");
+      span.className = `origem-presenca origem-${origem} inline-flex shrink-0 items-center text-slate-500`;
+      span.title = titulo;
+      span.setAttribute("role", "img");
+      span.setAttribute("aria-label", titulo);
+      const svg = window.lucide && lucide.criar ? lucide.criar(origem === "celular" ? "smartphone" : "user-check", null) : null;
+      if (svg) {
+        svg.setAttribute("class", "h-3.5 w-3.5");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("data-desenhado", svg.getAttribute("data-lucide"));
+        span.appendChild(svg);
+      } else {
+        span.textContent = origem === "celular" ? "📱" : "👤";
+      }
+      return span;
     }
 
     function getTodayRecord(name) {
@@ -2947,6 +3059,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         + (atrasado ? " · atrasado" : "")
         + (record && record.pendente && navigator.onLine === false ? " · aguardando internet" : "");
       statusLabel.classList.toggle("is-late", atrasado);
+      // professor: ícone de quem marcou (celular do aluno ou professor)
+      const statusBox = statusLabel.parentElement;
+      statusBox.querySelectorAll(".origem-presenca").forEach((el) => el.remove());
+      const origem = (isTeacherModeActive || attendanceMode === "professor") ? iconeOrigem(record) : null;
+      if (origem) statusBox.appendChild(origem);
       statusLabel.classList.toggle("is-pending", Boolean(record && record.pendente && navigator.onLine === false));
       row.classList.toggle("is-present", isPresent);
       markButton.classList.toggle("hidden", isPresent);
@@ -3226,7 +3343,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     // "Relatar problema": e-mail já preenchido com o que ajuda a achar o erro
-    const APP_VERSION = "2026.09.26";
+    const APP_VERSION = "2026.09.27";
     document.getElementById("link-report-problem").addEventListener("click", (event) => {
       const turmaNome = selectedTurmaData && selectedTurmaData.nome;
       const linhas = [
@@ -4136,16 +4253,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       return row;
     }
 
+    // Código perto de vencer (5 min ou menos): destaca em amarelo, para o
+    // professor gerar outro se ainda faltar gente.
+    const AVISO_CODIGO_MS = 5 * 60 * 1000;
+    function codigoAcabando(restanteMs) {
+      return restanteMs > 0 && restanteMs <= AVISO_CODIGO_MS;
+    }
+
     // Linha do código no cartão: completa no computador, curta no celular
     function fillCardCodeText(el) {
       const expira = Number(el.dataset.expira);
+      const acabando = codigoAcabando(expira - Date.now());
+      el.classList.toggle("text-amber-600", acabando);
       const longo = document.createElement("span");
       longo.className = "max-sm:hidden";
       const rotulo = el.dataset.codigo ? `Código ${el.dataset.codigo}` : "Código ativo";
-      longo.textContent = `${rotulo} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
+      longo.textContent = `${acabando ? "⚠ " : ""}${rotulo} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
       const curto = document.createElement("span");
       curto.className = "sm:hidden";
-      curto.textContent = `${rotulo} · até ${formatTimeOfDay(expira)}`;
+      curto.textContent = acabando ? `⚠ ${rotulo} · vence em ${formatRemaining(expira - Date.now())}` : `${rotulo} · até ${formatTimeOfDay(expira)}`;
       el.replaceChildren(longo, curto);
     }
 
@@ -4396,9 +4522,42 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       return `${day}/${month}/${year}`;
     }
 
+    // Biblioteca do Excel (~1 MB): baixada só na hora de exportar (antes todo
+    // aluno baixava ao abrir o site). Com integrity: só roda se for o arquivo
+    // original da versão publicada.
+    const EXCEL_LIB_URL = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+    const EXCEL_LIB_INTEGRITY = "sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz";
+    let excelLibPromise = null;
+    function carregarExcel() {
+      if (window.ExcelJS) return Promise.resolve();
+      if (!excelLibPromise) {
+        excelLibPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = EXCEL_LIB_URL;
+          script.integrity = EXCEL_LIB_INTEGRITY;
+          script.crossOrigin = "anonymous";
+          script.async = true;
+          script.onload = () => (window.ExcelJS ? resolve() : reject(new Error("excel-lib")));
+          script.onerror = () => { excelLibPromise = null; reject(new Error("excel-lib")); };
+          document.head.appendChild(script);
+        });
+      }
+      return excelLibPromise;
+    }
+    async function prepararExcel() {
+      try {
+        await carregarExcel();
+        return true;
+      } catch (error) {
+        showToast("error", "Não foi possível preparar o Excel. Verifique a internet e tente de novo.");
+        return false;
+      }
+    }
+
     // Gera e baixa um .xlsx (Excel de verdade, com largura de coluna definida
     // e a coluna "Status" em vermelho nas linhas de aluno ausente).
     async function downloadAttendanceXlsx(header, rows, colWidths, filename) {
+      if (!(await prepararExcel())) return;
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Chamada");
       worksheet.columns = colWidths.map((width) => ({ width }));
@@ -4582,6 +4741,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         const right = document.createElement("div");
         right.className = "flex shrink-0 items-center gap-2";
         right.appendChild(status);
+        const origem = iconeOrigem(record);
+        if (origem) right.appendChild(origem);
         // Corrigir: marcar presente (aluno esqueceu / estava sem celular) ou desfazer
         const fix = document.createElement("button");
         fix.type = "button";
@@ -5709,6 +5870,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const btnBarNewCode = document.getElementById("btn-bar-new-code");
     const btnBarCopyAbsent = document.getElementById("btn-bar-copy-absent");
 
+    const avisosCodigoAcabando = new Set();
     function renderTeacherCodeBar() {
       btnOpenStudentInfo.classList.toggle("hidden", isTeacherModeActive); // "Sobre seus dados" é para o aluno
       // instrução é para o aluno, e só até ele validar o código
@@ -5723,9 +5885,19 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       document.getElementById("bar-auto-end-wrap").classList.toggle("hidden", !active);
       document.getElementById("bar-auto-end").checked = readAutoEnd();
       const expira = codeExpiresAtMillis(selectedTurmaData);
+      const acabando = active && codigoAcabando(expira - Date.now());
       teacherCodeBarText.textContent = active
-        ? `${codigoBarra ? `Código ${codigoBarra}` : "Código ativo"} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
+        ? `${acabando ? "⚠ " : ""}${codigoBarra ? `Código ${codigoBarra}` : "Código ativo"} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
         : "Nenhum código ativo: os alunos não conseguem marcar presença.";
+      teacherCodeBarText.classList.toggle("text-amber-700", acabando);
+      // aviso uma vez por código, se ainda faltar gente
+      if (acabando && alunos.some((a) => !getTodayRecord(a.nome))) {
+        const chave = `${selectedTurmaData.id}|${codeDefinedAtMillis(selectedTurmaData)}`;
+        if (!avisosCodigoAcabando.has(chave)) {
+          avisosCodigoAcabando.add(chave);
+          showToast("info", `O código vence em ${formatRemaining(expira - Date.now())}. Se ainda faltar gente, gere outro.`);
+        }
+      }
       btnBarEndCode.classList.toggle("hidden", !active);
       btnBarNewCode.classList.toggle("hidden", active);
       const ausentes = alunos.filter((a) => !getTodayRecord(a.nome)).length;
@@ -5875,6 +6047,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const conhecidos = new Set(nomes.map(normalize));
       historyPresencas.forEach((r) => { if (!conhecidos.has(normalize(r.nome))) { conhecidos.add(normalize(r.nome)); nomes.push(r.nome); } });
 
+      if (!(await prepararExcel())) return;
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Chamadas");
       sheet.columns = [{ width: 34 }, ...dates.map(() => ({ width: 17 })), { width: 11 }, { width: 9 }, { width: 9 }];
@@ -5978,19 +6151,29 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       shareTurmaLink(allTeacherTurmas.find((t) => t.id === codeDisplayTurmaId));
     });
 
+    // Link do QR da janela do código: já leva o código (#turma=ID&c=CÓDIGO).
+    // O aluno que escaneia entra validado; o código sai do endereço logo em
+    // seguida. "Copiar link" e "Compartilhar" continuam SEM o código.
+    function turmaLinkComCodigo(turmaId, codigo) {
+      return `${turmaLink(turmaId)}&c=${encodeURIComponent(codigo)}`;
+    }
+
     async function copyTurmaLink(turmaId) {
       const ok = await copyText(turmaLink(turmaId));
       showToast(ok ? "success" : "error", ok ? "Link da turma copiado." : "Não foi possível copiar o link.");
     }
 
     const turmaQrBackdrop = document.getElementById("turma-qr-backdrop");
-    function showTurmaQr(turma) {
+    function showTurmaQr(turma, codigo = null) {
       hideToast();
       document.getElementById("turma-qr-title").textContent = turma.nome || "Turma";
       document.getElementById("turma-qr-link").textContent = turmaLink(turma.id);
+      document.getElementById("turma-qr-hint").textContent = codigo
+        ? "Aponte a câmera do celular: já entra na turma com o código de hoje (enquanto ele valer)."
+        : "Aponte a câmera do celular para abrir a turma. O código do dia continua sendo pedido.";
       turmaQrBackdrop.classList.remove("hidden");
       turmaQrBackdrop.setAttribute("aria-hidden", "false");
-      renderQrInto(document.getElementById("turma-qr-image"), turmaLink(turma.id), 16);
+      renderQrInto(document.getElementById("turma-qr-image"), codigo ? turmaLinkComCodigo(turma.id, codigo) : turmaLink(turma.id), 16);
     }
     function closeTurmaQr() {
       turmaQrBackdrop.classList.add("hidden");
@@ -6013,15 +6196,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }, 350);
     }
 
-    function turmaIdFromHash() {
-      const match = /^#turma=(.+)$/.exec(location.hash);
-      if (!match) return null;
+    // Endereço "#turma=ID" (link/QR da turma) ou "#turma=ID&c=CÓDIGO" (QR da
+    // janela do código, que já entra com o código).
+    function hashParams() {
+      if (!/^#turma=/.test(location.hash)) return null;
       try {
-        const id = decodeURIComponent(match[1]);
-        return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null; // IDs de turma: letras, números, - e _
+        return new URLSearchParams(location.hash.slice(1));
       } catch (error) {
         return null; // link malformado (ex.: "%" solto): mostra a lista de turmas
       }
+    }
+    function turmaIdFromHash() {
+      const params = hashParams();
+      const id = params && params.get("turma");
+      return id && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null; // IDs de turma: letras, números, - e _
+    }
+    function codigoFromHash() {
+      const params = hashParams();
+      const codigo = params && params.get("c");
+      return codigo && /^\d{4,6}$/.test(codigo) ? codigo : null;
     }
 
     function setTurmaHash(turmaId) {
@@ -6031,7 +6224,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     async function openTurmaFromHash() {
       const turmaId = turmaIdFromHash();
-      if (!turmaId || turmaId === selectedTurmaId) return;
+      if (!turmaId) return;
+      if (turmaId === selectedTurmaId) {
+        // já está na turma e escaneou o QR com o código: confere direto
+        const codigoDoQr = codigoFromHash();
+        setTurmaHash(turmaId);
+        if (codigoDoQr && !isDailyCodeVerified) { studentDailyCodeInput.value = codigoDoQr; verifyDailyCode(true); }
+        return;
+      }
       try {
         const snap = await getDoc(doc(db, "turmas", turmaId));
         if (!snap.exists() || snap.data().arquivada) {
@@ -6040,8 +6240,16 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           showToast("error", snap.exists() ? "Essa turma foi arquivada pelo professor. Escolha sua turma na lista." : "Essa turma não existe mais. Escolha sua turma na lista.");
           return;
         }
+        const codigoDoQr = codigoFromHash();
         enterTurma(turmaId);
-        focusDailyCodeSoon();
+        if (codigoDoQr) {
+          // QR com o código: preenche e confere sozinho (quando a turma carregar)
+          setTurmaHash(turmaId); // tira o código do endereço (não fica no histórico)
+          studentDailyCodeInput.value = codigoDoQr;
+          if (codigoDoQr.length !== CODE_LENGTH) focusDailyCodeSoon();
+        } else {
+          focusDailyCodeSoon();
+        }
       } catch (error) {
         showToast("error", "Não foi possível abrir a turma do link. Escolha sua turma na lista.");
       }
@@ -6221,16 +6429,25 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let codeDisplayTurmaId = null;
     let codeDisplayExpiresAt = 0;
     let codeDisplayEnded = false;
+    let codeDisplayCodigo = "";
 
     function updateCodeDisplayValidity() {
       if (codeDisplayEnded) return;
-      codeDisplayValidity.textContent = `Válido até ${formatTimeOfDay(codeDisplayExpiresAt)} · expira em ${formatRemaining(codeDisplayExpiresAt - Date.now())}`;
+      const restante = codeDisplayExpiresAt - Date.now();
+      const acabando = codigoAcabando(restante);
+      codeDisplayValidity.textContent = `${acabando ? "⚠ " : ""}Válido até ${formatTimeOfDay(codeDisplayExpiresAt)} · expira em ${formatRemaining(restante)}`;
+      codeDisplayValidity.classList.toggle("text-emerald-700", !acabando);
+      codeDisplayValidity.classList.toggle("text-amber-700", acabando);
     }
 
     function markCodeDisplayEnded(total) {
       codeDisplayEnded = true;
       codeDisplayValidity.textContent = `Encerrado: todos os ${total} alunos marcaram presença.`;
       codeDisplayValue.classList.add("line-through", "opacity-40");
+      atualizarContadorCodigo(total, total);
+      // o QR deixa de levar o código encerrado
+      if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLink(codeDisplayTurmaId), 3);
+      document.getElementById("code-display-qr-hint").textContent = "O QR abre a turma (o código foi encerrado).";
       stopCodeDisplayWatch();
     }
 
@@ -6241,16 +6458,27 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       codeDisplayWatch.forEach((unsub) => unsub());
       codeDisplayWatch = [];
     }
+    // Contador ao vivo na janela do código: "18 de 30 já marcaram" (sem
+    // nomes: pode ser projetado).
+    const codeDisplayCount = document.getElementById("code-display-count");
+    function atualizarContadorCodigo(marcaram, total) {
+      if (marcaram === null || !total) { codeDisplayCount.textContent = ""; return; }
+      codeDisplayCount.textContent = marcaram >= total ? `Todos os ${total} já marcaram ✓` : `${marcaram} de ${total} já marcaram`;
+    }
     function startCodeDisplayWatch() {
       stopCodeDisplayWatch();
       const turmaId = codeDisplayTurmaId;
-      if (!turmaId || !readAutoEnd() || codeDisplayEnded) return;
-      // Na Chamada da mesma turma a própria lista já faz essa conta
-      if (selectedTurmaId === turmaId) return;
+      if (!turmaId || codeDisplayEnded) return;
+      atualizarContadorCodigo(null);
       let nomesAlunos = null;
       let presentesHoje = null;
       const verificar = () => {
         if (!nomesAlunos || !presentesHoje || !nomesAlunos.length) return;
+        const conhecidos = new Set(nomesAlunos.map(normalize));
+        atualizarContadorCodigo([...presentesHoje].filter((n) => conhecidos.has(n)).length, conhecidos.size);
+        // encerrar sozinho: só com a opção ligada (na Chamada da mesma turma
+        // a própria lista já faz essa conta)
+        if (!readAutoEnd() || selectedTurmaId === turmaId) return;
         const todos = nomesAlunos.every((nome) => presentesHoje.has(normalize(nome)));
         const turma = allTeacherTurmas.find((t) => t.id === turmaId);
         if (todos && turma) autoEndCodeIfAllMarked(turma, nomesAlunos.length);
@@ -6268,8 +6496,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
     document.getElementById("code-display-auto-end").addEventListener("change", (event) => {
       writeAutoEnd(event.target.checked);
-      if (event.target.checked) startCodeDisplayWatch();
-      else stopCodeDisplayWatch();
+      startCodeDisplayWatch(); // o contador continua; só muda o "encerrar sozinho"
     });
 
     function showCodeDisplay(turma, code, minutes) {
@@ -6284,7 +6511,9 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       updateCodeDisplayValidity();
       codeDisplayBackdrop.classList.remove("hidden");
       codeDisplayBackdrop.setAttribute("aria-hidden", "false");
-      if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLink(codeDisplayTurmaId), 3);
+      codeDisplayCodigo = code;
+      document.getElementById("code-display-qr-hint").textContent = "O QR já entra na turma com este código (enquanto ele valer). Toque no QR para ampliar.";
+      if (codeDisplayTurmaId) renderQrInto(document.getElementById("code-display-qr"), turmaLinkComCodigo(codeDisplayTurmaId, code), 3);
       document.body.style.overflow = "hidden";
       startCodeDisplayWatch();
     }
@@ -6311,7 +6540,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }, 30000);
     document.getElementById("code-display-qr").addEventListener("click", () => {
       const turma = codeDisplayTurmaId && allTeacherTurmas.find((t) => t.id === codeDisplayTurmaId);
-      if (turma) showTurmaQr(turma);
+      if (turma) showTurmaQr(turma, codeDisplayEnded ? null : codeDisplayCodigo);
     });
     document.getElementById("btn-code-display-copy-link").addEventListener("click", () => {
       if (codeDisplayTurmaId) copyTurmaLink(codeDisplayTurmaId);
