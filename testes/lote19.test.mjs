@@ -117,6 +117,10 @@ const origemCel = page.locator(".student-row", { hasText: nomesT[0] }).locator("
 const origemProf = page.locator(".student-row", { hasText: nomesT[1] }).locator(".origem-presenca");
 check("Origem: 📱 marcado pelo celular do aluno", (await origemCel.getAttribute("aria-label")) === "Marcado pelo celular do aluno" && (await origemCel.locator("svg").count()) === 1);
 check("Origem: 👤 marcado pelo professor", (await origemProf.getAttribute("aria-label")) === "Marcado pelo professor");
+await page.click("#teacher-code-bar-text");
+await page.waitForSelector("#code-display-backdrop:not(.hidden)", { timeout: 5000 }).catch(() => {});
+check("Chamada: tocar no código da barra abre o código grande (com QR)", (await page.isVisible("#code-display-backdrop")) && (await page.textContent("#code-display-value")).replace(/\s/g, "") === "135790");
+await page.click("#btn-close-code-display");
 check("Excel ainda não baixado (só a Chamada aberta)", pedidos.length === 0 && (await page.evaluate(() => !window.ExcelJS)));
 const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }), page.click("#btn-export-csv")]);
 check("Exportar Excel: baixa a biblioteca na hora (com integrity) e gera o arquivo", pedidos.length === 1 && /\.xlsx$/.test(dl.suggestedFilename()) && (await page.evaluate(() => [...document.scripts].some((s) => /exceljs/.test(s.src) && s.integrity.startsWith("sha384-")))), dl.suggestedFilename());
@@ -173,21 +177,27 @@ await page.waitForFunction(() => /Todos os 3 já marcaram|3 de 3/.test(document.
 check("Nenhum erro de JavaScript (professora e aluno)", page.errs.length === 0 && aluno.errs.length === 0, [...page.errs, ...aluno.errs].join(";"));
 await ctxA.close();
 
-// --- Limite de tentativas no aparelho do aluno
+// --- Limite de tentativas no aparelho do aluno (código novo: o anterior
+// encerrou sozinho quando todos marcaram)
+const codigo2 = "777777";
+await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const def = Timestamp.now();
+  await updateDoc(doc(f, "turmas/T1"), { codigoDefinidoEm: def, codigoDuracaoMin: 30 });
+  await setDoc(doc(f, "turmas/T1/salas/777777"), { nomes: [...nomesT].sort(), marcados: [], definidoEm: def });
+});
 const ctxB = await newCtx(true);
 const b = await open(ctxB, APP + "#turma=T1");
 await b.waitForSelector("#view-attendance:not(.hidden)"); await b.waitForTimeout(600);
-const errado = codigo === "000000" ? "000001" : "000000";
+const errado = "000000";
 for (let i = 0; i < 5; i++) {
   await b.fill("#student-daily-code", ""); await b.fill("#student-daily-code", errado);
   await b.waitForTimeout(700);
 }
 check("5 códigos errados: pede para aguardar 1 minuto", /Código incorreto 5 vezes|Muitas tentativas/.test(await b.textContent("#global-message")), await b.textContent("#global-message"));
-await b.fill("#student-daily-code", ""); await b.fill("#student-daily-code", codigo); await b.waitForTimeout(1200);
+await b.fill("#student-daily-code", ""); await b.fill("#student-daily-code", codigo2); await b.waitForTimeout(1200);
 check("Durante a espera, nem o código certo é conferido", (await b.locator(".student-row").count()) === 0 && /Muitas tentativas/.test(await b.textContent("#global-message")));
 await b.evaluate(() => localStorage.setItem("chamada:tentativasCodigo", JSON.stringify({ n: 0, ate: Date.now() - 1 })));
 await b.reload(); await b.waitForSelector("#view-attendance:not(.hidden)"); await b.waitForTimeout(600);
-await b.fill("#student-daily-code", codigo);
+await b.fill("#student-daily-code", codigo2);
 await b.waitForFunction(() => document.querySelectorAll(".student-row").length === 3, null, { timeout: 10000 })
   .then(() => check("Depois do minuto de espera, o código certo funciona", true), () => check("Depois do minuto de espera, o código certo funciona", false));
 await ctxB.close(); await ctx.close();

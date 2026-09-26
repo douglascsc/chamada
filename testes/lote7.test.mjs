@@ -94,26 +94,23 @@ check("Celular/professor: contador de presentes continua", await page.isVisible(
 await page.screenshot({ path: `${OUT}/l7-01-chamada-enxuta-celular.png` });
 
 // ===== Encerrar sozinho quando todos marcarem (Chamada) =====
-check("Opção \"encerrar sozinho\" aparece com código ativo (desligada)", (await page.isVisible("#bar-auto-end")) && !(await page.isChecked("#bar-auto-end")));
+check("Sem a opção \"encerrar sozinho\" (agora é sempre)", (await page.locator("#bar-auto-end, #code-display-auto-end").count()) === 0);
 for (const n of alunos) {
   await page.locator(".student-row", { hasText: n }).locator(".mark-button").click();
   await page.waitForTimeout(250);
 }
 await page.waitForFunction(() => document.getElementById("present-count").textContent === "4", null, { timeout: 8000 });
-await page.waitForTimeout(800);
-check("Opção desligada: todos marcaram e o código continua", (await codigoAtual(env, "t0")) === "482193");
-await page.check("#bar-auto-end");
-await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 });
-check("Opção ligada: encerra o código (banco)", (await codigoAtual(env, "t0")) === "");
+await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getElementById("toast-text").textContent), null, { timeout: 8000 })
+  .then(() => check("Todos marcaram: avisa que o código foi encerrado", true), () => check("Todos marcaram: avisa que o código foi encerrado", false));
+check("Todos marcaram: encerra o código sozinho (banco)", (await codigoAtual(env, "t0")) === "");
 await page.waitForTimeout(500);
-check("Depois de encerrar: barra mostra \"Nenhum código ativo\" e some a opção", /Nenhum código ativo/.test(await page.textContent("#teacher-code-bar-text")) && (await page.isHidden("#bar-auto-end-wrap")));
+check("Depois de encerrar: barra mostra \"Nenhum código ativo\"", /Nenhum código ativo/.test(await page.textContent("#teacher-code-bar-text")));
 check("Celular/professor sem código: \"Gerar código 30 min\" e \"Copiar ausentes\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
 // ===== Encerrar sozinho pela janela do código =====
 await cardClick(row(page, "INF3M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-check("Janela do código: opção já vem ligada (lembra a escolha)", await page.isChecked("#code-display-auto-end"));
 check("Janela do código: botão Compartilhar (onde o celular permite)", await page.isVisible("#btn-code-display-share"));
 await page.click("#btn-code-display-share");
 const shared = await page.evaluate(() => window.__shared);
@@ -127,13 +124,15 @@ await page.waitForFunction(() => /Encerrado: todos os 4 alunos marcaram/.test(do
 check("Janela do código: o 4º marcou → encerra e avisa na janela", (await codigoAtual(env, "t1")) === "");
 await page.screenshot({ path: `${OUT}/l7-02-janela-encerrado-celular.png` });
 await page.click("#btn-close-code-display");
-// desligando a opção
+// tocar no código já gerado (cartão) reabre a janela grande
 await cardClick(row(page, "INF1M 2025"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-await page.uncheck("#code-display-auto-end");
-await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const b = writeBatch(f); alunos.forEach((n, k) => b.set(doc(f, `turmas/t2/presencas/p${k}`), { nome: n, data: hoje, horario: "08:00", maquina: `m${k}`, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b.commit(); });
-await page.waitForTimeout(1500);
-check("Opção desligada na janela: não encerra", (await codigoAtual(env, "t2")) !== "");
+const codigoT2 = (await page.textContent("#code-display-value")).replace(/\s/g, "");
+await page.click("#btn-close-code-display"); await page.waitForTimeout(800);
+await row(page, "INF1M 2025").locator("button[data-expira]").click();
+await page.waitForSelector("#code-display-backdrop:not(.hidden)", { timeout: 5000 }).catch(() => {});
+check("Tocar no código do cartão reabre a janela grande com o mesmo código", (await page.isVisible("#code-display-backdrop")) && (await page.textContent("#code-display-value")).replace(/\s/g, "") === codigoT2, codigoT2);
+check("Janela reaberta: validade e QR com o código", /Válido até \d{2}:\d{2} · expira em (59 min|1h)/.test(await page.textContent("#code-display-validity")) && /já entra na turma com este código/.test(await page.textContent("#code-display-qr-hint")), await page.textContent("#code-display-validity"));
 await page.click("#btn-close-code-display");
 
 // ===== Compartilhar no Gerenciar + cor da turma =====
