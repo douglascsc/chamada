@@ -89,9 +89,9 @@ async function newPage(viewport = { width: 1280, height: 900 }, extra = {}) {
     r.fulfill({ body: readFileSync(`node_modules/firebase/${name}`), contentType: "text/javascript" });
   });
   await ctx.route("https://cdn.tailwindcss.com/**", (r) => r.fulfill({ contentType: "text/javascript", body: `document.addEventListener("DOMContentLoaded", () => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/tw.css"; document.head.appendChild(l); });` }));
-  await ctx.route("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/**", (q) => q.fulfill({ contentType: "text/javascript", body: readFileSync("node_modules/qrcode-generator/qrcode.js") }));
-  await ctx.route("https://cdn.jsdelivr.net/npm/lucide**", (r) => r.fulfill({ contentType: "text/javascript", body: readFileSync("node_modules/lucide/dist/umd/lucide.min.js") }));
-  await ctx.route("https://cdnjs.cloudflare.com/**", (r) => r.fulfill({ contentType: "text/javascript", body: readFileSync("node_modules/exceljs/dist/exceljs.min.js") }));
+  await ctx.route("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/**", (q) => q.fulfill({ headers: { "access-control-allow-origin": "*" }, contentType: "text/javascript", body: readFileSync("node_modules/qrcode-generator/qrcode.js") }));
+  await ctx.route("https://cdn.jsdelivr.net/npm/lucide**", (r) => r.fulfill({ headers: { "access-control-allow-origin": "*" }, contentType: "text/javascript", body: readFileSync("node_modules/lucide/dist/umd/lucide.min.js") }));
+  await ctx.route("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/**", (r) => r.fulfill({ headers: { "access-control-allow-origin": "*" }, contentType: "text/javascript", body: readFileSync("node_modules/exceljs/dist/exceljs.min.js") }));
   await ctx.route("https://fonts.googleapis.com/**", (r) => r.fulfill({ contentType: "text/css", body: "" }));
   const page = await ctx.newPage();
   page.jsErrors = [];
