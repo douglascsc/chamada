@@ -97,6 +97,9 @@ await fetch(`${AUTH}/accounts:update?key=fake`, { method: "POST", headers: { "co
 const uidX = rX.localId;
 await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), "acordosProfessor", uidX), { avisosAceitosEm: Timestamp.now(), email: "estranho@gmail.com", nome: "Estranho" }); });
 const anon = env.unauthenticatedContext().firestore();
+// liberado direto no Firestore Console (conta criada no Authentication, nunca entrou)
+await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), "professoresAutorizados/uid-do-console"), { email: "console@ifsul.edu.br", nome: "Liberada Pelo Console" }); });
+await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), "professoresPendentes/antiga@ifsul.edu.br"), { nome: "Conta Antiga", email: "antiga@ifsul.edu.br", criadoEm: Timestamp.now() }); });
 const prof = env.authenticatedContext(uidA, { email: "prof.ana@ifsul.edu.br" }).firestore();
 const estranho = env.authenticatedContext(uidX, { email: "estranho@gmail.com" }).firestore();
 const master = env.authenticatedContext(uidM, { email: "douglascamargo@ifsul.edu.br" }).firestore();
@@ -156,7 +159,10 @@ await ctx.close();
 await openAdmin(page);
 const linhaX = page.locator("#admin-professores-list > div", { hasText: "estranho@gmail.com" });
 check("Painel admin: conta não liberada aparece marcada", /Não liberado/.test(await linhaX.textContent()));
-check("Painel admin: professora liberada sem o aviso", !/Não liberado/.test(await page.locator("#admin-professores-list > div", { hasText: "prof.ana@ifsul.edu.br" }).textContent()));
+check("Painel admin: professora liberada mostra \"✓ Liberado\"", /✓ Liberado para criar turmas/.test(await page.locator("#admin-professores-list > div", { hasText: "prof.ana@ifsul.edu.br" }).textContent()));
+check("Painel admin: conta antiga aguardando 1º acesso explica quando será liberada", /Será liberado quando entrar pela 1ª vez/.test(await page.locator("#admin-professores-list > div", { hasText: "antiga@ifsul.edu.br" }).textContent()));
+check("Painel admin: liberado direto no Firestore aparece (aguardando 1º acesso · ✓ Liberado)", /aguardando 1º acesso[\s\S]*✓ Liberado/.test((await page.locator("#admin-professores-list > div", { hasText: "console@ifsul.edu.br" }).textContent()) || ""));
+check("Painel admin: sem aviso de regras antigas", !/publique as regras/.test(await page.textContent("#admin-professores-status")));
 await linhaX.getByRole("button", { name: "Liberar" }).click();
 await page.waitForFunction(() => /liberado\(a\) para criar turmas/.test(document.getElementById("admin-professores-status").textContent), null, { timeout: 10000 })
   .then(() => check("Painel admin: Liberar funciona", true), () => check("Painel admin: Liberar funciona", false));
@@ -167,6 +173,10 @@ await page.click("#btn-create-professor");
 await page.waitForFunction(() => /criado/.test(document.getElementById("create-professor-status").textContent), null, { timeout: 15000 });
 const liberados = await list("professoresAutorizados");
 check("Criar professor no Painel admin: já fica liberado", liberados.some((p) => p.email === "juliane@ifsul.edu.br"), JSON.stringify(liberados.map((p) => p.email)));
+await page.waitForFunction(() => /✓ Liberado/.test([...document.querySelectorAll("#admin-professores-list > div")].find((r) => r.textContent.includes("juliane@ifsul.edu.br"))?.textContent || ""), null, { timeout: 10000 })
+  .then(() => check("Professor recém-criado (aguardando 1º acesso) aparece como \"✓ Liberado\"", true), () => check("Professor recém-criado (aguardando 1º acesso) aparece como \"✓ Liberado\"", false));
+await linhaX.waitFor();
+check("Depois de Liberar: a linha mostra \"✓ Liberado\" e some o botão", /✓ Liberado/.test(await page.locator("#admin-professores-list > div", { hasText: "estranho@gmail.com" }).textContent()) && (await page.locator("#admin-professores-list > div", { hasText: "estranho@gmail.com" }).getByRole("button", { name: "Liberar" }).count()) === 0);
 check("Nenhum erro de JavaScript (master)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
 
