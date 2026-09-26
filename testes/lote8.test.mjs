@@ -5,7 +5,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -125,15 +125,15 @@ check("Painel: \"Área do professor\" só para leitor de tela; conta e avisos fo
 check("Painel: \"Tela dos alunos\" no lugar de \"Voltar\"", (await page.innerText("#btn-teacher-back")).trim() === "Tela dos alunos");
 const c1 = card(page, "INF1M 2026");
 const nomesBotoes = await c1.locator("button:visible").evaluateAll((bs) => bs.map((b) => b.getAttribute("aria-label") || b.innerText.trim()));
-check("Cartão (celular): Gerar código 1h, Chamada, Atrasos e ⋯", nomesBotoes.length === 4 && nomesBotoes.includes("Gerar código 1h") && nomesBotoes.includes("Chamada") && nomesBotoes.includes("Atrasos") && nomesBotoes.some((n) => /^Mais opções/.test(n)), nomesBotoes.join(" | "));
+check("Cartão (celular): Gerar código 30 min, Chamada, Atrasos e ⋯", nomesBotoes.length === 4 && nomesBotoes.includes("Gerar código 30 min") && nomesBotoes.includes("Chamada") && nomesBotoes.includes("Atrasos") && nomesBotoes.some((n) => /^Mais opções/.test(n)), nomesBotoes.join(" | "));
 const acoes = await c1.locator("button:visible").evaluateAll((bs) => bs.filter((b) => !/Mais opções/.test(b.getAttribute("aria-label") || "")).map((b) => Math.round(b.getBoundingClientRect().top)));
 check("Cartão (celular): as 3 ações numa linha só", new Set(acoes).size === 1, acoes.join("/"));
 await c1.getByRole("button", { name: /^Mais opções/ }).click();
-check("⋯ mostra \"Gerar código 3h\" e \"Gerenciar\"", (await c1.getByRole("button", { name: "Gerar código 3h", exact: true }).locator("visible=true").count()) === 1 && (await c1.getByRole("button", { name: "Gerenciar", exact: true }).locator("visible=true").count()) === 1 && (await c1.getByRole("button", { name: /^Mais opções/ }).getAttribute("aria-expanded")) === "true");
+check("⋯ mostra \"Gerar código 1h\" e \"Gerenciar\"", (await c1.getByRole("button", { name: "Gerar código 1h", exact: true }).locator("visible=true").count()) === 1 && (await c1.getByRole("button", { name: "Gerenciar", exact: true }).locator("visible=true").count()) === 1 && (await c1.getByRole("button", { name: /^Mais opções/ }).getAttribute("aria-expanded")) === "true");
 await page.screenshot({ path: `${OUT}/l8-03-painel-celular.png` });
-await c1.getByRole("button", { name: "Gerar código 3h", exact: true }).locator("visible=true").click();
+await c1.getByRole("button", { name: "Gerar código 1h", exact: true }).locator("visible=true").click();
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-check("⋯ → Gerar código 3h funciona (janela do código)", /expira em (2h 5\dmin|3h)/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
+check("⋯ → Gerar código 1h funciona (janela do código)", /expira em (59 min|1h)/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
 check("Janela do código: sem aviso flutuante por cima (a janela já confirma)", await page.isHidden("#toast"));
 await page.click("#btn-close-code-display"); await page.waitForTimeout(500);
 const c3 = card(page, "INF2M 2026");
@@ -217,7 +217,7 @@ await page.waitForSelector("#teacher-gate-modal-backdrop:not(.hidden)");
 await page.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await page.fill("#teacher-gate-password", PASS); await page.click("#teacher-gate-submit");
 await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTimeout(800);
 const bot = (await card(page, "INF1N 2026").locator("button:visible").allInnerTexts()).filter((t) => !/^[☆★]$/.test(t.trim())); // ☆ = fixar (mais de 6 turmas)
-check("Computador: cartão com as 5 ações de sempre (sem ⋯)", JSON.stringify(bot.map((t) => t.trim())) === JSON.stringify(["Gerar código 1h", "Gerar código 3h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
+check("Computador: cartão com as 5 ações de sempre (sem ⋯)", JSON.stringify(bot.map((t) => t.trim())) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]), bot.join(" | "));
 check("Computador: código ativo com o texto completo", /Código 4821 · expira em \d+ min \(\d{2}:\d{2}\)/.test(await card(page, "INF2M 2026").locator("[data-expira] span:visible").innerText()));
 check("Computador: \"Área do professor\" e \"Ver todos os atrasos\" no topo", (await page.isVisible("#view-teacher-dashboard h2")) && (await page.isVisible("#btn-open-all-atrasos")) && (await page.isHidden("#btn-open-all-atrasos-bottom")));
 await card(page, "INF2M 2026").getByRole("button", { name: "Atrasos" }).click();

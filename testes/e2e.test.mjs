@@ -5,7 +5,7 @@ import http from "node:http";
 import { readFileSync, writeFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -128,7 +128,7 @@ check("Autenticação: professor autenticado entra na Área do professor", await
 const namesA = await rowNames(page);
 check("Turmas: prof A vê só as próprias turmas", namesA.length === 2 && !namesA.some((n) => n.includes("INF2N")), namesA.join(" | "));
 const btnTexts = await row(page, "INF2M").locator("button:visible").allTextContents();
-check("Botões na ordem [Gerar código 1h][Gerar código 3h][Chamada][📷 Atrasos][Gerenciar]", JSON.stringify(btnTexts) === JSON.stringify(["Gerar código 1h", "Gerar código 3h", "Chamada", "Atrasos", "Gerenciar"]), btnTexts.join(" | "));
+check("Botões na ordem [Gerar código 30 min][Gerar código 1h][Chamada][📷 Atrasos][Gerenciar]", JSON.stringify(btnTexts) === JSON.stringify(["Gerar código 30 min", "Gerar código 1h", "Chamada", "Atrasos", "Gerenciar"]), btnTexts.join(" | "));
 const cls = await row(page, "INF2M").locator("button:visible").evaluateAll((b) => [b[3].className, b[4].className]);
 check("Botão Atrasos com o mesmo estilo (cores) do botão Gerenciar", ["bg-slate-100", "text-slate-700", "rounded-lg", "font-semibold"].every((c) => cls[0].includes(c) && cls[1].includes(c)));
 check("\"Ver todos os atrasos\" no cabeçalho de Turmas cadastradas", await page.isVisible("#btn-open-all-atrasos"));
@@ -320,7 +320,7 @@ check("Todos os atrasos: excluir", (await count("turmas/tA2/atrasos")) === 0 && 
 await page.click("#btn-close-atrasos");
 
 // ---------- Regressão (prof A) ----------
-await row(page, "INF2M").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF2M"), "Gerar código 1h");
 await page.waitForFunction(() => /Código \d{4} gerado/.test(document.getElementById("toast-text").textContent));
 const code = (await page.textContent("#toast-text")).match(/Código (\d{4})/)[1];
 await page.click("#btn-close-code-display");

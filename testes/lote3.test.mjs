@@ -5,7 +5,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -84,7 +84,7 @@ await page.waitForSelector("#teacher-turmas-list > div"); await page.waitForTime
 // 4. tempo restante
 const linha = await row(page, "INF2M 2026").textContent();
 check("Tempo restante no cartão: \"expira em 40 min (hh:mm)\"", /Código 4821 · expira em (39|40) min \(\d{2}:\d{2}\)/.test(linha), linha.match(/Código[^E]*/)?.[0]);
-await row(page, "INF3M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF3M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 check("Tempo restante na janela do código", /^Válido até \d{2}:\d{2} · expira em (59 min|1h)$/.test(await page.textContent("#code-display-validity")), await page.textContent("#code-display-validity"));
 check("Item 3 não foi feito: sem botão \"+30 min\"", (await page.locator("text=+30 min").count()) === 0);

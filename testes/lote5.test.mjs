@@ -6,7 +6,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");

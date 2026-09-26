@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -97,7 +97,7 @@ await page.waitForTimeout(500);
 check("Encerrar (cartão): cartão mostra \"Nenhum código ativo\"", (await row(page, "INF2M 2026").textContent()).includes("Nenhum código ativo"));
 
 // --- Gerar → código grande com QR + link
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 await page.waitForSelector("#code-display-qr img", { timeout: 8000 });
 check("Código grande: QR da turma aparece", await page.$eval("#code-display-qr img", (i) => i.complete && i.naturalWidth > 0));
@@ -122,10 +122,10 @@ check("Copiar ausentes (chamada): título + um nome por linha", txt.startsWith("
 await page.screenshot({ path: `${OUT}/l2-03-chamada-barra-celular.png` });
 await page.click("#btn-bar-end-code");
 await page.waitForFunction(() => /Nenhum código ativo/.test(document.getElementById("teacher-code-bar-text").textContent), null, { timeout: 8000 });
-check("Chamada: \"Encerrar código agora\" → barra mostra \"Gerar código 1h\"", (await page.isVisible("#btn-bar-new-code")) && (await page.isHidden("#btn-bar-end-code")));
+check("Chamada: \"Encerrar código agora\" → barra mostra \"Gerar código 30 min\"", (await page.isVisible("#btn-bar-new-code")) && (await page.isHidden("#btn-bar-end-code")));
 await page.click("#btn-bar-new-code");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
-check("Chamada: \"Gerar código 1h\" pela barra abre o código grande", /^\d{4}$/.test(await page.textContent("#code-display-value")));
+check("Chamada: \"Gerar código 30 min\" pela barra abre o código grande", /^\d{4}$/.test(await page.textContent("#code-display-value")));
 await page.click("#btn-close-code-display");
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
@@ -150,7 +150,7 @@ const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(xlsxPath);
 const sh = wb.worksheets[0];
 const header = sh.getRow(3).values.slice(1);
 const linhaBruno = sh.getRow(4 + alunos.slice().sort((a, b) => a.localeCompare(b, "pt-BR")).indexOf("Bruno Henrique Alves")).values.slice(1);
-check("Exportar 7 dias: uma coluna por dia + Presenças + Faltas", header.length === 6 && header[0] === "Aluno" && header[4] === "Presenças" && header[5] === "Faltas", header.join(" | "));
+check("Exportar 7 dias: uma coluna por dia + Presenças + Faltas + Atrasos", header.length === 7 && header[0] === "Aluno" && header[4] === "Presenças" && header[5] === "Faltas" && header[6] === "Atrasos", header.join(" | "));
 check("Exportar 7 dias: presença com horário, falta como \"Falta\" e totais", linhaBruno[1] === "08:01" && linhaBruno[2] === "08:01" && linhaBruno[3] === "Falta" && linhaBruno[4] === 2 && linhaBruno[5] === 1, linhaBruno.join(" | "));
 await page.locator("#manage-alunos-list > div", { hasText: "Felipe Carvalho" }).getByRole("button", { name: /Editar nome/ }).click();
 const editInput = page.locator('#manage-alunos-list input[aria-label="Novo nome de Felipe Carvalho"]');
@@ -217,7 +217,7 @@ page = await open(ctx, APP + "#professor");
 await login(page, "douglascamargo@ifsul.edu.br");
 await page.waitForSelector("#teacher-turmas-list > div");
 // --- QR grande para projetar (computador)
-await row(page, "INF2M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF2M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-qr img", { timeout: 8000 });
 await page.click("#code-display-qr");
 await page.waitForSelector("#turma-qr-image img", { timeout: 8000 });

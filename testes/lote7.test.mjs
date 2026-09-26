@@ -5,7 +5,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -105,11 +105,11 @@ await page.waitForFunction(() => /Todos os 4 alunos marcaram/.test(document.getE
 check("Opção ligada: encerra o código (banco)", (await read("turmas/t0")).codigoDoDia === "");
 await page.waitForTimeout(500);
 check("Depois de encerrar: barra mostra \"Nenhum código ativo\" e some a opção", /Nenhum código ativo/.test(await page.textContent("#teacher-code-bar-text")) && (await page.isHidden("#bar-auto-end-wrap")));
-check("Celular/professor sem código: \"Gerar código 1h\" e \"Copiar ausentes\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
+check("Celular/professor sem código: \"Gerar código 30 min\" e \"Copiar ausentes\" lado a lado", await (async () => { const a = await box(page, "#btn-bar-new-code"), b = await box(page, "#btn-bar-copy-absent"); return Math.abs(a.y - b.y) < 2; })());
 await page.click("#btn-trocar-turma"); await page.waitForTimeout(600);
 
 // ===== Encerrar sozinho pela janela do código =====
-await row(page, "INF3M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF3M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 check("Janela do código: opção já vem ligada (lembra a escolha)", await page.isChecked("#code-display-auto-end"));
 check("Janela do código: botão Compartilhar (onde o celular permite)", await page.isVisible("#btn-code-display-share"));
@@ -126,7 +126,7 @@ check("Janela do código: o 4º marcou → encerra e avisa na janela", (await re
 await page.screenshot({ path: `${OUT}/l7-02-janela-encerrado-celular.png` });
 await page.click("#btn-close-code-display");
 // desligando a opção
-await row(page, "INF1M 2025").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF1M 2025"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 await page.uncheck("#code-display-auto-end");
 await env.withSecurityRulesDisabled(async (c) => { const f = c.firestore(); const b = writeBatch(f); alunos.forEach((n, k) => b.set(doc(f, `turmas/t2/presencas/p${k}`), { nome: n, data: hoje, horario: "08:00", maquina: `m${k}`, expiraEm: Timestamp.fromMillis(now + 86400000) })); await b.commit(); });

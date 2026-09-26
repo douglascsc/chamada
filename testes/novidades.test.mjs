@@ -5,7 +5,7 @@ import http from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-// Cartão da turma: no celular, "Gerenciar" e "Gerar código 3h" ficam no "⋯"
+// Cartão da turma: no celular, "Gerenciar" e "Gerar código 1h" ficam no "⋯"
 // Gerenciar: "Alunos" e "Configurações da turma" começam recolhidos; abre como o professor faria (tocando no título)
 async function abrirGerenciar(p) {
   await p.waitForSelector("#teacher-manage-panel:not(.hidden)");
@@ -111,7 +111,7 @@ await page.screenshot({ path: `${OUT}/nov-01-painel-busca-estrela-celular.png` }
 
 // ===== 10c. Aviso flutuante visível mesmo rolado =====
 await row(page, "INF4M 2026").scrollIntoViewIfNeeded();
-await row(page, "INF4M 2026").getByRole("button", { name: "Gerar código 1h" }).click();
+await cardClick(row(page, "INF4M 2026"), "Gerar código 1h");
 await page.waitForSelector("#code-display-backdrop:not(.hidden)");
 // a janela do código já confirma; o aviso flutuante é testado com outra ação (copiar o link)
 await page.click("#btn-code-display-copy-link");

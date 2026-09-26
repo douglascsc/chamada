@@ -41,6 +41,7 @@ O script termina com código 0 só se todos os testes passarem.
 | `ux.test.mjs` | Login, "Manter conectado", atalho `#professor`, modo professor |
 | `novidades.test.mjs` | Tela Chamada do professor, histórico, exportar |
 | `lote2` … `lote7` | Lotes de melhorias (link/QR, arquivar, prévia de importação, sem internet, cor da turma…) |
+| `lote11` | Código de 30 min e 1h; presença com atraso (limites de 20 min, professor, histórico, Excel, aluno não vê) |
 | `lote10` | Menos leituras: só presenças de hoje, lista de turmas sob demanda (lê o tráfego do banco), virada do dia, aluno que digita rápido |
 | `lote9` | Nomes inteiros, marcar todos presentes, ir para outra turma, marcações não enviadas |
 | `lote8` | Melhorias da auditoria (6 turmas, 32 alunos): aluno vê só quem falta, cartão enxuto, Gerenciar reorganizado, Tirar foto; mede alturas e rolagem |
