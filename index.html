@@ -1709,6 +1709,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let alunos = [];
     let presencas = [];
     let isDailyCodeVerified = false;
+    let codigoVerificado = "";       // código que o aluno digitou e o servidor aceitou
+    let codigoVerificadoEm = null;   // codigoDefinidoEm da turma quando o código foi aceito
+    let nomesDaSalaAluno = [];       // lista de nomes que o aluno recebe junto com o código
+    let unsubSalaAluno = null;
+    let attendanceMode = null;       // "professor" | "aluno" | null (quem está usando a chamada)
+    let attendanceKey = null;        // modo + código (aluno): muda → busca de novo
     let isTeacherModeActive = false;
     let isTeacherAuthenticated = false;
     let isMasterAccount = false; // TEACHER_EMAIL: acesso a todas as turmas de todos os professores
@@ -2172,6 +2178,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         if (!snap.exists()) return;
         selectedTurmaData = { id: snap.id, ...snap.data() };
         attendanceTurmaName.textContent = selectedTurmaData.nome || "Turma";
+        startAttendanceSubscriptionsIfNeeded(); // professor dono: já pode buscar a lista
         updateDailyCodeStatusUI();
         renderAttendance();
         // Código digitado antes de os dados da turma chegarem: confere agora
@@ -2181,33 +2188,62 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         primeiraLeitura = false;
       });
 
-      // TESTE (branch teste/codigo-ativo, não publicado): a lista de alunos
-      // e as presenças só são buscadas depois que o código do dia é
-      // validado (ou em Modo professor/login) — veja
-      // startAttendanceSubscriptionsIfNeeded(). As regras do Firestore
-      // precisam aplicar exatamente essa mesma condição do lado do
-      // servidor (função codigoAtivo()) para isso funcionar.
+      // A lista de alunos e as presenças só são buscadas depois que o código
+      // do dia é aceito pelo servidor (ou pelo professor dono da turma) —
+      // veja startAttendanceSubscriptionsIfNeeded(). As regras do Firestore
+      // aplicam a mesma condição do lado do servidor.
       startAttendanceSubscriptionsIfNeeded();
+    }
+
+    // Quem está usando a chamada agora:
+    // - "professor": Modo professor, ou professor dono da turma (ou master)
+    //   conectado — lê a lista de alunos e todas as presenças do dia;
+    // - "aluno": digitou o código certo — recebe a lista de nomes junto com
+    //   o código e só as presenças marcadas com esse código.
+    function modoDaChamada() {
+      if (isTeacherModeActive) return "professor";
+      const user = auth.currentUser;
+      if (isTeacherAuthenticated && user && selectedTurmaData
+          && (isMasterAccount || selectedTurmaData.professorUid === user.uid)) return "professor";
+      if (isDailyCodeVerified && codigoVerificado) return "aluno";
+      return null;
+    }
+
+    function stopAttendanceSubscriptions() {
+      if (unsubAlunos) { unsubAlunos(); unsubAlunos = null; }
+      if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
     }
 
     function startAttendanceSubscriptionsIfNeeded() {
       if (!selectedTurmaId) return;
-      if (!(isDailyCodeVerified || isTeacherModeActive || isTeacherAuthenticated)) return;
-      if (unsubAlunos || unsubPresencas) return;
+      const modo = modoDaChamada();
+      const key = modo === "aluno" ? `aluno|${codigoVerificado}` : modo;
+      if (key === attendanceKey && (unsubPresencas || !modo)) return;
+      stopAttendanceSubscriptions();
+      attendanceMode = modo;
+      attendanceKey = key;
+      if (!modo) return;
 
-      const alunosQuery = query(collection(db, "turmas", selectedTurmaId, "alunos"), orderBy("nome"));
-      unsubAlunos = onSnapshot(
-        alunosQuery,
-        (snap) => {
-          alunos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          syncStudentRows();
-          renderAttendance();
-        },
-        (error) => {
-          console.error("[teste/codigo-ativo] erro ao ler alunos:", error.code, error.message);
-          showMessage("error", `Não foi possível carregar a lista de alunos (${error.code}). Veja o Console (F12) para detalhes.`);
-        }
-      );
+      if (modo === "aluno") {
+        alunos = nomesDaSalaAluno.map((nome) => ({ id: nome, nome }));
+        syncStudentRows();
+      } else {
+        acompanharSala(selectedTurmaId); // código atual, para a barra do professor
+        const alunosQuery = query(collection(db, "turmas", selectedTurmaId, "alunos"), orderBy("nome"));
+        unsubAlunos = onSnapshot(
+          alunosQuery,
+          (snap) => {
+            alunos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            sincronizarNomesDaSala(selectedTurmaData, alunos.map((a) => a.nome));
+            syncStudentRows();
+            renderAttendance();
+          },
+          (error) => {
+            console.error("Erro ao ler alunos:", error.code, error.message);
+            showMessage("error", `Não foi possível carregar a lista de alunos (${error.code}). Veja o Console (F12) para detalhes.`);
+          }
+        );
+      }
 
       subscribePresencasDeHoje();
     }
@@ -2220,15 +2256,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (!selectedTurmaId) return;
       if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
       presencasDate = getLocalParts().isoDate;
+      const presencasCol = collection(db, "turmas", selectedTurmaId, "presencas");
+      // Aluno só pode ler as presenças marcadas com o código atual (regras)
+      const presencasQuery = attendanceMode === "aluno"
+        ? query(presencasCol, where("data", "==", presencasDate), where("codigoUsado", "==", codigoVerificado))
+        : query(presencasCol, where("data", "==", presencasDate));
+      const modoDaEscuta = attendanceMode;
       unsubPresencas = onSnapshot(
-        query(collection(db, "turmas", selectedTurmaId, "presencas"), where("data", "==", presencasDate)),
+        presencasQuery,
         { includeMetadataChanges: true }, // para saber quando uma marcação sem internet foi enviada
         (snap) => {
           presencas = snap.docs.map((d) => ({ id: d.id, ...d.data(), pendente: d.metadata.hasPendingWrites }));
           renderAttendance();
         },
         (error) => {
-          console.error("[teste/codigo-ativo] erro ao ler presenças:", error.code, error.message);
+          console.error("Erro ao ler presenças:", error.code, error.message);
+          // Aluno: o código foi encerrado ou trocado; a lista fica como estava
+          if (modoDaEscuta === "aluno") return;
           showMessage("error", `Não foi possível carregar as presenças (${error.code}). Veja o Console (F12) para detalhes.`);
         }
       );
@@ -2248,13 +2292,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       if (toastActionHandler) hideToast(); // o "Desfazer" rápido é só para a tela da chamada
       document.getElementById("chamada-switch-wrap").classList.add("hidden"); // "Ir para" é só do professor
       if (unsubSelectedTurmaDoc) { unsubSelectedTurmaDoc(); unsubSelectedTurmaDoc = null; }
-      if (unsubAlunos) { unsubAlunos(); unsubAlunos = null; }
-      if (unsubPresencas) { unsubPresencas(); unsubPresencas = null; }
+      stopAttendanceSubscriptions();
+      pararSalaDoAluno();
+      attendanceMode = null;
+      attendanceKey = null;
       selectedTurmaId = null;
       selectedTurmaData = null;
       alunos = [];
       presencas = [];
       isDailyCodeVerified = false;
+      codigoVerificado = "";
+      codigoVerificadoEm = null;
+      nomesDaSalaAluno = [];
       studentDailyCodeInput.value = "";
       studentList.innerHTML = "";
       studentDoneDismissed = false;
@@ -2344,11 +2393,112 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       return Timestamp.fromMillis(Date.now() + PRESENCA_RETENTION_MS);
     }
 
+    // O valor do código NÃO fica na turma (que qualquer um pode ler): a
+    // turma só diz quando ele foi gerado e quanto tempo vale. Turmas antigas,
+    // com o código gravado nela, ficam sem código até o professor gerar um novo.
     function isCodeActive(turma) {
-      if (!turma || !turma.codigoDoDia) return false;
+      if (!turma || "codigoDoDia" in turma) return false;
       const definedAtMillis = codeDefinedAtMillis(turma);
       if (!definedAtMillis) return false;
       return Date.now() - definedAtMillis < codeValidityMs(turma);
+    }
+
+    // Código do dia do lado do professor: o valor é o ID do documento em
+    // turmas/{id}/salas (que guarda a lista de nomes para os alunos). Só o
+    // professor da turma lista essa coleção. É acompanhada só nas turmas que
+    // precisam mostrar o código (cartões com código recente, Gerenciar,
+    // Chamada), para não gastar leituras.
+    const salasProfessor = new Map(); // turmaId -> { codigo, nomes, definidoEm, unsub }
+    function acompanharSala(turmaId) {
+      if (!turmaId || !auth.currentUser || salasProfessor.has(turmaId)) return;
+      const entry = { codigo: "", nomes: [], definidoEm: null, unsub: null };
+      salasProfessor.set(turmaId, entry);
+      entry.unsub = onSnapshot(collection(db, "turmas", turmaId, "salas"), (snap) => {
+        let atual = null;
+        snap.docs.forEach((d) => {
+          const data = d.data();
+          const millis = data.definidoEm && typeof data.definidoEm.toMillis === "function" ? data.definidoEm.toMillis() : null;
+          if (!atual || (millis || 0) > (atual.definidoEm || 0)) {
+            atual = { codigo: d.id, nomes: Array.isArray(data.nomes) ? data.nomes : [], definidoEm: millis };
+          }
+        });
+        Object.assign(entry, atual || { codigo: "", nomes: [], definidoEm: null });
+        aoMudarSala(turmaId);
+      }, () => { entry.unsub = null; }); // sem permissão (turma de outro professor)
+    }
+    function pararSalas() {
+      salasProfessor.forEach((entry) => { if (entry.unsub) entry.unsub(); });
+      salasProfessor.clear();
+    }
+    // Código atual da turma (só para o professor; "" se não souber)
+    function codigoDe(turma) {
+      const entry = turma && salasProfessor.get(turma.id);
+      const definidoEm = codeDefinedAtMillis(turma);
+      return entry && entry.codigo && definidoEm !== null && entry.definidoEm === definidoEm ? entry.codigo : "";
+    }
+    function nomesParaSala(nomes) {
+      return [...new Set(nomes.map((n) => String(n || "").trim()).filter(Boolean))].sort();
+    }
+    // Aluno incluído/renomeado/removido com o código ativo: atualiza a lista
+    // que os alunos recebem (só quando algo mudou).
+    function sincronizarNomesDaSala(turma, nomes) {
+      if (!turma || !isCodeActive(turma)) return;
+      const codigo = codigoDe(turma);
+      if (!codigo) return;
+      const entry = salasProfessor.get(turma.id);
+      const lista = nomesParaSala(nomes);
+      if (JSON.stringify(lista) === JSON.stringify(entry.nomes)) return;
+      entry.nomes = lista;
+      updateDoc(doc(db, "turmas", turma.id, "salas", codigo), { nomes: lista }).catch(() => {});
+    }
+    function aoMudarSala(turmaId) {
+      if (selectedTurmaId === turmaId) {
+        renderTeacherCodeBar();
+        if (attendanceMode === "professor") sincronizarNomesDaSala(selectedTurmaData, alunos.map((a) => a.nome));
+      }
+      if (teacherManagingTurmaId === turmaId) {
+        renderManageCode();
+        sincronizarNomesDaSala(teacherManagingTurmaData, teacherManagingAlunos.map((a) => a.nome));
+      }
+      if (!viewTeacherDashboard.classList.contains("hidden") && allTeacherTurmas.some((t) => t.id === turmaId)) {
+        renderFilteredTeacherTurmasRows();
+      }
+    }
+    // Gera (ou salva) o código: a turma guarda só quando e por quanto tempo;
+    // o código vira o ID do documento com a lista de nomes. Tudo de uma vez
+    // (um código anterior é apagado na mesma gravação).
+    async function abrirCodigoDaTurma(turmaId, code, minutes) {
+      const [alunosSnap, salasSnap] = await Promise.all([
+        getDocs(collection(db, "turmas", turmaId, "alunos")),
+        getDocs(collection(db, "turmas", turmaId, "salas"))
+      ]);
+      const batch = writeBatch(db);
+      batch.update(doc(db, "turmas", turmaId), {
+        codigoDoDia: deleteField(),
+        codigoDefinidoEm: serverTimestamp(),
+        codigoDuracaoMin: minutes
+      });
+      salasSnap.docs.forEach((d) => { if (d.id !== code) batch.delete(d.ref); });
+      batch.set(doc(db, "turmas", turmaId, "salas", code), {
+        nomes: nomesParaSala(alunosSnap.docs.map((d) => d.data().nome)),
+        definidoEm: serverTimestamp()
+      });
+      await batch.commit();
+      acompanharSala(turmaId);
+    }
+    // Encerra o código (e apaga a lista de nomes dos alunos)
+    async function fecharCodigoDaTurma(turmaId, extra = {}) {
+      const salasSnap = await getDocs(collection(db, "turmas", turmaId, "salas"));
+      const batch = writeBatch(db);
+      batch.update(doc(db, "turmas", turmaId), { codigoDoDia: deleteField(), codigoDefinidoEm: null, ...extra });
+      salasSnap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+    // Presença marcada pelo professor com um código ativo leva o código, para
+    // aparecer como marcada também na tela dos alunos.
+    function codigoParaPresencaDoProfessor(turma) {
+      const codigo = isCodeActive(turma) ? codigoDe(turma) : "";
+      return codigo ? { codigoUsado: codigo } : {};
     }
 
     function formatTimeOfDay(millis) {
@@ -2408,6 +2558,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       } else {
         btnTeacherMode.className = "focus-ring inline-flex min-h-11 items-center gap-1.5 rounded px-0.5 text-xs font-semibold text-slate-500 hover:text-[#2B7A40] hover:underline sm:min-h-0";
         teacherModeLabel.textContent = "Modo professor";
+        startAttendanceSubscriptionsIfNeeded();
       }
       updateDailyCodeStatusUI();
       renderAttendance();
@@ -2426,7 +2577,14 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       openTeacherGateModal();
     });
 
-    function verifyDailyCode(showMessages = true) {
+    // O código digitado é conferido pelo servidor: a lista de nomes fica no
+    // documento turmas/{id}/salas/{código}, que só abre com o código atual.
+    function pararSalaDoAluno() {
+      if (unsubSalaAluno) { unsubSalaAluno(); unsubSalaAluno = null; }
+    }
+
+    let verificacaoAtual = 0;
+    async function verifyDailyCode(showMessages = true) {
       if (!selectedTurmaData) return false;
 
       if (!isCodeActive(selectedTurmaData)) {
@@ -2437,26 +2595,72 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
 
       const code = studentDailyCodeInput.value.trim();
-      if (code === selectedTurmaData.codigoDoDia) {
-        isDailyCodeVerified = true;
-        updateDailyCodeStatusUI();
-        startAttendanceSubscriptionsIfNeeded();
-        renderAttendance();
-        // O selo "Código validado" já confirma; em vez de mais um aviso, a
-        // tela desce até a lista (e fecha o teclado do celular).
-        if (showMessages) {
-          hideMessage();
-          studentDailyCodeInput.blur();
-          scrollToListPending = true; // desce quando a lista de alunos aparecer
-          scrollToListIfReady();
+      if (isDailyCodeVerified && code === codigoVerificado) return true;
+      const incorreto = () => {
+        if (showMessages) showMessage("error", "Código do Dia incorreto. Peça ao professor o código correto escrito no quadro.");
+        return false;
+      };
+      if (!/^\d{4}$/.test(code)) return incorreto();
+
+      const turmaId = selectedTurmaId;
+      const token = ++verificacaoAtual;
+      pararSalaDoAluno();
+      btnVerifyCode.disabled = true;
+      const resultado = await new Promise((resolve) => {
+        let respondeu = false;
+        const responder = (valor) => { if (!respondeu) { respondeu = true; resolve(valor); } };
+        const unsub = onSnapshot(doc(db, "turmas", turmaId, "salas", code), (snap) => {
+          if (!snap.exists()) {
+            // sem internet a resposta vem da memória (vazia): não é "incorreto"
+            responder(snap.metadata.fromCache ? "offline" : "incorreto");
+            return; // (depois de aceito: código encerrado/trocado — a lista fica como estava)
+          }
+          const nomes = Array.isArray(snap.data().nomes) ? snap.data().nomes.filter((n) => typeof n === "string") : [];
+          if (!respondeu) {
+            nomesDaSalaAluno = nomes;
+            responder("ok");
+            return;
+          }
+          // o professor incluiu ou mudou alunos com o código ativo
+          if (token !== verificacaoAtual) return;
+          nomesDaSalaAluno = nomes;
+          if (attendanceMode === "aluno") {
+            alunos = nomes.map((nome) => ({ id: nome, nome }));
+            syncStudentRows();
+            renderAttendance();
+          }
+        }, (error) => {
+          responder(error.code === "permission-denied" ? "incorreto" : "offline");
+        });
+        if (token === verificacaoAtual) unsubSalaAluno = unsub; else unsub();
+      });
+      btnVerifyCode.disabled = false;
+      if (token !== verificacaoAtual || turmaId !== selectedTurmaId) return false;
+
+      if (resultado !== "ok") {
+        pararSalaDoAluno();
+        if (resultado === "offline") {
+          if (showMessages) showMessage("error", "Sem conexão com a internet para conferir o código. Verifique a internet e tente de novo.");
+          return false;
         }
-        return true;
+        return incorreto();
       }
 
+      codigoVerificado = code;
+      codigoVerificadoEm = codeDefinedAtMillis(selectedTurmaData);
+      isDailyCodeVerified = true;
+      updateDailyCodeStatusUI();
+      startAttendanceSubscriptionsIfNeeded();
+      renderAttendance();
+      // O selo "Código validado" já confirma; em vez de mais um aviso, a
+      // tela desce até a lista (e fecha o teclado do celular).
       if (showMessages) {
-        showMessage("error", "Código do Dia incorreto. Peça ao professor o código correto escrito no quadro.");
+        hideMessage();
+        studentDailyCodeInput.blur();
+        scrollToListPending = true; // desce quando a lista de alunos aparecer
+        scrollToListIfReady();
       }
-      return false;
+      return true;
     }
 
     btnVerifyCode.addEventListener("click", () => verifyDailyCode(true));
@@ -2719,7 +2923,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           data: current.isoDate,
           horario: current.time,
           maquina: "professor",
-          expiraEm: presencaExpiraEm()
+          expiraEm: presencaExpiraEm(),
+          ...codigoParaPresencaDoProfessor(selectedTurmaData)
         })).catch(() => {
           showToast("error", `Não foi possível registrar a presença de ${name}. Tente novamente.`);
         });
@@ -2769,7 +2974,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
           data: current.isoDate,
           horario: current.time,
           maquina: deviceId,
-          codigoUsado: selectedTurmaData.codigoDoDia,
+          codigoUsado: codigoVerificado,
           expiraEm: presencaExpiraEm()
         });
         showMessage("success", isTeacherModeActive
@@ -2778,7 +2983,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         // o celular vibra ao confirmar (onde o navegador permite; no iPhone não vibra)
         try { if (navigator.vibrate) navigator.vibrate([60, 60, 120]); } catch (error) { /* sem vibração */ }
       } catch (error) {
-        showMessage("error", "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
+        const codigoMudou = !isCodeActive(selectedTurmaData) || codeDefinedAtMillis(selectedTurmaData) !== codigoVerificadoEm;
+        showMessage("error", codigoMudou
+          ? "O código do dia expirou, foi encerrado ou foi trocado. Peça ao professor o código atual e digite de novo."
+          : "Não foi possível registrar a presença. Este dispositivo já pode ter sido usado hoje nesta turma.");
       } finally {
         clearTimeout(slowStudent);
         busyName = "";
@@ -2795,7 +3003,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     // "Relatar problema": e-mail já preenchido com o que ajuda a achar o erro
-    const APP_VERSION = "2026.09.25";
+    const APP_VERSION = "2026.09.26";
     document.getElementById("link-report-problem").addEventListener("click", (event) => {
       const turmaNome = selectedTurmaData && selectedTurmaData.nome;
       const linhas = [
@@ -3142,6 +3350,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
       if (!isTeacherAuthenticated) {
         setTeacherModeActive(false);
+        pararSalas();
         unsubscribeMyTurmasList();
         closeAtrasoViewer();
         closeAtrasosModal();
@@ -3339,7 +3548,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     let allTeacherTurmas = [];
     let teacherTurmasFilterUid = null; // null = todos os professores
 
+    // Turmas antigas guardavam o código na própria turma (pública): ao
+    // aparecerem para o professor, esse campo é apagado (o código antigo
+    // já não vale mais — é só gerar um novo).
+    const turmasLimpas = new Set();
+    function limparCodigoAntigo(turmas) {
+      const user = auth.currentUser;
+      if (!user) return;
+      turmas.forEach((t) => {
+        if (!("codigoDoDia" in t) || turmasLimpas.has(t.id)) return;
+        if (!isMasterAccount && t.professorUid !== user.uid) return;
+        turmasLimpas.add(t.id);
+        updateDoc(doc(db, "turmas", t.id), { codigoDoDia: deleteField(), codigoDefinidoEm: null }).catch(() => turmasLimpas.delete(t.id));
+      });
+    }
+
     function renderTeacherTurmasList(turmas) {
+      limparCodigoAntigo(turmas);
       allTeacherTurmas = [...turmas].sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
       renderTeacherTurmasProfessorFilter();
       renderFilteredTeacherTurmasRows();
@@ -3475,7 +3700,8 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
     async function setTurmaArchived(turma, arquivar) {
       try {
-        await updateDoc(doc(db, "turmas", turma.id), arquivar ? { arquivada: true, codigoDoDia: "" } : { arquivada: false });
+        if (arquivar) await fecharCodigoDaTurma(turma.id, { arquivada: true });
+        else await updateDoc(doc(db, "turmas", turma.id), { arquivada: false });
         showToast("success", arquivar
           ? `"${turma.nome}" arquivada. Ela fica em "Turmas arquivadas", no fim da lista.`
           : `"${turma.nome}" reativada.`);
@@ -3520,18 +3746,21 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
       const codeLine = document.createElement("div");
       codeLine.className = "text-xs mt-0.5";
-      if (turma.codigoDoDia) {
+      // código gerado nas últimas 12h: acompanha para mostrar o número
+      if (codeDefinedAtMillis(turma) && Date.now() - codeExpiresAtMillis(turma) < 12 * 60 * 60 * 1000) acompanharSala(turma.id);
+      const codigoCartao = codigoDe(turma);
+      if (isCodeActive(turma) || codigoCartao) {
         const active = isCodeActive(turma);
         codeLine.className += active ? " text-emerald-600 font-semibold" : " text-slate-500";
         if (active) {
           const expira = codeExpiresAtMillis(turma);
           const texto = document.createElement("span");
           texto.dataset.expira = String(expira); // atualizado a cada 30s
-          texto.dataset.codigo = turma.codigoDoDia;
+          texto.dataset.codigo = codigoCartao;
           fillCardCodeText(texto);
           codeLine.appendChild(texto);
         } else {
-          codeLine.textContent = `Código: ${turma.codigoDoDia} (expirou em ${formatDateTimeOfDay(codeExpiresAtMillis(turma))})`;
+          codeLine.textContent = `Código: ${codigoCartao} (expirou em ${formatDateTimeOfDay(codeExpiresAtMillis(turma))})`;
         }
         if (active) {
           // Encerrar antes do prazo (ex.: a aula já começou)
@@ -3640,10 +3869,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const expira = Number(el.dataset.expira);
       const longo = document.createElement("span");
       longo.className = "max-sm:hidden";
-      longo.textContent = `Código ${el.dataset.codigo} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
+      const rotulo = el.dataset.codigo ? `Código ${el.dataset.codigo}` : "Código ativo";
+      longo.textContent = `${rotulo} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`;
       const curto = document.createElement("span");
       curto.className = "sm:hidden";
-      curto.textContent = `Código ${el.dataset.codigo} · até ${formatTimeOfDay(expira)}`;
+      curto.textContent = `${rotulo} · até ${formatTimeOfDay(expira)}`;
       el.replaceChildren(longo, curto);
     }
 
@@ -3778,7 +4008,6 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       try {
         const turmaRef = await addDoc(turmasCollection, {
           nome,
-          codigoDoDia: "",
           codigoDefinidoEm: null,
           professorUid: auth.currentUser.uid,
           professorNome: auth.currentUser.displayName || auth.currentUser.email
@@ -3830,26 +4059,34 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         renderManageTransfer();
         renderManageColorOptions();
         manageTurmaTitle.textContent = teacherManagingTurmaData.nome || "Turma";
-        manageCodeInput.value = teacherManagingTurmaData.codigoDoDia || "";
-        const definedAtMillis = codeDefinedAtMillis(teacherManagingTurmaData);
-        if (isCodeActive(teacherManagingTurmaData)) {
-          const durationMin = codeDurationMin(teacherManagingTurmaData);
-          const expiresAt = definedAtMillis + codeValidityMs(teacherManagingTurmaData);
-          manageCodeHint.textContent = `Este código está ativo e expira em ${formatDateTimeOfDay(expiresAt)} (${formatDurationLabel(durationMin)} após ter sido definido).`;
-        } else if (definedAtMillis) {
-          manageCodeHint.textContent = `Este código expirou em ${formatDateTimeOfDay(definedAtMillis + codeValidityMs(teacherManagingTurmaData))}. Gere e salve um novo para liberar a chamada da turma.`;
-        } else {
-          manageCodeHint.textContent = "Nenhum código ativo. Defina e salve um código para liberar a chamada da turma.";
-        }
+        renderManageCode();
       });
+      acompanharSala(turmaId);
 
       const alunosQuery = query(collection(db, "turmas", turmaId, "alunos"), orderBy("nome"));
       unsubManageAlunos = onSnapshot(alunosQuery, (snap) => {
         teacherManagingAlunos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        sincronizarNomesDaSala(teacherManagingTurmaData, teacherManagingAlunos.map((a) => a.nome));
         renderManageAlunosList();
       });
 
       loadHistory(); // histórico já aberto no dia mais recente
+    }
+
+    function renderManageCode() {
+      const turma = teacherManagingTurmaData;
+      if (!turma) return;
+      if (document.activeElement !== manageCodeInput) manageCodeInput.value = codigoDe(turma);
+      const definedAtMillis = codeDefinedAtMillis(turma);
+      if (isCodeActive(turma)) {
+        const durationMin = codeDurationMin(turma);
+        const expiresAt = definedAtMillis + codeValidityMs(turma);
+        manageCodeHint.textContent = `Este código está ativo e expira em ${formatDateTimeOfDay(expiresAt)} (${formatDurationLabel(durationMin)} após ter sido definido).`;
+      } else if (definedAtMillis && !("codigoDoDia" in turma)) {
+        manageCodeHint.textContent = `Este código expirou em ${formatDateTimeOfDay(definedAtMillis + codeValidityMs(turma))}. Gere e salve um novo para liberar a chamada da turma.`;
+      } else {
+        manageCodeHint.textContent = "Nenhum código ativo. Defina e salve um código para liberar a chamada da turma.";
+      }
     }
 
     function stopManagingTurma() {
@@ -4186,6 +4423,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       await deleteAllDocsIn(collection(db, "turmas", turmaId, "atrasos"));
       await deleteAllDocsIn(collection(db, "turmas", turmaId, "presencas"));
       await deleteAllDocsIn(collection(db, "turmas", turmaId, "alunos"));
+      await deleteAllDocsIn(collection(db, "turmas", turmaId, "salas"));
       await deleteDoc(doc(db, "turmas", turmaId));
     }
 
@@ -4524,11 +4762,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     async function saveTurmaCode(code, minutes) {
       if (!teacherManagingTurmaId) return;
       try {
-        await updateDoc(doc(db, "turmas", teacherManagingTurmaId), {
-          codigoDoDia: code,
-          codigoDefinidoEm: serverTimestamp(),
-          codigoDuracaoMin: minutes
-        });
+        await abrirCodigoDaTurma(teacherManagingTurmaId, code, minutes);
         manageCodeStatus.textContent = `Código salvo! A turma já pode usá-lo pelas próximas ${formatDurationLabel(minutes)}.`;
         manageCodeStatus.className = "mt-1 text-xs text-emerald-600 font-semibold";
         showCodeDisplay(teacherManagingTurmaData, code, minutes);
@@ -5070,11 +5304,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     async function generateCodeForTurma(turma, minutes) {
       const code = String(Math.floor(1000 + Math.random() * 9000));
       try {
-        await updateDoc(doc(db, "turmas", turma.id), {
-          codigoDoDia: code,
-          codigoDefinidoEm: serverTimestamp(),
-          codigoDuracaoMin: minutes
-        });
+        await abrirCodigoDaTurma(turma.id, code, minutes);
         showTeacherMessage("success", `Código ${code} gerado e salvo para "${turma.nome || "a turma"}" (válido por ${formatDurationLabel(minutes)}).`);
         showCodeDisplay(turma, code, minutes);
         return code;
@@ -5085,10 +5315,10 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     }
 
     // Encerra o código antes do prazo: ninguém mais consegue marcar presença
-    // com ele (as regras do Firestore exigem um código não vazio e ativo).
+    // com ele (as regras do Firestore exigem o código atual e no prazo).
     async function endCodeForTurma(turma) {
       try {
-        await updateDoc(doc(db, "turmas", turma.id), { codigoDoDia: "" });
+        await fecharCodigoDaTurma(turma.id);
         showTeacherMessage("success", `Código de "${turma.nome || "a turma"}" encerrado: ninguém mais consegue marcar presença com ele.`);
       } catch (error) {
         showTeacherMessage("error", "Não foi possível encerrar o código. Tente novamente.");
@@ -5110,11 +5340,13 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       attendanceListPanel.classList.toggle("teacher-compact", show); // layout enxuto no celular (ver CSS)
       if (!show) return;
       const active = isCodeActive(selectedTurmaData);
+      if (isTeacherAuthenticated) acompanharSala(selectedTurmaData.id);
+      const codigoBarra = codigoDe(selectedTurmaData);
       document.getElementById("bar-auto-end-wrap").classList.toggle("hidden", !active);
       document.getElementById("bar-auto-end").checked = readAutoEnd();
       const expira = codeExpiresAtMillis(selectedTurmaData);
       teacherCodeBarText.textContent = active
-        ? `Código ${selectedTurmaData.codigoDoDia} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
+        ? `${codigoBarra ? `Código ${codigoBarra}` : "Código ativo"} · expira em ${formatRemaining(expira - Date.now())} (${formatTimeOfDay(expira)})`
         : "Nenhum código ativo: os alunos não conseguem marcar presença.";
       btnBarEndCode.classList.toggle("hidden", !active);
       btnBarNewCode.classList.toggle("hidden", active);
@@ -5144,11 +5376,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     const autoEndedCodes = new Set(); // não encerra o mesmo código duas vezes
     async function autoEndCodeIfAllMarked(turma, total) {
       if (!readAutoEnd() || !turma || !isCodeActive(turma)) return;
-      const chave = `${turma.id}|${turma.codigoDoDia}|${codeDefinedAtMillis(turma)}`;
+      const chave = `${turma.id}|${codeDefinedAtMillis(turma)}`;
       if (autoEndedCodes.has(chave)) return;
       autoEndedCodes.add(chave);
       try {
-        await updateDoc(doc(db, "turmas", turma.id), { codigoDoDia: "" });
+        await fecharCodigoDaTurma(turma.id);
         showToast("success", `Todos os ${total} alunos marcaram: código de "${turma.nome || "a turma"}" encerrado.`);
         if (codeDisplayTurmaId === turma.id) markCodeDisplayEnded(total);
       } catch (error) {
@@ -5190,10 +5422,11 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       const current = getLocalParts();
       const refs = [];
       const batch = writeBatch(db);
+      const comCodigo = codigoParaPresencaDoProfessor(selectedTurmaData);
       faltando.forEach((aluno) => {
         const ref = doc(collection(db, "turmas", turmaId, "presencas"));
         refs.push(ref);
-        batch.set(ref, { nome: aluno.nome, data: current.isoDate, horario: current.time, maquina: "professor", expiraEm: presencaExpiraEm() });
+        batch.set(ref, { nome: aluno.nome, data: current.isoDate, horario: current.time, maquina: "professor", expiraEm: presencaExpiraEm(), ...comCodigo });
       });
       trackWrite(batch.commit(), refs.length).catch(() => showToast("error", "Não foi possível marcar todos. Tente novamente."));
       showToast("success", `${refs.length} ${refs.length === 1 ? "aluno marcado" : "alunos marcados"} como presentes.`, {
@@ -5637,6 +5870,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       };
       codeDisplayWatch.push(onSnapshot(collection(db, "turmas", turmaId, "alunos"), (snap) => {
         nomesAlunos = snap.docs.map((d) => d.data().nome || "");
+        sincronizarNomesDaSala(allTeacherTurmas.find((t) => t.id === turmaId), nomesAlunos);
         verificar();
       }, () => {}));
       codeDisplayWatch.push(onSnapshot(query(collection(db, "turmas", turmaId, "presencas"), where("data", "==", getLocalParts().isoDate)), (snap) => {

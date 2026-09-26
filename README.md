@@ -111,9 +111,12 @@ A segurança do sistema depende inteiramente dessas duas peças estarem configur
 
 O código do dia deve ser entendido como uma **credencial compartilhada da turma** — não como autenticação individual de cada aluno, e não como prova de presença física de quem o utiliza.
 
-- É salvo em `turmas/{turmaId}.codigoDoDia` como texto simples (não é um hash). A coleção `turmas` tem `allow read: if true` — necessário para a tela inicial listar as turmas antes de qualquer login —, o que também significa que **qualquer pessoa que consulte o Firestore diretamente (sem passar pela interface) consegue ler o código atual de qualquer turma**, mesmo sem ter aberto a tela de chamada. Esta é uma limitação conhecida da modelagem atual, não um comportamento acidental.
-- A verificação "o código digitado é igual ao `codigoDoDia`" acontece no JavaScript do navegador e **também** é reconferida pelo servidor ao criar uma presença (função `codigoAtivo()` nas regras, que compara o `codigoUsado` enviado com o `codigoDoDia` real da turma e confirma se ainda está dentro do prazo escolhido). Essa parte específica não é apenas proteção de interface.
-- A leitura da lista de alunos e das presenças de uma turma exige, de fato, o código ativo dela — a regra `allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId)` é aplicada pelo servidor do Firestore.
+- **O código não fica na turma.** A coleção `turmas` tem `allow read: if true` (a tela inicial lista as turmas antes de qualquer login), então a turma guarda só **quando** o código foi gerado (`codigoDefinidoEm`) e **por quanto tempo** vale (`codigoDuracaoMin`). O código em si é o **ID** do documento `turmas/{turmaId}/salas/{código}`, que guarda a lista de nomes da turma para os alunos. Ninguém consegue listar essa coleção (só o professor dono / conta master), então só chega nesse documento quem já sabe o código.
+- **Quem confere é o servidor.** O aluno digita o código e o site tenta ler `salas/{código digitado}`: as regras (função `salaValida()`) só liberam se esse documento existir, for do código atual (mesmo horário de `codigoDefinidoEm` da turma) e o prazo não tiver acabado. Código errado, encerrado, trocado ou vencido → acesso negado, e o site mostra "código incorreto" ou "expirou".
+- **O aluno não lê a coleção `alunos`** (só o professor): recebe apenas a lista de nomes da sala. **Presenças**: o aluno só consegue ler as presenças do dia marcadas com o código atual (a consulta precisa filtrar por `codigoUsado`) — por isso uma presença marcada pelo professor **antes** de gerar o código não aparece como marcada na tela dos alunos (para o professor aparece normalmente). As marcadas pelo professor com um código ativo levam o código e aparecem para os alunos.
+- **Aluno incluído com o código ativo**: ao incluir/renomear/remover um aluno pelo site (Gerenciar, Chamada ou com a janela do código aberta), a lista de nomes da sala é atualizada na hora. Se isso não acontecer (ex.: alteração feita direto no Firebase Console), é só gerar o código de novo.
+- Turmas antigas, que tinham o código gravado na própria turma (`codigoDoDia`), perdem esse campo quando o dono (ou a conta master) entra na Área do professor, e ficam sem código ativo até um novo ser gerado. As regras não aceitam mais gravar um código na turma.
+- O código continua tendo 4 dígitos: alguém muito insistente poderia tentar adivinhá-lo por tentativa e erro (até 10 mil tentativas) durante o prazo de validade. O App Check (ver instalação) dificulta esse tipo de abuso.
 - **O que isso não garante**: qualquer pessoa que saiba o código — por tê-lo recebido de outro aluno, por exemplo — consegue ler os dados da turma dentro do prazo de validade, mesmo sem estar fisicamente na sala. O código autentica "conhecer o código daquela turma", não "estar presente".
 
 ### Identificador do aparelho
@@ -128,19 +131,18 @@ A trava de "um aparelho, um aluno, por dia" funciona assim:
 
 ### Criação de presença sem estar autenticado
 
-Sem estar logado, alguém só consegue criar uma presença informando `nome`, `data`, `horario`, `maquina` **e** um `codigoUsado` igual ao `codigoDoDia` real da turma, dentro do prazo de validade daquele código (`codigoAtivo()`) — isso é verificado pelo servidor, não só pela interface. Dentro dessa exigência, ainda existem lacunas conhecidas:
+Sem estar logado, alguém só consegue criar uma presença informando `nome`, `data`, `horario`, `maquina` **e** um `codigoUsado` igual ao código atual da turma, dentro do prazo de validade (`salaValida()`) — isso é verificado pelo servidor, não só pela interface. Além disso, o `nome` precisa estar na lista de nomes da turma (a da sala) e o ID do documento precisa ser `data_maquina`. Dentro dessa exigência, ainda existem lacunas conhecidas:
 
-- **Não é verificado** se `nome` corresponde a um aluno de fato cadastrado na turma — é possível registrar presença com um nome inventado, desde que se conheça o código ativo.
 - **Não é verificado** se `data`/`horario` correspondem ao momento real — quem conhece o código ativo pode, em tese, enviar uma presença com uma data diferente (retroativa ou futura), dentro da janela em que aquele código é válido.
 - **É verificado e bloqueado**: reescrever a mesma presença de um mesmo aparelho no mesmo dia, e criar uma presença sem um código correto e ativo (a menos que quem estiver criando seja o professor dono da turma, autenticado).
 - **É verificado e bloqueado** (desde a revisão de segurança): campos além de `nome`, `data`, `horario`, `maquina`, `expiraEm` e `codigoUsado`; `nome` vazio ou com mais de 120 caracteres; `data` fora do formato `AAAA-MM-DD`; `horario` e `maquina` longos demais; e presença **sem `expiraEm`** ou com `expiraEm` mais de 8 dias à frente (antes era possível criar presenças que nunca seriam apagadas pela retenção, ou documentos enormes que enchiam o banco).
 
-Atenção: como o código do dia fica no documento público da turma (ver **[Código do dia](#código-do-dia)**), "conhecer o código ativo" não exige estar na sala. O risco prático dessas lacunas de `nome`/`data`/`horario` depende disso — mas estão documentadas aqui deliberadamente, para não sugerir uma proteção maior do que a implementação atual entrega.
+Atenção: "conhecer o código ativo" não exige estar na sala (um colega pode repassar o código). O código não fica mais público (ver **[Código do dia](#código-do-dia)**), mas essas lacunas de `data`/`horario` e de `maquina` estão documentadas aqui deliberadamente, para não sugerir uma proteção maior do que a implementação atual entrega.
 
 ### Isolamento entre professores
 
 - As regras do Firestore exigem estar autenticado **e** que o `professorUid` da turma seja igual ao UID de quem está logado (ou que seja a conta master) para: criar/editar/apagar a turma, criar/editar/apagar alunos, mudar o código do dia, ou apagar uma presença. Um professor não consegue alterar, apagar ou gerenciar os alunos de uma turma de outro professor — isso é garantido pelo Firestore, e não apenas pela Área do professor filtrar a lista para mostrar só as próprias turmas.
-- A leitura de alunos/presenças de uma turma que não é sua também exige o código ativo dela (`codigoAtivo()`) — um professor não vê automaticamente os dados de turmas de outros professores só por estar autenticado; precisaria saber o código do dia daquela turma, como qualquer outra pessoa.
+- Um professor não vê os dados de turmas de outros professores só por estar autenticado: a coleção `alunos` é só do dono (ou da master), e a lista de nomes/presenças do dia exige saber o código atual daquela turma, como qualquer outra pessoa.
 - Dentro da própria turma, o dono (ou a conta master) sempre pode marcar presença de qualquer aluno via Modo professor, sem precisar do código — esse é o comportamento pretendido dessa funcionalidade, não uma falha de isolamento.
 - A conta master é a única exceção deliberada nas regras: tem acesso de leitura/escrita a todas as turmas, alunos e presenças de todos os professores, por design, sem depender do código do dia.
 
@@ -175,7 +177,7 @@ Este sistema trata dados pessoais de estudantes — a LGPD (Lei Geral de Proteç
 - **Dados tratados**: nome do aluno, nome da turma, e registros de presença (nome, data, horário e um identificador de dispositivo). Não são coletados e-mail, matrícula, CPF ou qualquer outro dado do aluno pelo sistema em si. As **fotos de comprovantes de atraso** guardadas pelo professor podem conter dados do aluno que estejam no próprio papel fotografado (nome, assinatura etc.) — o sistema não lê nem extrai nada delas.
 - **Onde ficam armazenados**: no Cloud Firestore, dentro do projeto Firebase de quem publicou aquela cópia do sistema — ver **[Modelo de dados](#modelo-de-dados)**.
 - **Finalidade**: apoio operacional ao controle de chamada do professor. Este sistema não substitui os sistemas institucionais de controle acadêmico — a chamada oficial continua sendo registrada no SUAP (ou equivalente), sempre após validação do professor. A marcação depende do próprio aluno, sem verificação de identidade (ver **[Identificador do aparelho](#identificador-do-aparelho)** e **[Código do dia](#código-do-dia)**) — por isso o professor não deve tratar os registros deste sistema, isoladamente, como prova definitiva de frequência.
-- **Quem tem acesso**: na interface, o professor dono da turma e a conta master. Pelas regras do Firestore, a leitura de alunos/presenças de uma turma também é liberada a qualquer pessoa que apresente o código do dia dentro do prazo de validade — ver **[Código do dia](#código-do-dia)** para o detalhamento técnico completo; isso é mais amplo do que "só o professor e os alunos daquela turma".
+- **Quem tem acesso**: na interface, o professor dono da turma e a conta master. Pelas regras do Firestore, quem apresenta o código do dia dentro do prazo de validade também lê a lista de nomes da turma e as presenças do dia marcadas com esse código (o código não é público: não fica no documento da turma) — ver **[Código do dia](#código-do-dia)** para o detalhamento técnico completo; isso é mais amplo do que "só o professor e os alunos daquela turma".
 - **Fotos de atrasos**: guardadas sem acesso público (sem URL pública, sem Firebase Storage), acessíveis só ao professor dono da turma e à conta master, sem metadados EXIF (a foto é redesenhada no navegador, o que descarta inclusive a localização GPS) e apagadas automaticamente após 180 dias — ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 - **Retenção**: presenças são apagadas automaticamente cerca de 7 dias após serem criadas (as marcadas antes dessa mudança, com 72h), na próxima vez em que algum professor acessar a Área do professor — ver **[Retenção de dados](#retenção-de-dados)** para as limitações dessa implementação. Turmas, alunos e presenças anteriores a esta versão não têm exclusão automática. Excluir uma turma remove permanentemente seus alunos e presenças, de forma irreversível.
 - **Transparência com o professor**: no primeiro acesso à Área do professor, o sistema exibe um aviso obrigatório resumindo esses pontos, que só é dispensado depois de o professor clicar em "Concordo"; essa confirmação é registrada em `acordosProfessor/{uid}` (ver **[Modelo de dados](#modelo-de-dados)**).
@@ -234,11 +236,26 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                 && (isMaster() || turmaAtual(turmaId).professorUid == request.auth.uid);
        }
 
-       function codigoAtivo(turmaId) {
+       // Código do dia: o valor NÃO fica na turma (que é pública). Ele é o
+       // nome (ID) do documento turmas/{id}/salas/{codigo}, que guarda a lista
+       // de nomes para os alunos. Só quem sabe o código chega nesse documento.
+       // A turma guarda só quando o código foi gerado e quanto tempo vale.
+       function codigoNoPrazo(turmaId) {
          let t = turmaAtual(turmaId);
-         return t.codigoDoDia is string && t.codigoDoDia != ''
-                && t.get('codigoDefinidoEm', null) != null
+         return t.get('codigoDefinidoEm', null) != null
                 && request.time < t.codigoDefinidoEm + duration.value(t.get('codigoDuracaoMin', 180), 'm');
+       }
+
+       function salaPath(turmaId, codigo) {
+         return /databases/$(database)/documents/turmas/$(turmaId)/salas/$(codigo);
+       }
+
+       // O código informado é o código atual (e ainda no prazo) da turma
+       function salaValida(turmaId, codigo) {
+         return codigo is string && codigo.matches('^[0-9]{4,10}$')
+                && codigoNoPrazo(turmaId)
+                && exists(salaPath(turmaId, codigo))
+                && get(salaPath(turmaId, codigo)).data.definidoEm == turmaAtual(turmaId).codigoDefinidoEm;
        }
 
        // Texto com tamanho máximo (evita documentos enormes)
@@ -251,10 +268,13 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
        }
 
        // Campos da turma com tipo e tamanho corretos (vale para criar e alterar)
-       function turmaValida(d) {
+       // (codigoAntes: turmas antigas ainda podem ter um código velho gravado;
+       // alterar outra coisa nelas continua permitido, sem trocar esse valor)
+       function turmaValida(d, codigoAntes) {
          return textoAte(d.nome, 120) && d.nome.size() > 0
                 && (!('professorNome' in d) || textoAte(d.professorNome, 120))
-                && (!('codigoDoDia' in d) || textoAte(d.codigoDoDia, 10))
+                // o código do dia não pode mais ficar na turma (só vazio/removido)
+                && (!('codigoDoDia' in d) || d.codigoDoDia == '' || d.codigoDoDia == codigoAntes)
                 && (!('codigoDefinidoEm' in d) || d.codigoDefinidoEm == null || d.codigoDefinidoEm is timestamp)
                 && (!('codigoDuracaoMin' in d) || d.codigoDuracaoMin is int)
                 && (!('arquivada' in d) || d.arquivada is bool)
@@ -268,7 +288,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && request.resource.data.keys().hasAll(['nome', 'professorUid'])
                        && request.resource.data.keys().hasOnly(['nome', 'professorUid', 'professorNome', 'codigoDoDia', 'codigoDefinidoEm', 'codigoDuracaoMin', 'arquivada', 'cor'])
                        && request.resource.data.professorUid == request.auth.uid
-                       && turmaValida(request.resource.data);
+                       && turmaValida(request.resource.data, '');
          allow update: if request.auth != null
                        && (isMaster() || resource.data.professorUid == request.auth.uid)
                        && request.resource.data.diff(resource.data).affectedKeys()
@@ -277,11 +297,24 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorUid']) || isMaster())
                        // e-mail do professor (turmas antigas): só pode ser removido
                        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['professorEmail']) || !('professorEmail' in request.resource.data))
-                       && turmaValida(request.resource.data);
+                       && turmaValida(request.resource.data, resource.data.get('codigoDoDia', ''));
          allow delete: if request.auth != null && (isMaster() || resource.data.professorUid == request.auth.uid);
 
+         // Lista de nomes para os alunos, com o código como ID. Aluno só lê
+         // (um documento, pelo código exato); listar é só do professor.
+         match /salas/{codigo} {
+           allow get: if ehProfessorDaTurma(turmaId) || salaValida(turmaId, codigo);
+           allow list, delete: if ehProfessorDaTurma(turmaId);
+           allow create, update: if ehProfessorDaTurma(turmaId)
+                                 && codigo.matches('^[0-9]{4,10}$')
+                                 && request.resource.data.keys().hasOnly(['nomes', 'definidoEm'])
+                                 && request.resource.data.nomes is list
+                                 && request.resource.data.nomes.size() <= 500
+                                 && request.resource.data.definidoEm is timestamp;
+         }
+
          match /alunos/{alunoId} {
-           allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+           allow read: if ehProfessorDaTurma(turmaId);
            allow create: if ehProfessorDaTurma(turmaId)
                          && request.resource.data.keys().hasAll(['nome'])
                          && request.resource.data.nome is string;
@@ -292,7 +325,10 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
          }
 
          match /presencas/{presencaId} {
-           allow read: if ehProfessorDaTurma(turmaId) || codigoAtivo(turmaId);
+           // Aluno: só as presenças marcadas com o código atual (a consulta
+           // precisa filtrar por codigoUsado).
+           allow read: if ehProfessorDaTurma(turmaId)
+                       || salaValida(turmaId, resource.data.get('codigoUsado', ''));
            // Só os campos esperados, com tamanho limitado, e com prazo de
            // retenção obrigatório (no máximo 8 dias à frente).
            allow create: if request.resource.data.keys().hasAll(['nome', 'data', 'horario', 'maquina', 'expiraEm'])
@@ -306,9 +342,11 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
                          && (
                               ehProfessorDaTurma(turmaId)
                               || (
-                                   textoAte(request.resource.data.get('codigoUsado', null), 10)
-                                   && codigoAtivo(turmaId)
-                                   && request.resource.data.codigoUsado == turmaAtual(turmaId).codigoDoDia
+                                   // aluno: código atual, nome da lista da turma e
+                                   // um documento por aparelho por dia
+                                   salaValida(turmaId, request.resource.data.get('codigoUsado', ''))
+                                   && request.resource.data.nome in get(salaPath(turmaId, request.resource.data.codigoUsado)).data.nomes
+                                   && presencaId == request.resource.data.data + '_' + request.resource.data.maquina
                                  )
                             );
            allow update: if false;
@@ -358,7 +396,7 @@ Resumo das limitações técnicas já detalhadas nas seções acima — nenhuma 
 
    Clique em **"Publicar"**. Com essas regras:
    - criar turma, gerenciar alunos, mudar o código do dia ou apagar uma presença exige estar logado como o professor dono da turma (ou a conta master);
-   - a leitura de alunos e presenças de uma turma é liberada para o professor dono/master, ou para quem informar o código do dia dentro do prazo de validade escolhido — ver **[Código do dia](#código-do-dia)** para o que isso garante de fato;
+   - a coleção `alunos` só é lida pelo professor dono/master; quem informar o código do dia dentro do prazo lê só a lista de nomes (`salas/{código}`) e as presenças do dia marcadas com esse código — ver **[Código do dia](#código-do-dia)** para o que isso garante de fato;
    - `acordosProfessor/{uid}` guarda o registro de que aquele professor confirmou os "Avisos importantes" (e o nome/e-mail dele, usados na lista de professores da conta master) — cada um só lê/escreve o próprio registro; a conta master também pode ler todos e apagar o registro ao remover um professor;
    - `atrasos`/`atrasosImg` (fotos de comprovantes de atraso) só podem ser lidos, criados e apagados pelo professor dono da turma (ou pela conta master) — o código do dia não dá acesso a elas; ver **[Fotos de atrasos](#fotos-de-atrasos)**.
 
@@ -467,9 +505,12 @@ Tudo fica no Cloud Firestore, no projeto Firebase de cada instalação, organiza
 
 ```
 turmas/{turmaId}
-  nome, codigoDoDia, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorNome, arquivada, cor
+  nome, codigoDefinidoEm, codigoDuracaoMin, professorUid, professorNome, arquivada, cor
   (o e-mail do professor NÃO fica na turma, que é pública: fica em acordosProfessor;
-   turmas antigas perdem o campo professorEmail quando o dono ou a master entram)
+   turmas antigas perdem o campo professorEmail quando o dono ou a master entram;
+   o código do dia também NÃO fica na turma — turmas antigas perdem o campo codigoDoDia)
+  salas/{código do dia}
+    nomes, definidoEm      (lista de nomes para os alunos; o ID é o código)
   alunos/{alunoId}
     nome
   presencas/{presencaId}
@@ -486,6 +527,7 @@ professoresPendentes/{email}
 
 - `nome` (em `alunos`) e `nome` (em `presencas`) são independentes por decisão de modelagem: a presença guarda uma **cópia** do nome no momento em que foi marcada, não uma referência ao documento do aluno. Isso preserva o registro histórico como estava no momento da chamada — renomear um aluno depois não altera presenças já registradas, só as futuras. Ver **[Renomear aluno](#renomear-aluno)**.
 - `maquina` guarda o identificador do aparelho salvo no `localStorage` de quem marcou — ver **[Identificador do aparelho](#identificador-do-aparelho)**.
+- `salas/{código}` existe só enquanto há um código gerado (é apagada ao encerrar, arquivar ou gerar outro código); `definidoEm` é igual ao `codigoDefinidoEm` da turma, e é o que as regras usam para saber que é o código atual.
 - `codigoDuracaoMin` guarda por quantos minutos aquele código vale (15, 60, 120 ou 180), escolhido no botão usado para gerá-lo.
 - `expiraEm` guarda até quando aquela presença deve existir (7 dias depois de criada) — usado pela limpeza automática, ver **[Retenção de dados](#retenção-de-dados)**.
 - `atrasos/{atrasoId}` guarda a data de envio (`criadoEm`, hora do servidor) e uma miniatura (`thumb`) de cada foto de atraso; `atrasosImg/{atrasoId}` (mesmo ID) guarda a foto comprimida (`img`). Ver **[Fotos de atrasos](#fotos-de-atrasos)**.
@@ -545,7 +587,8 @@ Depois de publicar as regras, vale confirmar manualmente (idealmente com duas co
 10. Renomear um aluno com presença já registrada → a presença antiga mantém o nome anterior.
 11. Excluir uma turma → confirmar no Firestore Console que `alunos` e `presencas` dela desapareceram, não só o documento da turma.
 12. Testar em mais de um dispositivo/rede antes de confiar que uma alteração nas regras está funcionando — problemas de leitura/permissão às vezes só aparecem para quem não está autenticado como professor.
-13. Gerar um código de 15 min e esperar passar o prazo → a leitura de alunos/presenças da turma volta a ser negada para quem só tem o código, mesmo digitando o código certo (porque `codigoAtivo()` deixou de ser verdadeiro).
+13. Gerar um código de 15 min e esperar passar o prazo → a leitura da lista/presenças da turma volta a ser negada para quem só tem o código, mesmo digitando o código certo (porque `salaValida()` deixou de ser verdadeiro).
+13b. Abrir a turma (sem login) no Firebase Console / API → o documento da turma **não** contém o código; ler `turmas/{id}/alunos` sem login é negado.
 14. **Atrasos**: Professor A adiciona uma foto na turma A → ela aparece em "📷 Atrasos" da turma A e em "Ver todos os atrasos"; Professor B não vê a turma A nem as fotos dela (e, pelas regras, uma leitura direta de `turmas/{turmaA}/atrasos` feita pelo B é negada); um aluno com o código do dia da turma A também não consegue ler as fotos.
 15. **Manter conectado**: sem marcar, fechar a aba e abrir o atalho `#professor` de novo pede a senha; marcando, abre direto nas turmas; depois de "Sair", volta a pedir a senha.
 16. Primeiro login de um professor novo → o modal "Avisos importantes" abre sozinho e não fecha clicando fora nem com Esc, só pelo botão "Concordo"; um novo login depois disso não deve mais mostrar o modal forçado.
@@ -561,7 +604,7 @@ Nem tudo nesta lista tem garantia absoluta — onde a limitação é conhecida (
 - **"Não acho as presenças no Firestore"** → dentro do documento da turma, abra a subcoleção `presencas`. Se estiver vazia, ninguém marcou presença ainda.
 - **"Preciso mesmo tornar o repositório público?"** → sim, para usar o GitHub Pages de graça. Os dados de alunos e presenças não ficam no GitHub, só no Firestore.
 - **"Criei/excluí uma turma e a lista não atualiza sozinha"** → abra o Console do navegador (F12) e veja se há um erro do Firestore pedindo para criar um índice — comum quando falta o índice combinado (passo 11 da instalação).
-- **"A lista de alunos não aparece mesmo com o código certo"** → confira se as regras publicadas são exatamente as da seção de instalação, incluindo onde cada função foi declarada. Já ocorreu, numa versão anterior deste projeto, de `turmaAtual`/`ehProfessorDaTurma`/`codigoAtivo` serem declaradas fora do bloco `match /databases/{database}/documents { ... }` — o que faz toda regra que as usa falhar com "Invalid variable name: database" (visível passando o mouse sobre o indicador de erro na aba Regras). O Firestore trata esse erro como negar o acesso, mesmo para quem digitou o código certo. O bloco da seção de instalação já tem as funções no lugar correto.
+- **"A lista de alunos não aparece mesmo com o código certo"** → confira se as regras publicadas são exatamente as da seção de instalação, incluindo onde cada função foi declarada. Já ocorreu, numa versão anterior deste projeto, de `turmaAtual`/`ehProfessorDaTurma`/`codigoAtivo` (hoje `salaValida`) serem declaradas fora do bloco `match /databases/{database}/documents { ... }` — o que faz toda regra que as usa falhar com "Invalid variable name: database" (visível passando o mouse sobre o indicador de erro na aba Regras). O Firestore trata esse erro como negar o acesso, mesmo para quem digitou o código certo. O bloco da seção de instalação já tem as funções no lugar correto.
 
 ### Renomear aluno
 
