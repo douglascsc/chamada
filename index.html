@@ -467,6 +467,10 @@
     .student-row.is-confirming .row-actions { flex-basis: 100%; }
     /* Aluno: quem já marcou fica recolhido */
     .student-row.is-collapsed { display: none; }
+    /* o nome nunca fica espremido: sem espaço, os botões descem para a linha de baixo */
+    .student-row > .student-main { min-width: 10rem; }
+    .nome-clicavel { cursor: pointer; text-decoration: underline dotted #94a3b8; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+    .nome-clicavel:hover { color: #2B7A40; text-decoration-color: #2B7A40; }
     .filtro-chip { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; min-height: 2.75rem; padding: 0 .35rem; border-radius: .75rem; border: 1px solid #e2e8f0; background: rgba(255,255,255,.85); color: #475569; font-size: .75rem; font-weight: 600; white-space: nowrap; }
     .filtro-chip:hover { background: #f1f5f9; }
     .filtro-chip[aria-pressed="true"] { background: #2B7A40; border-color: #2B7A40; color: #fff; }
@@ -1171,7 +1175,7 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
 
   <template id="student-row-template">
    <article class="student-row flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4" role="listitem">
-    <div class="flex min-w-0 flex-1 items-center gap-3">
+    <div class="student-main flex min-w-0 flex-1 items-center gap-3">
      <div class="student-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-extrabold" aria-hidden="true"></div>
      <div class="min-w-0">
       <!-- nome sempre inteiro (quebra linha): nomes parecidos precisam ser distinguíveis -->
@@ -1190,6 +1194,23 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
     </div>
    </article>
   </template>
+
+  <!-- Modal: os últimos 7 dias de um aluno (só professor) -->
+  <div id="aluno-semana-backdrop" class="modal-backdrop hidden" aria-hidden="true">
+   <section class="teacher-modal bg-white" role="dialog" aria-modal="true" aria-labelledby="aluno-semana-nome">
+    <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF6EC] text-[#2B7A40]">
+     <i data-lucide="calendar-days" aria-hidden="true" class="h-6 w-6"></i>
+    </div>
+    <h2 id="aluno-semana-nome" class="text-xl font-extrabold text-[var(--ink)] break-words"></h2>
+    <p id="aluno-semana-turma" class="mt-1 text-sm text-slate-500"></p>
+    <p id="aluno-semana-resumo" class="mt-3 rounded-xl border border-[#CFE6C8] bg-[#EEF6EC] px-3 py-2 text-sm font-semibold text-slate-700"></p>
+    <div id="aluno-semana-lista" class="mt-3 divide-y divide-slate-100 text-sm"></div>
+    <p class="mt-3 text-xs text-slate-500">Só aparecem os dias com chamada nesta turma. As presenças ficam guardadas por 7 dias.</p>
+    <div class="mt-5 flex justify-end">
+     <button id="btn-close-aluno-semana" class="action-button focus-ring rounded-xl px-4 py-3 bg-[var(--ink)] hover:bg-slate-800 text-white font-semibold" type="button">Fechar</button>
+    </div>
+   </section>
+  </div>
 
   <!-- Modal: login do professor (usado para Área do professor, Modo professor e para desfazer presença) -->
   <div id="teacher-gate-modal-backdrop" class="modal-backdrop hidden" aria-hidden="true">
@@ -3124,6 +3145,18 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       row.querySelector(".exit-label").textContent = saida ? "Desfazer saída" : "Saiu antes";
       exitButton.setAttribute("aria-label", saida ? `Desfazer a saída antecipada de ${name}` : `Registrar saída antecipada de ${name}`);
       exitButton.disabled = Boolean(busyName);
+      // professor: tocar no nome mostra os últimos 7 dias do aluno
+      const nomeEl = row.querySelector(".student-name");
+      nomeEl.classList.toggle("nome-clicavel", visaoProfessor);
+      if (visaoProfessor) {
+        nomeEl.setAttribute("role", "button");
+        nomeEl.setAttribute("tabindex", "0");
+        nomeEl.setAttribute("aria-label", `Ver os últimos 7 dias de ${name}`);
+      } else {
+        nomeEl.removeAttribute("role");
+        nomeEl.removeAttribute("tabindex");
+        nomeEl.removeAttribute("aria-label");
+      }
       // professor: ícone de quem marcou (celular do aluno ou professor)
       const statusBox = statusLabel.parentElement;
       statusBox.querySelectorAll(".origem-presenca").forEach((el) => el.remove());
@@ -3583,6 +3616,15 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         row.querySelector(".cancel-attendance").addEventListener("click", () => closeIdentityConfirmation(row));
         row.querySelector(".confirm-attendance").addEventListener("click", () => markAttendance(row));
         row.querySelector(".exit-button").addEventListener("click", () => toggleSaidaAntecipada(row));
+        const nomeEl = row.querySelector(".student-name");
+        const verSemana = () => {
+          if (!nomeEl.classList.contains("nome-clicavel") || !selectedTurmaId) return;
+          abrirAlunoSemana(selectedTurmaId, selectedTurmaData && selectedTurmaData.nome, row.dataset.studentName);
+        };
+        nomeEl.addEventListener("click", verSemana);
+        nomeEl.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") { event.preventDefault(); verSemana(); }
+        });
         row.querySelector(".undo-button").addEventListener("click", async () => {
           // Sempre exige a senha do professor de novo para desfazer, mesmo
           // com o Modo professor ativo — evita que outro aluno no mesmo
@@ -4795,6 +4837,90 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
       }
     }
 
+    // ---------------------------------------------------------------------
+    // Professor: tocar no nome do aluno mostra os últimos 7 dias dele
+    // (dias com chamada na turma: horário, atraso, saída antecipada ou falta)
+    // ---------------------------------------------------------------------
+    const alunoSemanaBackdrop = document.getElementById("aluno-semana-backdrop");
+    let alunoSemanaToken = 0;
+    function diaDaSemanaCurto(isoDate) {
+      const d = new Date(`${isoDate}T12:00:00-03:00`);
+      return d.toLocaleDateString("pt-BR", { weekday: "short", timeZone: TIME_ZONE }).replace(".", "");
+    }
+    function renderAlunoSemana(nome, registros) {
+      const lista = document.getElementById("aluno-semana-lista");
+      lista.innerHTML = "";
+      const datas = [...new Set(registros.map((r) => r.data).filter((d) => typeof d === "string"))].sort().reverse().slice(0, 7);
+      let presentes = 0, faltas = 0, atrasos = 0, saidas = 0;
+      datas.forEach((iso) => {
+        const doDia = registros.filter((r) => r.data === iso);
+        const record = presencaPorAluno(doDia).get(normalize(nome));
+        const atrasado = isAtrasado(record, inicioDaChamada(doDia));
+        const saida = record ? saidaDoAluno(doDia, nome) : "";
+        if (record) presentes++; else faltas++;
+        if (atrasado) atrasos++;
+        if (saida) saidas++;
+        const linha = document.createElement("div");
+        linha.className = "flex items-center justify-between gap-3 py-2";
+        const dia = document.createElement("span");
+        dia.className = "text-slate-600";
+        dia.textContent = `${diaDaSemanaCurto(iso)}, ${formatDisplayDate(iso).slice(0, 5)}`;
+        const st = document.createElement("span");
+        st.className = `text-right font-semibold ${!record ? "text-red-600" : atrasado || saida ? "text-amber-700" : "text-emerald-700"}`;
+        st.textContent = record
+          ? `Presente · ${horarioDe(record)}${atrasado ? " · atrasado" : ""}${saida ? ` · saiu às ${saida}` : ""}`
+          : "Ausente";
+        linha.append(dia, st);
+        lista.appendChild(linha);
+      });
+      const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+      document.getElementById("aluno-semana-resumo").textContent = datas.length
+        ? [`${plural(presentes, "presença", "presenças")} em ${plural(datas.length, "dia", "dias")}`,
+           faltas ? plural(faltas, "falta", "faltas") : "",
+           atrasos ? plural(atrasos, "atraso", "atrasos") : "",
+           saidas ? plural(saidas, "saída antecipada", "saídas antecipadas") : ""].filter(Boolean).join(" · ")
+        : "Nenhuma chamada registrada nos últimos 7 dias.";
+    }
+    // registros: as presenças da turma, se já estiverem carregadas (histórico);
+    // sem eles (Chamada, que só lê as de hoje), busca os 7 dias da turma
+    async function abrirAlunoSemana(turmaId, turmaNome, nome, registros) {
+      if (!turmaId) return;
+      const token = ++alunoSemanaToken;
+      document.getElementById("aluno-semana-nome").textContent = nome;
+      document.getElementById("aluno-semana-turma").textContent = `${turmaNome || "Turma"} · últimos 7 dias`;
+      document.getElementById("aluno-semana-lista").innerHTML = "";
+      document.getElementById("aluno-semana-resumo").textContent = "Carregando…";
+      alunoSemanaBackdrop.classList.remove("hidden");
+      alunoSemanaBackdrop.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (window.lucide) lucide.createIcons();
+      document.getElementById("btn-close-aluno-semana").focus();
+      let lista = registros;
+      if (!lista) {
+        try {
+          const snap = await getDocs(collection(db, "turmas", turmaId, "presencas"));
+          lista = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        } catch (error) {
+          if (token !== alunoSemanaToken) return;
+          document.getElementById("aluno-semana-resumo").textContent = "Não foi possível carregar os dias deste aluno. Verifique a internet e tente de novo.";
+          return;
+        }
+      }
+      if (token !== alunoSemanaToken) return;
+      renderAlunoSemana(nome, lista);
+    }
+    function fecharAlunoSemana() {
+      alunoSemanaToken++;
+      alunoSemanaBackdrop.classList.add("hidden");
+      alunoSemanaBackdrop.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "auto";
+    }
+    document.getElementById("btn-close-aluno-semana").addEventListener("click", fecharAlunoSemana);
+    alunoSemanaBackdrop.addEventListener("click", (event) => { if (event.target === alunoSemanaBackdrop) fecharAlunoSemana(); });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !alunoSemanaBackdrop.classList.contains("hidden")) fecharAlunoSemana();
+    });
+
     // Saída antecipada lançada depois, pelo histórico: pede o horário da
     // saída (hoje sugere o horário atual) ou desfaz a saída já registrada.
     async function toggleSaidaHistorico(nome, isoDate, button) {
@@ -4932,9 +5058,12 @@ A resposta final deve conter apenas a lista de nomes, sem qualquer texto adicion
         // à esquerda: nome e, embaixo, o horário (e atraso/saída) com o ícone de quem marcou
         const left = document.createElement("div");
         left.className = "min-w-0 flex-1";
-        const name = document.createElement("span");
-        name.className = `block truncate ${record ? "text-slate-700" : "text-red-600"}`;
+        const name = document.createElement("button");
+        name.type = "button";
+        name.className = `nome-clicavel focus-ring block max-w-full truncate text-left ${record ? "text-slate-700" : "text-red-600"}`;
         name.textContent = aluno.nome;
+        name.setAttribute("aria-label", `Ver os últimos 7 dias de ${aluno.nome}`);
+        name.addEventListener("click", () => abrirAlunoSemana(teacherManagingTurmaId, teacherManagingTurmaData && teacherManagingTurmaData.nome, aluno.nome, historyPresencas));
         const status = document.createElement("span");
         const atrasado = isAtrasado(record, inicio);
         const saida = record ? saidaDoAluno(dayRecords, aluno.nome) : "";
