@@ -471,6 +471,9 @@
     .student-row > .student-main { min-width: 10rem; }
     .nome-clicavel { cursor: pointer; text-decoration: underline dotted #94a3b8; text-underline-offset: 4px; text-decoration-thickness: 1px; }
     .nome-clicavel:hover { color: #2B7A40; text-decoration-color: #2B7A40; }
+    /* (o "hidden" precisa valer em qualquer tela: o layout só vale sem ele) */
+    #chamada-filtro:not(.hidden) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .375rem; }
+    @media (min-width: 640px) { #chamada-filtro:not(.hidden) { display: flex; flex-wrap: wrap; gap: .5rem; } }
     .filtro-chip { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; min-height: 2.75rem; padding: 0 .35rem; border-radius: .75rem; border: 1px solid #e2e8f0; background: rgba(255,255,255,.85); color: #475569; font-size: .75rem; font-weight: 600; white-space: nowrap; }
     .filtro-chip:hover { background: #f1f5f9; }
     .filtro-chip[aria-pressed="true"] { background: #2B7A40; border-color: #2B7A40; color: #fff; }
@@ -593,7 +596,7 @@
         </button>
        </div>
        <!-- Professor: filtro da lista (Todos / Ausentes / Ocorrências) -->
-       <div id="chamada-filtro" class="hidden mt-3 grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2" role="group" aria-label="Filtrar a lista">
+       <div id="chamada-filtro" class="hidden mt-3" role="group" aria-label="Filtrar a lista">
         <button type="button" data-filtro="todos" class="filtro-chip focus-ring" aria-pressed="true">Todos <span class="filtro-n"></span></button>
         <button type="button" data-filtro="ausentes" class="filtro-chip focus-ring" aria-pressed="false">Ausentes <span class="filtro-n"></span></button>
         <button type="button" data-filtro="ocorrencias" class="filtro-chip focus-ring" aria-pressed="false">Ocorrências <span class="filtro-n"></span></button>
