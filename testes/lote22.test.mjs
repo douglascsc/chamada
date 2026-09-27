@@ -192,6 +192,22 @@ await aluno.waitForFunction(() => /^Não há código ativo nesta turma agora: o 
   .then(() => check("Aluno: sem código → \"Não há código ativo nesta turma agora\"", true), async () => check("Aluno: sem código", false, await aluno.textContent("#global-message-text")));
 check("Nenhum erro de JavaScript (aluno)", aluno.errs.length === 0, aluno.errs.join(";"));
 await ctxA.close();
+// aluno no computador (tela larga): o filtro também não aparece
+const ctxD = await newCtx(false);
+const alunoD = await open(ctxD, APP + "#turma=T3");
+await alunoD.waitForSelector("#view-attendance:not(.hidden)"); await alunoD.waitForTimeout(600);
+check("Aluno no computador: filtro do professor não aparece", await alunoD.isHidden("#chamada-filtro"));
+await ctxD.close();
+// professor no computador: aparece em linha
+const { ctx: ctxP, page: profD } = await (async () => { const c = await newCtx(false); const p = await open(c, APP + "#professor");
+  await p.waitForSelector("#teacher-gate-modal-backdrop:not(.hidden)");
+  await p.fill("#teacher-gate-email", "prof.ana@ifsul.edu.br"); await p.fill("#teacher-gate-password", PASS); await p.click("#teacher-gate-submit");
+  await p.waitForSelector("#teacher-dashboard-content:not(.hidden)", { timeout: 15000 }); return { ctx: c, page: p }; })();
+await profD.locator("#teacher-turmas-list > div", { hasText: "INF2M 2026" }).getByRole("button", { name: "Chamada" }).click();
+await profD.waitForFunction(() => document.querySelectorAll(".student-row").length === 5, null, { timeout: 10000 }); await profD.waitForTimeout(500);
+const disp = await profD.$eval("#chamada-filtro", (e) => getComputedStyle(e).display);
+check("Professor no computador: filtro aparece em linha, com as contagens", disp === "flex" && /Todos\s*\(5\)/.test(await profD.textContent("#chamada-filtro")), disp);
+await ctxP.close();
 
 await browser.close(); await env.cleanup(); server.close();
 const falhas = results.filter((x) => !x).length;
