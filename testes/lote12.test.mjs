@@ -156,6 +156,7 @@ ctx = await newCtx(true); page = await open(ctx, APP + "#turma=T1");
 await page.waitForSelector("#view-attendance:not(.hidden)"); await page.waitForTimeout(600);
 await page.click("#btn-open-student-info"); await page.waitForTimeout(300);
 check("Aluno: \"Sobre seus dados\" indica o contato do responsável pelo sistema", (await page.textContent("#student-info-contact-link")) === "douglascamargo@ifsul.edu.br");
+await page.screenshot({ path: `${OUT}/l12-sobre-seus-dados-celular.png` });
 check("Nenhum erro de JavaScript (aluno)", page.errs.length === 0, page.errs.join(";"));
 await ctx.close();
 
