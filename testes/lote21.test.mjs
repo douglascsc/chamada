@@ -56,7 +56,7 @@ async function newCtx(mobile = true) {
   await ctx.route("https://fonts.googleapis.com/**", (q) => q.fulfill({ contentType: "text/css", body: "" }));
   return ctx;
 }
-async function open(ctx, url) { const p = await ctx.newPage(); p.errs = []; p.on("pageerror", (e) => p.errs.push(e.message)); p.on("dialog", (d) => d.accept()); await p.goto(url); return p; }
+async function open(ctx, url) { const p = await ctx.newPage(); p.errs = []; p.on("pageerror", (e) => p.errs.push(e.message)); p.on("dialog", (d) => { p.ultimoDialog = d.message(); return p.responder ? p.responder(d) : d.accept(); }); await p.goto(url); return p; }
 const hoje = new Date(now).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 const ok = (label, p) => p.then(() => check(label, true), (e) => check(label, false, e.message.slice(0, 120)));
 const nega = (label, p) => p.then(() => check(label, false, "foi PERMITIDO"), () => check(label, true));
@@ -135,19 +135,26 @@ const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 20000 }
 const ExcelJS = (await import("exceljs")).default;
 const wb = new ExcelJS.Workbook(); await wb.xlsx.readFile(await dl.path());
 const ws = wb.worksheets[0];
-const cab = ws.getRow(1).values.slice(1);
-const linhaB = ws.getRows(2, ws.rowCount - 1).map((r) => r.values.slice(1)).find((v) => v[1] === nomesT[1]);
+const todas = []; ws.eachRow((r) => todas.push(r.values.slice(1)));
+check("Excel do dia: resumo no topo", todas[0][0] === "Presentes: 2 de 3 · Ausentes: 1 · Atrasos: 0 · Saídas antecipadas: 1", JSON.stringify(todas[0]));
+const cab = todas.find((v) => v[0] === "Turma");
+const linhaB = todas.find((v) => v[1] === nomesT[1]);
 check("Excel do dia: coluna \"Saída antecipada\" com o horário", cab.includes("Saída antecipada") && /^\d{2}:\d{2}$/.test(linhaB[cab.indexOf("Saída antecipada")]), JSON.stringify({ cab, linhaB }));
 // Copiar ocorrências (ordem alfabética, com a ocorrência)
 check("Botão \"Copiar ocorrências (2)\"", (await page.textContent("#btn-bar-copy-absent")) === "Copiar ocorrências (2)", await page.textContent("#btn-bar-copy-absent"));
 await page.click("#btn-bar-copy-absent"); await page.waitForTimeout(300);
 const oc = (await page.evaluate(() => navigator.clipboard.readText())).split("\n");
 check("Copiar ocorrências: \"Nome - Saída antecipada HH:MM\" e \"Nome - Ausente\" em ordem alfabética", oc.length === 3 && /^Ocorrências - INF2M 2026 - .+ - \d{2}\/\d{2}\/\d{4}$/.test(oc[0]) && new RegExp(`^${nomesT[1]} - Saída antecipada \\d{2}:\\d{2}$`).test(oc[1]) && oc[2] === `${nomesT[2]} - Ausente`, JSON.stringify(oc));
-// desfazer
+// desfazer (pede confirmação: "Cancelar" não muda nada)
+page.responder = (d) => d.dismiss();
+await linha(nomesT[1]).locator(".exit-button").click(); await page.waitForTimeout(600);
+page.responder = null;
+check("Desfazer saída: \"Cancelar\" mantém a saída", /saiu às/.test(await linha(nomesT[1]).locator(".present-status-label").textContent()));
 await linha(nomesT[1]).locator(".exit-button").click();
 await page.waitForFunction((n) => !/saiu às/.test([...document.querySelectorAll(".student-row")].find((r) => r.dataset.studentName === n).querySelector(".present-status-label").textContent), nomesT[1], { timeout: 8000 })
   .then(() => check("Desfazer saída: volta a \"Presente\"", true), () => check("Desfazer saída: volta a \"Presente\"", false));
 await page.waitForTimeout(800);
+check("Desfazer saída: confirmação com o nome e o horário", new RegExp(`^Desfazer a saída antecipada de ${nomesT[1]} \\(saiu às \\d{2}:\\d{2}\\)\\?$`).test(page.ultimoDialog), page.ultimoDialog);
 check("Desfazer saída: apaga dos 2 registros", (await list("turmas/T1/presencas")).filter((r) => r.nome === nomesT[1]).every((r) => !r.saidaEm));
 // marca de novo para o histórico
 await linha(nomesT[0]).locator(".exit-button").click(); await page.waitForTimeout(1200);

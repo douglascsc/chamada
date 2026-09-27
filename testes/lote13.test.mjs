@@ -157,7 +157,7 @@ await nega("Depois de encerrar: NÃO marca com o código antigo", setDoc(doc(ano
 const aluno2 = await open(ctxA, APP + "#turma=T1"); // (mesmo aparelho, outra aba: só para ver a mensagem)
 await aluno2.waitForSelector("#view-attendance:not(.hidden)"); await aluno2.waitForTimeout(600);
 await aluno2.fill("#student-daily-code", codigo);
-await aluno2.waitForFunction(() => /expirou ou ainda não foi definido/.test(document.body.textContent), null, { timeout: 8000 })
+await aluno2.waitForFunction(() => /Não há código ativo nesta turma agora/.test(document.body.textContent), null, { timeout: 8000 })
   .then(() => check("Aluno com código encerrado: aviso de código expirado", true), () => check("Aluno com código encerrado: aviso de código expirado", false));
 
 // --- Gerar de novo: o código anterior não vale mais (mesmo se sobrar a sala)
